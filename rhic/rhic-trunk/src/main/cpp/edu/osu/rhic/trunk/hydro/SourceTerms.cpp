@@ -287,6 +287,7 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS,
 #endif
 }
 
+// For source terms of x, y, z types, I, J, K are used respectively; Lipei's comments
 /***************************************************************************************************************************************************/ 
 void loadSourceTermsX(const PRECISION * const __restrict__ I, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dx
@@ -507,5 +508,23 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
 	for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];		
 #endif		
+}
+
+//=========================================================
+//=========================================================
+//Source Terms generated from the particles;
+//by Lipei 11/25/2017
+//P is the source read in from Source File; S is the re-defination of the source
+//=========================================================
+//=========================================================
+void loadSourceTermsPart(const PRECISION * const __restrict__ P, PRECISION * const __restrict__ S)
+{
+    //Trivial defination; for further improvement
+    S[0] = P[0];
+    S[1] = P[1];
+    S[2] = P[2];
+    S[3] = P[3];
+//#ifdef USE_CARTESIAN_COORDINATES
+//#endif
 }
 

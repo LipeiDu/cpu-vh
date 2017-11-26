@@ -12,6 +12,8 @@ int initialConditionType;
 
 int numberOfNucleonsPerNuclei;
 
+int particleSourceType;//Lipei
+
 double initialEnergyDensity;
 double scatteringCrossSectionNN;
 double impactParameter;
@@ -32,6 +34,8 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 
 	getIntegerProperty(cfg, "initialConditionType", &initialConditionType, 2);	
 	getIntegerProperty(cfg, "numberOfNucleonsPerNuclei", &numberOfNucleonsPerNuclei, 208);
+    
+    getIntegerProperty(cfg, "particleSourceType", &particleSourceType, 0);//Lipei
 
 	getDoubleProperty(cfg, "initialEnergyDensity", &initialEnergyDensity, 1.0);
 	getDoubleProperty(cfg, "scatteringCrossSectionNN", &scatteringCrossSectionNN, 62);
@@ -43,6 +47,7 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) params;
 	initCond->initialConditionType = initialConditionType;
 	initCond->numberOfNucleonsPerNuclei = numberOfNucleonsPerNuclei;
+    initCond->particleSourceType = particleSourceType;//Lipei
 	initCond->initialEnergyDensity = initialEnergyDensity;
 	initCond->scatteringCrossSectionNN = scatteringCrossSectionNN;
 	initCond->impactParameter = impactParameter;

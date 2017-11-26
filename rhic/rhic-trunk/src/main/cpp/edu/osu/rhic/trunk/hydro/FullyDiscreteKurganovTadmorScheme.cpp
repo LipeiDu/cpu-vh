@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <stdio.h> // for printf
 #include <math.h>
+#include <iostream>// by Lipei
+#include <fstream>// by Lipei
+
 
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h"
 #include "edu/osu/rhic/harness/lattice/LatticeParameters.h"
@@ -22,117 +25,8 @@
 
 #include "edu/osu/rhic/core/util/FiniteDifference.h" //temp
 
-/**************************************************************************************************************************************************\
-void setNeighborCells(const PRECISION * const __restrict__ data,
-PRECISION * const __restrict__ I, PRECISION * const __restrict__ J, PRECISION * const __restrict__ K, PRECISION * const __restrict__ Q,
-int s, unsigned int n, int ptr, int simm, int sim, int sip, int sipp, int sjmm, int sjm, int sjp, int sjpp, int skmm, int skm, int skp, int skpp) {
-			PRECISION data_ns = data[s];
-			// I
-			*(I+ptr) = *(data+simm);
-			*(I+ptr+1) = *(data+sim);
-			*(I+ptr+2) = data_ns;
-			*(I+ptr+3) = *(data+sip);
-			*(I+ptr+4) = *(data+sipp);
-			// J
-			*(J+ptr) = *(data+sjmm);
-			*(J+ptr+1) = *(data+sjm);
-			*(J+ptr+2) = data_ns;
-			*(J+ptr+3) = *(data+sjp);
-			*(J+ptr+4) = *(data+sjpp);
-			// K
-			*(K+ptr) = *(data+skmm);
-			*(K+ptr+1) = *(data+skm);
-			*(K+ptr+2) = data_ns;
-			*(K+ptr+3) = *(data+skp);
-			*(K+ptr+4) = *(data+skpp);
-			// Q
-			*(Q + n) = data_ns;
-}
+#include "edu/osu/rhic/trunk/hydro/SourcePart.h"//Lipei
 
-void eulerStepKernel(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
-const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dz, PRECISION etabar
-) {
-	PRECISION I[5 * NUMBER_CONSERVED_VARIABLES], J[5* NUMBER_CONSERVED_VARIABLES], K[5 * NUMBER_CONSERVED_VARIABLES];
-	PRECISION hpx[NUMBER_CONSERVED_VARIABLES], hmx[NUMBER_CONSERVED_VARIABLES],
-		hpy[NUMBER_CONSERVED_VARIABLES], hmy[NUMBER_CONSERVED_VARIABLES],
-		hpz[NUMBER_CONSERVED_VARIABLES],	hmz[NUMBER_CONSERVED_VARIABLES];
-	PRECISION Q[NUMBER_CONSERVED_VARIABLES], S[NUMBER_CONSERVED_VARIABLES];
-
-	for(int i = 2; i < ncx-2; ++i) {
-		for(int j = 2; j < ncy-2; ++j) {
-			for(int k = 2; k < ncz-2; ++k) {
-
-				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-
-				// calculate neighbor cell indices;
-				int sim = s-1;
-				int simm = sim-1;
-				int sip = s+1;
-				int sipp = sip+1;
-
-				int sjm = s-ncx;
-				int sjmm = sjm-ncx;
-				int sjp = s+ncx;
-				int sjpp = sjp+ncx;
-
-				int skm = s-ncx*ncy;
-				int skmm = skm-ncx*ncy;
-				int skp = s+ncx*ncy;
-				int skpp = skp+ncx*ncy;
-
-				int ptr = 0;
-				setNeighborCells(currrentVars->ttt,I,J,K,Q,s,0,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->ttx,I,J,K,Q,s,1,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->tty,I,J,K,Q,s,2,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->ttn,I,J,K,Q,s,3,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pitt,I,J,K,Q,s,4,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pitx,I,J,K,Q,s,5,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pity,I,J,K,Q,s,6,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pitn,I,J,K,Q,s,7,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pixx,I,J,K,Q,s,8,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pixy,I,J,K,Q,s,9,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pixn,I,J,K,Q,s,10,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->piyy,I,J,K,Q,s,11,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->piyn,I,J,K,Q,s,12,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp); ptr+=5;
-				setNeighborCells(currrentVars->pinn,I,J,K,Q,s,13,ptr,simm,sim,sip,sipp,sjmm,sjm,sjp,sjpp,skmm,skm,skp,skpp);
-
-				flux(I, hpx, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t);
-				flux(I, hmx, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t);
-				flux(J, hpy, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t);
-				flux(J, hmy, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t);
-				flux(K, hpz, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t);
-				flux(K, hmz, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t);
-
-				loadSourceTerms(I, J, K, Q, S, u->ut, u->ux, u->uy, u->un, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p,
-					i, j, k, s, ncx, ncy, ncz, dt, dx, dz, etabar);
-
-				PRECISION result[NUMBER_CONSERVED_VARIABLES];
-				for (int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-					*(result+n) = *(Q+n) + dt * ( *(S+n) - ( *(hpx+n) - *(hmx+n) + *(hpy+n) - *(hmy+n) ) / dx - ( *(hpz+n) - *(hmz+n) )/dz );
-				}
-
-				updatedVars->ttt[s] = result[0];
-				updatedVars->ttx[s] = result[1];
-				updatedVars->tty[s] = result[2];
-				updatedVars->ttn[s] = result[3];
-				updatedVars->pitt[s] = result[4];
-				updatedVars->pitx[s] = result[5];
-				updatedVars->pity[s] = result[6];
-				updatedVars->pitn[s] = result[7];
-				updatedVars->pixx[s] = result[8];
-				updatedVars->pixy[s] = result[9];
-				updatedVars->pixn[s] = result[10];
-				updatedVars->piyy[s] = result[11];
-				updatedVars->piyn[s] = result[12];
-				updatedVars->pinn[s] = result[13];
-			}
-		}
-	}
-}
-/**************************************************************************************************************************************************/
 
 /**************************************************************************************************************************************************/
 void setNeighborCellsJK2(const PRECISION * const __restrict__ in, PRECISION * const __restrict__ out,
@@ -156,9 +50,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
+                // Defined in DynamicalVariables.cpp return i + ncx * (j + ncy * k); Lipei's comment
 				PRECISION Q[NUMBER_CONSERVED_VARIABLES];
 				PRECISION S[NUMBER_CONSERVED_VARIABLES];
 
+                // The current values of elements of energy-momentum & stress tensors (sources); Lipei's comment
 				Q[0] = currrentVars->ttt[s];
 				Q[1] = currrentVars->ttx[s];
 				Q[2] = currrentVars->tty[s];
@@ -180,12 +76,14 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 #endif
 
 				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz);
-
+                //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
+                
 				PRECISION result[NUMBER_CONSERVED_VARIABLES];
 				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = *(Q+n) + dt * ( *(S+n) );
 				}
 
+                // The updated values after adding up part of the source terms; Lipei's comment
 				updatedVars->ttt[s] = result[0];
 				updatedVars->ttx[s] = result[1];
 				updatedVars->tty[s] = result[2];
@@ -209,6 +107,84 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 		}
 	}
 }
+
+//*****************************************************************
+//*****************************************************************
+// Load source terms from the particles; by Lipei
+// 11/25/2017
+//*****************************************************************
+//*****************************************************************
+void eulerStepKernelSourcePart(PRECISION t, PRECISION dt,
+const PRECISION * const __restrict__ Part, CONSERVED_VARIABLES * const __restrict__ updatedVars,// arraies of current and updated; demension=CONSERVED_VARIABLES
+int ncx, int ncy, int ncz)
+{
+    //Exclude Ghost cells
+    for(int i = 2; i < ncx-2; ++i) {
+        for(int j = 2; j < ncy-2; ++j) {
+            for(int k = 2; k < ncz-2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
+                
+                PRECISION P[NUMBER_CONSERVED_VARIABLES];//Original source terms from particles
+                PRECISION S[NUMBER_CONSERVED_VARIABLES];//Re-defination of the source terms from particles
+                
+                P[0] = Part[s];
+                P[1] = Part[s];
+                P[2] = Part[s];
+                P[3] = Part[s];//For test, should have 4 Part[s] for different components
+#ifdef PIMUNU
+                P[4] = 0;
+                P[5] = 0;
+                P[6] = 0;
+                P[7] = 0;
+                P[8] = 0;
+                P[9] = 0;
+                P[10] = 0;
+                P[11] = 0;
+                P[12] = 0;
+                P[13] = 0;
+#endif
+#ifdef PI
+                P[14] = 0;
+#endif
+                
+
+                //Load source terms from the particles; Part->S
+                loadSourceTermsPart(P, S);
+
+                PRECISION result[NUMBER_CONSERVED_VARIABLES];//Initialize RESULT array?
+                for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) += *(S+n);//dt?
+                }
+                
+                // The updated values after adding up part of the source terms
+                updatedVars->ttt[s] += result[0];
+                updatedVars->ttx[s] += result[1];
+                updatedVars->tty[s] += result[2];
+                updatedVars->ttn[s] += result[3];
+#ifdef PIMUNU
+                updatedVars->pitt[s] += result[4];
+                updatedVars->pitx[s] += result[5];
+                updatedVars->pity[s] += result[6];
+                updatedVars->pitn[s] += result[7];
+                updatedVars->pixx[s] += result[8];
+                updatedVars->pixy[s] += result[9];
+                updatedVars->pixn[s] += result[10];
+                updatedVars->piyy[s] += result[11];
+                updatedVars->piyn[s] += result[12];
+                updatedVars->pinn[s] += result[13];
+#endif
+#ifdef PI
+                updatedVars->Pi[s] += result[14];
+#endif
+            }
+        }
+    }
+}
+//*****************************************************************
+//*****************************************************************
+// Source terms from the particles end
+//*****************************************************************
+//*****************************************************************
 
 void eulerStepKernelX(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
@@ -260,6 +236,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 					*(result+n) /= dx;
 				}
 #ifndef IDEAL
+                //H is the source term; lipei's comment
 				loadSourceTermsX(I, H, u, s, dx);
 				for (unsigned int n = 0; n < 4; ++n) {
 					*(result+n) += *(H+n);
@@ -631,6 +608,7 @@ void * latticeParams, void * hydroParams
 	// STEP 1:
 	//===================================================
 	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
+    eulerStepKernelSourcePart(t, dt, Part, qS, ncx, ncy, ncz);//Lipei
 	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy);
 	eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz);
@@ -649,6 +627,7 @@ void * latticeParams, void * hydroParams
 	// STEP 2:
 	//===================================================
 	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
+    eulerStepKernelSourcePart(t, dt, Part, qS, ncx, ncy, ncz);//Lipei
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz);

@@ -15,6 +15,8 @@ struct InitialConditionParameters
 	int initialConditionType;
 
 	int numberOfNucleonsPerNuclei;
+    
+    int particleSourceType;//Lipei
 
 	double initialEnergyDensity;
 	double scatteringCrossSectionNN;

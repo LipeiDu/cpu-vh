@@ -38,4 +38,7 @@ PRECISION t, PRECISION e, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz
 );
 
+//by Lipei
+void loadSourceTermsPart(const PRECISION * const __restrict__ P, PRECISION * const __restrict__ S);
+
 #endif /* SOURCETERMS_H_ */

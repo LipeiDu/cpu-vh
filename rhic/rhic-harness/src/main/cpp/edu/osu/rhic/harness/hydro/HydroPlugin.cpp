@@ -28,6 +28,7 @@
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h"
 #include "edu/osu/rhic/trunk/hydro/EnergyMomentumTensor.h"
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
+#include "edu/osu/rhic/trunk/hydro/SourcePart.h"//lipei
 
 #define FREQ 100 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
@@ -151,6 +152,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   double t = t0;
   // generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
+  //Read in source terms from particles
+  setSourcePart(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // impose boundary conditions with ghost cells

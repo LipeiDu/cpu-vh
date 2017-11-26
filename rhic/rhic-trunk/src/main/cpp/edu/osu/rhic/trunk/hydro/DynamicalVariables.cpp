@@ -16,6 +16,7 @@ CONSERVED_VARIABLES *q,*Q,*qS;
 FLUID_VELOCITY *u,*up,*uS;
 
 PRECISION *e, *p;
+PRECISION *Part;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
@@ -24,11 +25,12 @@ int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 void allocateHostMemory(int len) {
 	size_t bytes = sizeof(PRECISION);
 
+    Part = (PRECISION *)calloc(len, bytes);//Lipei
 	//=======================================================
 	// Primary variables
 	//=======================================================	
 	e = (PRECISION *)calloc(len, bytes);
-	p = (PRECISION *)calloc(len,bytes);
+	p = (PRECISION *)calloc(len, bytes);
 	// fluid velocity at current time step
 	u = (FLUID_VELOCITY *)calloc(1, sizeof(FLUID_VELOCITY));
 	u->ut = (PRECISION *)calloc(len,bytes);
@@ -314,6 +316,7 @@ void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) {
 }
 
 void freeHostMemory() {
+    free(Part);//Lipei
 	free(e);
 	free(p);
 	free(u->ut);
