@@ -153,7 +153,7 @@ int ncx, int ncy, int ncz)
 
                 PRECISION result[NUMBER_CONSERVED_VARIABLES];//Initialize RESULT array?
                 for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) += *(S+n);//dt?
+                    *(result+n) = *(S+n);//dt?
                 }
                 
                 // The updated values after adding up part of the source terms

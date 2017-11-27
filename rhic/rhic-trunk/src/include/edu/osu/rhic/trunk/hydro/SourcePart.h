@@ -9,6 +9,7 @@
 //#define INITIALCONDITIONS_H_
 
 void readInSourcePart(void * latticeParams, void * initCondParams);
+void noSourcePart(void * latticeParams, void * initCondParams);
 void setSourcePart(void * latticeParams, void * initCondParams, void * hydroParams);
 
 //#endif /* INITIALCONDITIONS_H_ */

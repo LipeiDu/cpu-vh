@@ -8,9 +8,9 @@
 #include <math.h> // for math functions
 #include <stdio.h> // for printf
 #include <stdlib.h> //TEMP
-#include <iostream>// by Lipei
+#include <iostream>
 #include <istream>
-#include <fstream>// by Lipei
+#include <fstream>
 #include <cassert>
 #include <string>
 
@@ -43,7 +43,7 @@ void readInSourcePart(void * latticeParams, void * initCondParams)
     ifstream sourcefile("testsource.txt");
     assert(sourcefile.is_open());
     
-    while (!sourcefile.eof()){
+//    while (!sourcefile.eof()){
         for(int i = 2; i < nx+2; ++i){
             for(int j = 2; j < ny+2; ++j){
                 for(int k = 2; k < nz+2; ++k){
@@ -51,35 +51,66 @@ void readInSourcePart(void * latticeParams, void * initCondParams)
                     if(getline(sourcefile, line,' '))//delimitation character
                     {
                        float fline=atof(line.c_str());
-                       Part[s] = fline;
-                       cout<< "Part"<<Part[s]<<endl;
+                       Part[s] = (PRECISION) fline;
+                       cout<< "Part[ijks]"<< i <<" " << j<<" "  << k <<" " << s <<" " << Part[s] <<endl;
                     }
                 }
             }
         }
-    }
+ //   }
     sourcefile.close();
 }
 
+void noSourcePart(void * latticeParams, void * initCondParams)
+{
+        printf("noSourcePart is started\n");
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+     printf("nx, ny, nz, s=%d, %d, %d, %d\n", nx, ny, nz, (nx+1)+(nx+4)*(ny+1+(ny+4)*(nz+1)));
+    
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    for(int i = 2; i < nx+2; ++i){
+        for(int j = 2; j < ny+2; ++j){
+            for(int k = 2; k < nz+2; ++k){
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                Part[s] = 0;
+                cout<< "Part[ijks]"<< i <<" " << j<<" "  << k <<" " << s <<" " << Part[s] <<endl;
+            }
+        }
+        printf("a\n");
+    }
+    printf("noSourcePart is done\n");
+}
 
 /*********************************************************************************************************\
  * Source terms from particles
  * 	0 - add these source terms
  *	1 - not add these source terms
 /*********************************************************************************************************/
-void setSourcePart(void * latticeParams, void * initCondParams, void * hydroParams) {
+void setSourcePart(void * latticeParams, void * initCondParams, void * hydroParams)
+{
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int particleSourceType = initCond->particleSourceType;
 	printf("Source terms from particles: ");
 	switch (particleSourceType)
     {
 		case 0: {
-			printf("start to read in and add\n");
+			printf("read in particle source\n");
             readInSourcePart(latticeParams, initCondParams);
 			return;
 		        }
 		case 1: {
-			printf("won't read in...\n");
+			printf("no particle source...\n");
+            noSourcePart(latticeParams, initCondParams);
+            printf("b\n");
 		        }
 	}
 }
