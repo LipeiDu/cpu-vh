@@ -48,11 +48,10 @@ void readInSourcePart(void * latticeParams, void * initCondParams)
             for(int j = 2; j < ny+2; ++j){
                 for(int k = 2; k < nz+2; ++k){
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                    if(getline(sourcefile, line,' '))//delimitation character
+                    if(getline(sourcefile, line,';'))//delimitation character
                     {
                        float fline=atof(line.c_str());
                        Part[s] = (PRECISION) fline;
-                       cout<< "Part[ijks]"<< i <<" " << j<<" "  << k <<" " << s <<" " << Part[s] <<endl;
                     }
                 }
             }
@@ -63,15 +62,13 @@ void readInSourcePart(void * latticeParams, void * initCondParams)
 
 void noSourcePart(void * latticeParams, void * initCondParams)
 {
-        printf("noSourcePart is started\n");
+
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
     
     int nx = lattice->numLatticePointsX;
     int ny = lattice->numLatticePointsY;
     int nz = lattice->numLatticePointsRapidity;
-    
-     printf("nx, ny, nz, s=%d, %d, %d, %d\n", nx, ny, nz, (nx+1)+(nx+4)*(ny+1+(ny+4)*(nz+1)));
     
     double dx = lattice->latticeSpacingX;
     double dy = lattice->latticeSpacingY;
@@ -82,12 +79,9 @@ void noSourcePart(void * latticeParams, void * initCondParams)
             for(int k = 2; k < nz+2; ++k){
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 Part[s] = 0;
-                cout<< "Part[ijks]"<< i <<" " << j<<" "  << k <<" " << s <<" " << Part[s] <<endl;
             }
         }
-        printf("a\n");
     }
-    printf("noSourcePart is done\n");
 }
 
 /*********************************************************************************************************\
@@ -108,9 +102,8 @@ void setSourcePart(void * latticeParams, void * initCondParams, void * hydroPara
 			return;
 		        }
 		case 1: {
-			printf("no particle source...\n");
+			printf("set particle source as 0...\n");
             noSourcePart(latticeParams, initCondParams);
-            printf("b\n");
 		        }
 	}
 }
