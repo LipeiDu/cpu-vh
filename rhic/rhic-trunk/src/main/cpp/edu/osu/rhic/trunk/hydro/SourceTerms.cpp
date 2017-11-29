@@ -17,6 +17,8 @@
 
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h" // for bulk terms
 
+#include "edu/osu/rhic/trunk/hydro/SourcePart.h"//Lipei
+
 //#define USE_CARTESIAN_COORDINATES
 
 // paramters for the analytic parameterization of the bulk viscosity \zeta/S
@@ -397,7 +399,7 @@ PRECISION d_dz
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 PRECISION t, PRECISION e, const PRECISION * const __restrict__ pvec,
-int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz
+int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz, const PARTICLE_SOURCE * const __restrict__ Part//by Lipei
 ) {
 	//=========================================================
 	// conserved variables	
@@ -487,15 +489,16 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 	PRECISION dyvy = (dyuy - vy * dyut)/ ut;
 	PRECISION dnvn = (dnun - vn * dnut)/ ut;
 	PRECISION dkvk = dxvx + dyvy + dnvn;
-	S[0] = -(ttt / t + t * tnn) + dkvk*(pitt-p-Pi) - vx*dxp - vy*dyp - vn*dnp;
-	S[1] = -ttx/t -dxp + dkvk*pitx;
-	S[2] = -tty/t -dyp + dkvk*pity;
-	S[3] = -3*ttn/t -dnp/pow(t,2) + dkvk*pitn;
+    // added source terms from particles; lipei
+	S[0] = Part->partt[s]-(ttt / t + t * tnn) + dkvk*(pitt-p-Pi) - vx*dxp - vy*dyp - vn*dnp;
+	S[1] = Part->partx[s]-ttx/t -dxp + dkvk*pitx;
+	S[2] = Part->party[s]-tty/t -dyp + dkvk*pity;
+	S[3] = Part->partn[s]-3*ttn/t -dnp/pow(t,2) + dkvk*pitn;
 #ifdef USE_CARTESIAN_COORDINATES
-	S[0] = dkvk*(pitt-p-Pi) - vx*dxp - vy*dyp - vn*dnp;
-	S[1] = -dxp + dkvk*pitx;
-	S[2] = -dyp + dkvk*pity;
-	S[3] = -dnp + dkvk*pitn;
+	S[0] = Part->partt[s]+dkvk*(pitt-p-Pi) - vx*dxp - vy*dyp - vn*dnp;
+	S[1] = Part->partx[s]-dxp + dkvk*pitx;
+	S[2] = Part->party[s]-dyp + dkvk*pity;
+	S[3] = Part->partn[s]-dnp + dkvk*pitn;
 #endif
 
 	//=========================================================
@@ -508,23 +511,5 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
 	for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];		
 #endif		
-}
-
-//=========================================================
-//=========================================================
-//Source Terms generated from the particles;
-//by Lipei 11/25/2017
-//P is the source read in from Source File; S is the re-defination of the source
-//=========================================================
-//=========================================================
-void loadSourceTermsPart(const PRECISION * const __restrict__ P, PRECISION * const __restrict__ S)
-{
-    //Trivial defination; for further improvement
-    S[0] = P[0];
-    S[1] = P[1];
-    S[2] = P[2];
-    S[3] = P[3];
-//#ifdef USE_CARTESIAN_COORDINATES
-//#endif
 }
 

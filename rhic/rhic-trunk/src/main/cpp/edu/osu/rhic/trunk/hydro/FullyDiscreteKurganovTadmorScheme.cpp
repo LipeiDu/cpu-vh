@@ -26,7 +26,6 @@
 
 #include "edu/osu/rhic/core/util/FiniteDifference.h" //temp
 
-#include "edu/osu/rhic/trunk/hydro/SourcePart.h"//Lipei
 using namespace std;//Lipei
 
 /**************************************************************************************************************************************************/
@@ -76,7 +75,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 				Q[14] = currrentVars->Pi[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part);
                 //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
                 
 				PRECISION result[NUMBER_CONSERVED_VARIABLES];
@@ -110,175 +109,6 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 	}
 }
 
-//*****************************************************************
-//*****************************************************************
-// Load source terms from the particles; by Lipei
-// 11/25/2017
-//*****************************************************************
-//*****************************************************************
-void eulerStepKernelSourcePart(PRECISION t,
-const PRECISION * const __restrict__ Part, CONSERVED_VARIABLES * const __restrict__ updatedVars,// arraies of current and updated; demension=CONSERVED_VARIABLES
-int ncx, int ncy, int ncz, PRECISION dt)
-{
-    //Exclude Ghost cells
-    for(int i = 2; i < ncx-2; ++i) {
-        for(int j = 2; j < ncy-2; ++j) {
-            for(int k = 2; k < ncz-2; ++k) {
-                int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-                
-                PRECISION P[NUMBER_CONSERVED_VARIABLES];//Original source terms from particles
-                PRECISION S[NUMBER_CONSERVED_VARIABLES];//Re-defination of the source terms from particles
-                
-                P[0] = Part[s];
-                P[1] = Part[s];
-                P[2] = Part[s];
-                P[3] = Part[s];//For test, should have 4 Part[s] for different components
-#ifdef PIMUNU
-                P[4] = 0;
-                P[5] = 0;
-                P[6] = 0;
-                P[7] = 0;
-                P[8] = 0;
-                P[9] = 0;
-                P[10] = 0;
-                P[11] = 0;
-                P[12] = 0;
-                P[13] = 0;
-#endif
-#ifdef PI
-                P[14] = 0;
-#endif
-                
-
-                //Load source terms from the particles; Part->S
-                loadSourceTermsPart(P, S);
-
-                PRECISION result[NUMBER_CONSERVED_VARIABLES];//Initialize RESULT array?
-                for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) = dt*( *(S+n) );
-                }
-                
-                // The updated values after adding up part of the source terms
-                updatedVars->ttt[s] += result[0];
-                updatedVars->ttx[s] += result[1];
-                updatedVars->tty[s] += result[2];
-                updatedVars->ttn[s] += result[3];
-#ifdef PIMUNU
-                updatedVars->pitt[s] += result[4];
-                updatedVars->pitx[s] += result[5];
-                updatedVars->pity[s] += result[6];
-                updatedVars->pitn[s] += result[7];
-                updatedVars->pixx[s] += result[8];
-                updatedVars->pixy[s] += result[9];
-                updatedVars->pixn[s] += result[10];
-                updatedVars->piyy[s] += result[11];
-                updatedVars->piyn[s] += result[12];
-                updatedVars->pinn[s] += result[13];
-#endif
-#ifdef PI
-                updatedVars->Pi[s] += result[14];
-#endif
-
-            }
-        }
-    }
-}
-
-//Copy for crosschecking
-
-void eulerStepKernelSourcePart2(PRECISION t,
-const PRECISION * const __restrict__ Part, CONSERVED_VARIABLES * const __restrict__ updatedVars,// arraies of current and updated; demension=CONSERVED_VARIABLES
-int ncx, int ncy, int ncz, PRECISION dt)
-{
-    char jt[100], jx[100], jy[100], jn[100];//Lipei
-    sprintf(jt, "source_output/part_source_jt%f.dat", t);//Lipei
-    sprintf(jx, "source_output/part_source_jx%f.dat", t);//Lipei
-    sprintf(jy, "source_output/part_source_jy%f.dat", t);//Lipei
-    sprintf(jn, "source_output/part_source_jn%f.dat", t);//Lipei
-    ofstream partsourcettt(jt, ios::app);//Lipei
-    ofstream partsourcettx(jx, ios::app);//Lipei
-    ofstream partsourcetty(jy, ios::app);//Lipei
-    ofstream partsourcettn(jn, ios::app);//Lipei
-    
-    //Exclude Ghost cells
-    for(int i = 2; i < ncx-2; ++i) {
-        for(int j = 2; j < ncy-2; ++j) {
-            for(int k = 2; k < ncz-2; ++k) {
-                int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-                
-                PRECISION P[NUMBER_CONSERVED_VARIABLES];//Original source terms from particles
-                PRECISION S[NUMBER_CONSERVED_VARIABLES];//Re-defination of the source terms from particles
-                
-                P[0] = Part[s];
-                P[1] = Part[s];
-                P[2] = Part[s];
-                P[3] = Part[s];//For test, should have 4 Part[s] for different components
-#ifdef PIMUNU
-                P[4] = 0;
-                P[5] = 0;
-                P[6] = 0;
-                P[7] = 0;
-                P[8] = 0;
-                P[9] = 0;
-                P[10] = 0;
-                P[11] = 0;
-                P[12] = 0;
-                P[13] = 0;
-#endif
-#ifdef PI
-                P[14] = 0;
-#endif
-                
-                
-                //Load source terms from the particles; Part->S
-                loadSourceTermsPart(P, S);
-                
-                PRECISION result[NUMBER_CONSERVED_VARIABLES];//Initialize RESULT array?
-                for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) = dt*( *(S+n) );
-                }
-                
-                // The updated values after adding up part of the source terms
-                updatedVars->ttt[s] += result[0];
-                updatedVars->ttx[s] += result[1];
-                updatedVars->tty[s] += result[2];
-                updatedVars->ttn[s] += result[3];
-#ifdef PIMUNU
-                updatedVars->pitt[s] += result[4];
-                updatedVars->pitx[s] += result[5];
-                updatedVars->pity[s] += result[6];
-                updatedVars->pitn[s] += result[7];
-                updatedVars->pixx[s] += result[8];
-                updatedVars->pixy[s] += result[9];
-                updatedVars->pixn[s] += result[10];
-                updatedVars->piyy[s] += result[11];
-                updatedVars->piyn[s] += result[12];
-                updatedVars->pinn[s] += result[13];
-#endif
-#ifdef PI
-                updatedVars->Pi[s] += result[14];
-#endif
-                
-                partsourcettt << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << result[0] << endl;//Lipei
-                partsourcettx << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << result[1] << endl;//Lipei
-                partsourcetty << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << result[2] << endl;//Lipei
-                partsourcettn << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << result[3] << endl;//Lipei
-                
-            }
-        }
-    }
-    
-    
-    partsourcettt.close();//Lipei
-    partsourcettx.close();//Lipei
-    partsourcetty.close();//Lipei
-    partsourcettn.close();//Lipei
-}
-//*****************************************************************
-//*****************************************************************
-// Source terms from the particles end
-//*****************************************************************
-//*****************************************************************
 
 void eulerStepKernelX(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
@@ -817,7 +647,6 @@ void * latticeParams, void * hydroParams
 	//===================================================
     
 	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
-    eulerStepKernelSourcePart2(t, Part, qS, ncx, ncy, ncz, dt);//Lipei
 	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy);
     eulerStepKernelZ2(t, q, qS, u, e, ncx, ncy, ncz, dt, dz);//Lipei's copy; generate outputs for crosschecking
@@ -838,7 +667,6 @@ void * latticeParams, void * hydroParams
 	//===================================================
     
 	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
-    eulerStepKernelSourcePart(t, Part, Q, ncx, ncy, ncz, dt);//Lipei
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz);

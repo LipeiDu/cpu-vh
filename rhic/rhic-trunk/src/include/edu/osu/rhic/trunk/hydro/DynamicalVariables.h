@@ -74,10 +74,18 @@ typedef struct
 	PRECISION *un;
 } FLUID_VELOCITY;
 
+typedef struct
+{
+    PRECISION *partt;
+    PRECISION *partx;
+    PRECISION *party;
+    PRECISION *partn;
+} PARTICLE_SOURCE;//lipei
+
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
 extern PRECISION *e, *p;
-extern PRECISION *Part;//Lipei
+extern PARTICLE_SOURCE *Part;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
 
