@@ -85,6 +85,7 @@ typedef struct
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
 extern PRECISION *e, *p;
+extern PRECISION *rhob;//Lipei
 extern PARTICLE_SOURCE *Part;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);

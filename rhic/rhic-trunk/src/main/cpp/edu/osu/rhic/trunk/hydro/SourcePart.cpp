@@ -99,6 +99,8 @@ void setSourcePart(void * latticeParams, void * initCondParams, void * hydroPara
 			return;}
 		case 1:{
 			printf("set particle sources as 0\n");
-            noSourcePart(latticeParams, initCondParams);}
+            noSourcePart(latticeParams, initCondParams);
+            printf("Particle sources initialized.\n");
+            return;}
 	}
 }

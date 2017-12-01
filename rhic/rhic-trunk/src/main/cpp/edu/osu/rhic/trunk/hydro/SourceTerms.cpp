@@ -51,7 +51,7 @@ const PRECISION tau_pipi = 1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
-void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS,
+void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION nbmuRHS, PRECISION  //nbmuRHS by Lipei
 		PRECISION t, PRECISION e, PRECISION p,
 		PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un, PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 		PRECISION pitt, PRECISION pitx, PRECISION pity,
@@ -77,7 +77,7 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS,
 	PRECISION beta_Pi = 15*a2*(e+p);
 	PRECISION lambda_Pipi = 8*a/5;
 
-   PRECISION zetabar = bulkViscosityToEntropyDensity(T);
+    PRECISION zetabar = bulkViscosityToEntropyDensity(T);
 	PRECISION tauPiInv = 15*a2*T/zetabar;
 
 	PRECISION ut2 = ut * ut;
@@ -506,7 +506,7 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 	//=========================================================
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
-	setPimunuSourceTerms(pimunuRHS, t, e, p, ut, ux, uy, un, utp, uxp, uyp, unp,
+	setPimunuSourceTerms(pimunuRHS, nbmuRHS, t, e, p, ut, ux, uy, un, utp, uxp, uyp, unp,//nbmuRHS by Lipei
 			pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
 	for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];		

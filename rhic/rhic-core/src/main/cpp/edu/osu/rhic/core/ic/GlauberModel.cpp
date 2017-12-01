@@ -69,7 +69,8 @@ double woundedNucleons(double x, double y,
  * Mixture of wounded nucleon and binary collision energy density profile
 /************************************************************************************/
 void energyDensityTransverseProfileAA(double * const __restrict__ energyDensityTransverse, 
-int nx, int ny, double dx, double dy, void * initCondParams) {
+int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB//thickness TA&TB by lipei
+                                      ) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	double A = initCond->numberOfNucleonsPerNuclei;
 	double B = A;
@@ -89,14 +90,19 @@ int nx, int ny, double dx, double dy, void * initCondParams) {
 	double nbcNorm = 1.;
 	double wnNorm = 1.;
 //*/
+
 	for(int i = 0; i < nx; ++i) {
 		double x = (i - (nx-1)/2.)*dx;
 		for(int j = 0; j < ny; ++j) {
 			double y = (j - (ny-1)/2.)*dy;
 			double TAminus = nuclearThicknessFunction(x-b/2,y,A);
-			double TAplus = nuclearThicknessFunction(x+b/2,y,A);
+			double TAplus  = nuclearThicknessFunction(x+b/2,y,A);
 			double TBminus = TAminus;
-			double TBplus = TAplus;
+			double TBplus  = TAplus;
+            
+            // Thickness function to construct baryon density;Lipei
+            TA[i+j*nx] = TAplus;
+            TB[i+j*nx] = TBminus;
 			// Binary collision energy density profile
 			double ed = nbcNorm * binaryCollisionPairs(x,y,TAplus,TBminus,snn);
 			ed *= alpha;

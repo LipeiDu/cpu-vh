@@ -18,6 +18,7 @@ FLUID_VELOCITY *u,*up,*uS;
 PRECISION *e, *p;
 
 PARTICLE_SOURCE *Part;//Lipei
+PRECISION *rhob;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
@@ -32,6 +33,8 @@ void allocateHostMemory(int len) {
     Part->partx = (PRECISION *)calloc(len, bytes);//Lipei
     Part->party = (PRECISION *)calloc(len, bytes);//Lipei
     Part->partn = (PRECISION *)calloc(len, bytes);//Lipei
+    // baryon density
+    rhob = (PRECISION *)calloc(len, bytes);//Lipei
     
 	//=======================================================
 	// Primary variables
@@ -327,6 +330,7 @@ void freeHostMemory() {
     free(Part->partx);//Lipei
     free(Part->party);//Lipei
     free(Part->partn);//Lipei
+    free(rhob);//Lipei
 	free(e);
 	free(p);
 	free(u->ut);

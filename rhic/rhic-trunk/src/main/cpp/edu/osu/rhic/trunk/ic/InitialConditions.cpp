@@ -9,6 +9,11 @@
 #include <stdio.h> // for printf
 #include <stdlib.h> //TEMP
 
+#include <iostream>// by Lipei
+#include <fstream>// by Lipei
+#include <iomanip>//by Lipei
+using namespace std;//Lipei
+
 #include "edu/osu/rhic/trunk/ic/InitialConditions.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
 #include "edu/osu/rhic/harness/lattice/LatticeParameters.h"
@@ -279,6 +284,7 @@ void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void 
 void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    
 
 	int nx = lattice->numLatticePointsX;
 	int ny = lattice->numLatticePointsY;
@@ -292,9 +298,28 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	double T0 = 3.05;
 //	e0 *= pow(T0,4);
 	e0 = (double) equilibriumEnergyDensity(T0);
+    
+    
+    //Baryon distribution in longitudinal direction; lipei
+    double Ta[nx*ny], Tb[nx*ny];
+    double rhoLa[nz], rhoLb[nz];
+    double etaFlat = initCond->rapidityMean;
+    for(int k = 0; k < nz; ++k) {
+        double eta = (k - (nz-1)/2)*dz;
+        double etaScaled_a = (etaFlat/2 - 2*eta)/(etaFlat+2);
+        double etaScaled_b = (etaFlat/2 + 2*eta)/(etaFlat+2);
+        rhoLa[k] = etaScaled_a;
+        rhoLb[k] = etaScaled_b;
+    }
+    //Lipei rhoLa/b=(eta_beam -/+ eta)/2*y_beam
+    
+    char rhobb[] = "output/baryon_density.dat";//Lipei
+    ofstream baryondens(rhobb);//Lipei
+
 
 	double eT[nx*ny], eL[nz];
-	energyDensityTransverseProfileAA(eT, nx, ny, dx, dy, initCondParams); 
+
+	energyDensityTransverseProfileAA(eT, nx, ny, dx, dy, initCondParams, Ta, Tb);
 	longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
 
 	for(int i = 2; i < nx+2; ++i) {
@@ -305,10 +330,26 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double energyDensityLongitudinal = eL[k-2];
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);	
+				p[s] = equilibriumPressure(e[s]);
+                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx]; //+ rhoLb[k-2]*Tb[i-2+(j-2)*nx];
+                //Lipei rhob=(eta_beam -/+ eta)/2*y_beam*Plateau*Ta/b
+                //baryondens << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;
+                //Lipei
 			}
 		}
 	}
+
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;
+                //Lipei
+            }
+        }
+    }
+
+    baryondens.close();//Lipei
 }
 
 /*********************************************************************************************************\
