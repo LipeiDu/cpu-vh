@@ -168,12 +168,51 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 }
 
 /*********************************************************************************************************\
+ * Set initial baryon diffusion current//Lipei
+ /*********************************************************************************************************/
+
+void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
+//    int initializePimunuNavierStokes = hydro->initializePimunuNavierStokes;
+//    if (initializePimunuNavierStokes==1) {
+//        printf("Initialize \\pi^\\mu\\nu to its asymptotic Navier-Stokes value.\n");
+//#ifdef PI
+//        printf("Initialize \\Pi to its asymptotic Navier-Stokes value.\n");
+//#endif
+//        setPimunuNavierStokesInitialCondition(latticeParams, initCondParams, hydroParams);
+//        return;
+//    }
+//    else {
+        printf("Initialize \\nb^\\mu to zero.\n");
+        struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+        int nx = lattice->numLatticePointsX;
+        int ny = lattice->numLatticePointsY;
+        int nz = lattice->numLatticePointsRapidity;
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+#ifdef VMU
+                    q->nbt[s] = 0;
+                    q->nbx[s] = 0;
+                    q->nby[s] = 0;
+                    q->nbn[s] = 0;
+#endif
+                }
+            }
+        }
+        return;
+//    }
+}
+
+/*********************************************************************************************************\
  * Constant initial energy density distribution
 /*********************************************************************************************************/
 void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initCondParams) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	double initialEnergyDensity = initCond->initialEnergyDensity;
-
+    double initialBaryonDensity = initCond->initialBaryonDensity;//Lipei
+    
 	double T0 = 3.05;
 	double ed = equilibriumEnergyDensity(T0);
 
@@ -186,7 +225,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);	
+				p[s] = equilibriumPressure(e[s]);
+                rhob[s] = (PRECISION) initialBaryonDensity;//Lipei
 			}
 		}
 	}
@@ -697,8 +737,8 @@ void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParam
 
 				double xc = 0.5;
 				double yc = 0.5;
-			   double beta = 50.0;
-			   double pr = 1.0 + 1e-1*exp(-beta*((x-xc)*(x-xc)+(y-yc)*(y-yc)));
+			    double beta = 50.0;
+			    double pr = 1.0 + 1e-1*exp(-beta*((x-xc)*(x-xc)+(y-yc)*(y-yc)));
 
 				e[s] = (PRECISION) (pr/(1.4-1.));
 
@@ -734,6 +774,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			setConstantEnergyDensityInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
 		case 1: {

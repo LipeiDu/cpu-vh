@@ -225,3 +225,21 @@ PRECISION Tnn(PRECISION e, PRECISION p, PRECISION un, PRECISION pinn, PRECISION 
 	return (e+p)*un*un+p/t/t+pinn;
 }
 
+//===================================================================
+// Components of Nb^{\mu} in (\tau,x,y,\eta_s)-coordinates//by Lipei
+//===================================================================
+PRECISION Nbt(PRECISION rhob, PRECISION ut, PRECISION nbt){
+    return rhob*ut+nbt;
+}
+
+PRECISION Nbx(PRECISION rhob, PRECISION ux, PRECISION nbx){
+    return rhob*ux+nbx;
+}
+
+PRECISION Nby(PRECISION rhob, PRECISION uy, PRECISION nby){
+    return rhob*uy+nby;
+}
+
+PRECISION Nbz(PRECISION rhob, PRECISION un, PRECISION nbn){
+    return rhob*un+nbn;
+}

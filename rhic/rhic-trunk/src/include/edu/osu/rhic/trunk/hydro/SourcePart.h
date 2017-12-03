@@ -5,11 +5,11 @@
  *      Author: Lipei
  */
 
-//#ifndef INITIALCONDITIONS_H_
-//#define INITIALCONDITIONS_H_
+#ifndef SOURCEPART_H_
+#define SOURCEPART_H_
 
 void readInSourcePart(void * latticeParams, void * initCondParams);
 void noSourcePart(void * latticeParams, void * initCondParams);
 void setSourcePart(void * latticeParams, void * initCondParams, void * hydroParams);
 
-//#endif /* INITIALCONDITIONS_H_ */
+#endif /* SOURCEPART_H_ */

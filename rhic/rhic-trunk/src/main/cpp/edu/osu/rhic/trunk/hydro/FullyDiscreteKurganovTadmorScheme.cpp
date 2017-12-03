@@ -44,15 +44,16 @@ void eulerStepKernelSource(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
 const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
 const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar
+int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
+const PRECISION * const __restrict__ rhob//rhob by Lipei
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 // Defined in DynamicalVariables.cpp return i + ncx * (j + ncy * k); Lipei's comment
-				PRECISION Q[NUMBER_CONSERVED_VARIABLES];
-				PRECISION S[NUMBER_CONSERVED_VARIABLES];
+				PRECISION Q[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION S[ALL_NUMBER_CONSERVED_VARIABLES];
 
                 // The current values of elements of energy-momentum & stress tensors (sources); Lipei's comment
 				Q[0] = currrentVars->ttt[s];
@@ -75,11 +76,24 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 				Q[14] = currrentVars->Pi[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part);
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                Q[NUMBER_CONSERVED_VARIABLES] = currrentVars->Nbt[s];
+#endif
+#ifdef VMU
+                Q[NUMBER_CONSERVED_VARIABLES+1] = currrentVars->nbt[s];
+                Q[NUMBER_CONSERVED_VARIABLES+2] = currrentVars->nbx[s];
+                Q[NUMBER_CONSERVED_VARIABLES+3] = currrentVars->nby[s];
+                Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
+#endif
+
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part, rhob[s]);
                 //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
                 
-				PRECISION result[NUMBER_CONSERVED_VARIABLES];
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = *(Q+n) + dt * ( *(S+n) );
 				}
 
@@ -103,6 +117,18 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION d
 #ifdef PI
 				updatedVars->Pi[s] = result[14];
 #endif
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                updatedVars->Nbt[s] = result[NUMBER_CONSERVED_VARIABLES];
+#endif
+#ifdef VMU
+                updatedVars->nbt[s] = result[NUMBER_CONSERVED_VARIABLES+1];
+                updatedVars->nbx[s] = result[NUMBER_CONSERVED_VARIABLES+2];
+                updatedVars->nby[s] = result[NUMBER_CONSERVED_VARIABLES+3];
+                updatedVars->nbn[s] = result[NUMBER_CONSERVED_VARIABLES+4];
+#endif
 
 			}
 		}
@@ -119,8 +145,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION I[5 * NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[NUMBER_CONSERVED_VARIABLES];
+				PRECISION I[5 * ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int sim = s-1;
@@ -146,34 +172,78 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 				setNeighborCellsJK2(currrentVars->pinn,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
 #endif
 #ifdef PI
-				setNeighborCellsJK2(currrentVars->Pi,I,s,ptr,simm,sim,sip,sipp);
+				setNeighborCellsJK2(currrentVars->Pi,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
 #endif
-
-				PRECISION result[NUMBER_CONSERVED_VARIABLES];
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                setNeighborCellsJK2(currrentVars->Nbt,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+#endif
+#ifdef VMU
+                setNeighborCellsJK2(currrentVars->nbt,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbx,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nby,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbn,I,s,ptr,simm,sim,sip,sipp);
+#endif//end; Lipei
+                
+                
+				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
 				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
 				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dx;
 				}
+
+                //===================================================
+                // conserved currents, Lipei's comment
+                //===================================================
 #ifndef IDEAL
 				loadSourceTermsX(I, H, u, s, dx);
 				for (unsigned int n = 0; n < 4; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) *= dt;
 				}
+
+                //for baryon; Lipei
+#ifdef NBMU
+                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
+#endif
+                //end; Lipei
 #else
 				for (unsigned int n = 0; n < 4; ++n) {
 					*(result+n) *= dt;
 				}
+#ifdef NBMU
+                //for baryon; Lipei
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
+                //end; Lipei
 #endif
+#endif
+
+                //===================================================
+                // dissipative currents, Lipei's comment
+                //===================================================
+                
+#ifdef PIMUNU
 				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) *= dt;
-				}
+                }
+#endif
 
+#ifdef VMU
+                //for baryon; Lipei
+                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) *= dt;
+                }
+                //end; Lipei
+#endif
+                
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
 				updatedVars->tty[s] += result[2];
@@ -193,7 +263,18 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 #ifdef PI
 				updatedVars->Pi[s] += result[14];
 #endif
-
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];
+#endif
+#ifdef VMU
+                updatedVars->nbt[s] += result[NUMBER_CONSERVED_VARIABLES+1];
+                updatedVars->nbx[s] += result[NUMBER_CONSERVED_VARIABLES+2];
+                updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
+                updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
+#endif
 			}
 		}
 	}
@@ -208,8 +289,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION J[5* NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[NUMBER_CONSERVED_VARIABLES];
+				PRECISION J[5* ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int sjm = s-ncx;
@@ -235,16 +316,29 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 				setNeighborCellsJK2(currrentVars->pinn,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
 #endif
 #ifdef PI
-				setNeighborCellsJK2(currrentVars->Pi,J,s,ptr,sjmm,sjm,sjp,sjpp);
+				setNeighborCellsJK2(currrentVars->Pi,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
 #endif
 
-				PRECISION result[NUMBER_CONSERVED_VARIABLES];
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                setNeighborCellsJK2(currrentVars->Nbt,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+#endif
+#ifdef VMU
+                setNeighborCellsJK2(currrentVars->nbt,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbx,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nby,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbn,J,s,ptr,sjmm,sjm,sjp,sjpp);
+#endif//end; Lipei
+                
+				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
 				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
 				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dy;
 				}
@@ -254,15 +348,36 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 					*(result+n) += *(H+n);
 					*(result+n) *= dt;
 				}
+                //for baryon; Lipei
+#ifdef NBMU
+                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
+#endif
+                //end; Lipei
 #else
 				for (unsigned int n = 0; n < 4; ++n) {
 					*(result+n) *= dt;
 				}
+                //for baryon; Lipei
+#ifdef NBMU
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
 #endif
+                //end; Lipei
+#endif
+
+#ifdef PIMUNU
 				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) *= dt;
 				}
-
+#endif
+                //for baryon; Lipei
+#ifdef NBMU
+                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) *= dt;
+                }
+#endif
+                //end; Lipei
+                
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
 				updatedVars->tty[s] += result[2];
@@ -282,7 +397,18 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 #ifdef PI
 				updatedVars->Pi[s] += result[14];
 #endif
-
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];
+#endif
+#ifdef VMU
+                updatedVars->nbt[s] += result[NUMBER_CONSERVED_VARIABLES+1];
+                updatedVars->nbx[s] += result[NUMBER_CONSERVED_VARIABLES+2];
+                updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
+                updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
+#endif
 			}
 		}
 	}
@@ -297,8 +423,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION K[5 * NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[NUMBER_CONSERVED_VARIABLES];
+				PRECISION K[5 * ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int stride = ncx * ncy;
@@ -325,16 +451,28 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 				setNeighborCellsJK2(currrentVars->pinn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
 #endif
 #ifdef PI
-				setNeighborCellsJK2(currrentVars->Pi,K,s,ptr,skmm,skm,skp,skpp);
+				setNeighborCellsJK2(currrentVars->Pi,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
 #endif
-
-				PRECISION result[NUMBER_CONSERVED_VARIABLES];
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                setNeighborCellsJK2(currrentVars->Nbt,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+#endif
+#ifdef VMU
+                setNeighborCellsJK2(currrentVars->nbt,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbx,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nby,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+                setNeighborCellsJK2(currrentVars->nbn,K,s,ptr,skmm,skm,skp,skpp);
+#endif//end; Lipei
+                
+				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
 				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = -*(H+n);
 				}
 				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s]);
-				for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dz;
 				}
@@ -344,15 +482,36 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 					*(result+n) += *(H+n);
 					*(result+n) *= dt;
 				}
+                //for baryon; Lipei
+#ifdef NBMU
+                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
+#endif
+                //end; Lipei
 #else
 				for (unsigned int n = 0; n < 4; ++n) {
 					*(result+n) *= dt;
 				}
+                //for baryon; Lipei
+#ifdef NBMU
+                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
 #endif
+                //end; Lipei
+#endif
+                
+#ifdef PIMUNU
 				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) *= dt;
 				}
-
+#endif
+                //for baryon; Lipei
+#ifdef NBMU
+                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) *= dt;
+                }
+#endif
+                //end; Lipei
+                
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
 				updatedVars->tty[s] += result[2];
@@ -372,13 +531,24 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 #ifdef PI
 				updatedVars->Pi[s] += result[14];
 #endif
-
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];
+#endif
+#ifdef VMU
+                updatedVars->nbt[s] += result[NUMBER_CONSERVED_VARIABLES+1];
+                updatedVars->nbx[s] += result[NUMBER_CONSERVED_VARIABLES+2];
+                updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
+                updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
+#endif
 			}
 		}
 	}
 }
 
-//***************\Lipeis copy; delete later/
+/*//***************\Lipeis copy; delete later/
 void eulerStepKernelZ2(PRECISION t,
                       const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
                       const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
@@ -488,7 +658,7 @@ void eulerStepKernelZ2(PRECISION t,
     netsourcettn.close();//Lipei
 }
 /***************\
- 
+*/
 /**************************************************************************************************************************************************\
 
 /**************************************************************************************************************************************************/
@@ -529,7 +699,24 @@ int ncx, int ncy, int ncz
 				Q->pinn[s] += q->pinn[s];
 				Q->pinn[s] /= 2;
 				#endif 
-			}
+                //===================================================
+                // baryon; by Lipei
+                //===================================================
+#ifdef NBMU
+                Q->Nbt[s] += q->Nbt[s];
+                Q->Nbt[s] /= 2;
+#endif
+#ifdef VMU
+                Q->nbt[s] += q->nbt[s];
+                Q->nbt[s] /= 2;
+                Q->nbx[s] += q->nbx[s];
+                Q->nbx[s] /= 2;
+                Q->nby[s] += q->nby[s];
+                Q->nby[s] /= 2;
+                Q->nbn[s] += q->nbn[s];
+                Q->nbn[s] /= 2;
+#endif
+            }
 		}
 	}
 }
@@ -548,6 +735,7 @@ int ncx, int ncy, int ncz
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 
+#ifdef PIMUNU
 				PRECISION pitt = currrentVars->pitt[s];
 				PRECISION pitx = currrentVars->pitx[s];
 				PRECISION pity = currrentVars->pity[s];
@@ -558,7 +746,19 @@ int ncx, int ncy, int ncz
 				PRECISION piyy = currrentVars->piyy[s];
 				PRECISION piyn = currrentVars->piyn[s];
 				PRECISION pinn = currrentVars->pinn[s];
-#ifdef Pi
+#else//by Lipei
+                PRECISION pitt = 0;
+                PRECISION pitx = 0;
+                PRECISION pity = 0;
+                PRECISION pitn = 0;
+                PRECISION pixx = 0;
+                PRECISION pixy = 0;
+                PRECISION pixn = 0;
+                PRECISION piyy = 0;
+                PRECISION piyn = 0;
+                PRECISION pinn = 0;
+#endif//end by Lipei
+#ifdef PI
 				PRECISION Pi = currrentVars->Pi[s];
 #else
 				PRECISION Pi = 0;
@@ -604,6 +804,7 @@ int ncx, int ncy, int ncz
 		//		if(isnan(fac)==1) printf("found Nan\n");
 		//		fac = 1;
 
+#ifdef PIMUNU
 				currrentVars->pitt[s] *= fac;
 				currrentVars->pitx[s] *= fac;
 				currrentVars->pity[s] *= fac;
@@ -614,6 +815,7 @@ int ncx, int ncy, int ncz
 				currrentVars->piyy[s] *= fac;
 				currrentVars->piyn[s] *= fac;
 				currrentVars->pinn[s] *= fac;
+#endif
 			}
 		}
 	}
@@ -646,10 +848,10 @@ void * latticeParams, void * hydroParams
 	// STEP 1:
 	//===================================================
     
-	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
+	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
 	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy);
-    eulerStepKernelZ2(t, q, qS, u, e, ncx, ncy, ncz, dt, dz);//Lipei's copy; generate outputs for crosschecking
+    eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz);
     
 
 	t+=dt;
@@ -660,13 +862,13 @@ void * latticeParams, void * hydroParams
 	regulateDissipativeCurrents(t, qS, e, p, uS, ncx, ncy, ncz);
 #endif
 
-	setGhostCells(qS, e, p, uS, latticeParams);
+	setGhostCells(qS, e, p, uS, latticeParams, rhob);
 
 	//===================================================
 	// STEP 2:
 	//===================================================
     
-	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar);
+	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz);
@@ -680,5 +882,5 @@ void * latticeParams, void * hydroParams
 	regulateDissipativeCurrents(t, Q, e, p, u, ncx, ncy, ncz);
 #endif
 
-	setGhostCells(Q, e, p, u, latticeParams);
+	setGhostCells(Q, e, p, u, latticeParams, rhob);
 }

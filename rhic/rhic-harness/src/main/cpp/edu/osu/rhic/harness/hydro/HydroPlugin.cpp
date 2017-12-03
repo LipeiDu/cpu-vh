@@ -56,6 +56,20 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->Pi, t, outputDir, "Pi", latticeParams);
   #endif
 
+  /************************************************************************************\
+   * baryon; by Lipei
+  /************************************************************************************/
+  output(rhob, t, outputDir, "rhob", latticeParams);
+#ifdef NBMU
+  output(q->Nbt, t, outputDir, "Nbt", latticeParams);
+#endif
+#ifdef VMU
+  output(q->nbt, t, outputDir, "nbt", latticeParams);
+  output(q->nbx, t, outputDir, "nbx", latticeParams);
+  output(q->nby, t, outputDir, "nby", latticeParams);
+  output(q->nbn, t, outputDir, "nbn", latticeParams);
+#endif
+
 }
 
 void run(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory, const char *outputDir)
@@ -64,7 +78,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
   struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 
-  /************************************************************************************	\
+  /************************************************************************************\
   * System configuration
   /************************************************************************************/
   int nt = lattice->numProperTimePoints;
@@ -157,7 +171,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // impose boundary conditions with ghost cells
-  setGhostCells(q,e,p,u,latticeParams);
+  setGhostCells(q,e,p,u,latticeParams,rhob);//rhob by Lipei
 
   /************************************************************************************	\
   * Evolve the system in time

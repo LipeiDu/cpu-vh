@@ -21,7 +21,7 @@
 
 //#define USE_CARTESIAN_COORDINATES
 
-// paramters for the analytic parameterization of the bulk viscosity \zeta/S
+// parameters for the analytic parameterization of the bulk viscosity \zeta/S
 #define A_1 -13.77
 #define A_2 27.55
 #define A_3 13.45
@@ -50,8 +50,12 @@ const PRECISION delta_pipi = 1.33333;
 const PRECISION tau_pipi = 1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
+const PRECISION tau_n = 1.0; //relaxition time of baryon diffusion; to be fixed; Lipei
+const PRECISION delta_nn = 0.5; //to be fixed; Lipei
+const PRECISION lambda_nn = 1.0; //to be fixed; Lipei
 
-void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION nbmuRHS, PRECISION  //nbmuRHS by Lipei
+void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
+        PRECISION nbt, PRECISION nbx, PRECISION nby, PRECISION nbn, PRECISION rhob,//nbmuRHS & nbmu & rhob for baryon by Lipei
 		PRECISION t, PRECISION e, PRECISION p,
 		PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un, PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 		PRECISION pitt, PRECISION pitx, PRECISION pity,
@@ -274,6 +278,7 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION nb
 	/*********************************************************\
 	 * time derivative of the dissipative quantities
 	/*********************************************************/
+#ifdef PIMUNU
 	pimunuRHS[0] = dpitt / ut + pitt * dkvk;
 	pimunuRHS[1] = dpitx / ut + pitx * dkvk;
 	pimunuRHS[2] = dpity / ut + pity * dkvk;
@@ -284,8 +289,24 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION nb
 	pimunuRHS[7] = dpiyy / ut + piyy * dkvk;
 	pimunuRHS[8] = dpiyn / ut + piyn * dkvk;
 	pimunuRHS[9] = dpinn / ut + pinn * dkvk;
+#endif
 #ifdef PI
 	pimunuRHS[10] = dPi / ut + Pi * dkvk;
+#endif
+    
+    /*********************************************************\
+     * time derivative of the diffusion current of baryon, by Lipei//to be fixed
+    /*********************************************************/
+    PRECISION NBI1 = 0;//(stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
+    PRECISION NBI2 = 0;//(sxt * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
+    PRECISION NBI3 = 0;//(syt * nbt - syx * nbx - syy * nby - t2 * syn * nbn);
+    PRECISION NBI4 = 0;//(snt * nbt - snx * nbx - sny * nby - t2 * snn * nbn);
+    //rhob to get mub? not used here yet
+#ifdef VMU
+    nbmuRHS[0] = 0;//-1/tau_n * (nbt + delta_nn * nbt * theta - lambda_nn * NBI1);
+    nbmuRHS[1] = 0;//-1/tau_n * (nbx + delta_nn * nbx * theta - lambda_nn * NBI2);
+    nbmuRHS[2] = 0;//-1/tau_n * (nby + delta_nn * nby * theta - lambda_nn * NBI3);
+    nbmuRHS[3] = 0;//-1/tau_n * (nbn + delta_nn * nbn * theta - lambda_nn * NBI4);
 #endif
 }
 
@@ -299,6 +320,7 @@ PRECISION d_dx
 	//=========================================================
 	PRECISION facX = 1/d_dx/2;
 	int ptr = 20; // 5 * n (with n = 4 corresponding to pitt)
+#ifdef PIMUNU
 	PRECISION dxpitt = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;	ptr+=5;
 	PRECISION dxpitx = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;	ptr+=5;
 	PRECISION dxpity = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;	ptr+=5;
@@ -306,7 +328,20 @@ PRECISION d_dx
 	PRECISION dxpixx = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;	ptr+=5;
 	PRECISION dxpixy = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;	ptr+=5;
 	PRECISION dxpixn = (*(I + ptr + 3) - *(I + ptr + 1)) *facX; ptr+=20;
-
+#endif
+    //=========================================================
+    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    //=========================================================
+#ifdef PI
+    ptr+=5;
+#endif
+#ifdef VMU
+    ptr+=5; // increased by 5 to start with nbt
+    PRECISION dxnbt = (*(I + ptr + 3) - *(I + ptr + 1)) *facX; ptr+=5;
+    PRECISION dxnbx = (*(I + ptr + 3) - *(I + ptr + 1)) *facX;
+#endif
+    //end; Lipei
+    
 	PRECISION ut = u->ut[s];
 	PRECISION ux = u->ux[s];
 
@@ -314,6 +349,7 @@ PRECISION d_dx
 	// set dx terms in the source terms
 	//=========================================================
 	PRECISION vx = ux / ut;
+#ifdef PIMUNU
 #ifndef PI
 	S[0] = dxpitt*vx - dxpitx;
 	S[1] = dxpitx*vx - dxpixx;
@@ -324,6 +360,25 @@ PRECISION d_dx
 #endif
 	S[2] = dxpity*vx - dxpixy;
 	S[3] = dxpitn*vx - dxpixn;
+#else
+    S[0] = 0.0;
+    S[1] = 0.0;
+    S[2] = 0.0;
+    S[3] = 0.0;
+#endif
+    //=========================================================
+    // set dx terms in the source terms of baryon current; by Lipei
+    //=========================================================
+    //above source terms are for T^{\mu\nu}; but S is defined to have components for  pi^{\mu\nu} also; below are sources for nb^\mu; by Lipei
+    //the demension of S was 4+1+10; now it's 5+1+10+4 to include baryon compoments by Lipei
+    //only one component for the conservation law of baryon number; no need for baryon diffusion currents
+#ifdef NBMU
+#ifdef VMU
+    S[NUMBER_CONSERVED_VARIABLES] = dxnbt*vx - dxnbx;
+#else
+    S[NUMBER_CONSERVED_VARIABLES] = 0.0;
+#endif
+#endif
 }
 
 void loadSourceTermsY(const PRECISION * const __restrict__ J, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
@@ -334,6 +389,7 @@ PRECISION d_dy
 	//=========================================================
 	PRECISION facY = 1/d_dy/2;
 	int ptr = 20; // 5 * n (with n = 4 corresponding to pitt)
+#ifdef PIMUNU
 	PRECISION dypitt = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;	ptr+=5;
 	PRECISION dypitx = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;	ptr+=5;
 	PRECISION dypity = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;	ptr+=5;
@@ -341,6 +397,20 @@ PRECISION d_dy
 	PRECISION dypixy = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;	ptr+=10;
 	PRECISION dypiyy = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;	ptr+=5;
 	PRECISION dypiyn = (*(J + ptr + 3) - *(J + ptr + 1)) *facY; ptr+=10;
+#endif
+    
+    //=========================================================
+    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    //=========================================================
+#ifdef PI
+    ptr+=5;
+#endif
+#ifdef VMU
+    ptr+=5;
+    PRECISION dynbt = (*(J + ptr + 3) - *(J + ptr + 1)) *facY; ptr+=10;
+    PRECISION dynby = (*(J + ptr + 3) - *(J + ptr + 1)) *facY;
+#endif
+    //end; Lipei
 
 	PRECISION ut = u->ut[s];
 	PRECISION uy = u->uy[s];
@@ -349,6 +419,7 @@ PRECISION d_dy
 	// set dy terms in the source terms
 	//=========================================================
 	PRECISION vy = uy / ut;
+#ifdef PIMUNU
 #ifndef PI
 	S[0] = dypitt*vy - dypity;
 	S[2] = dypity*vy - dypiyy;
@@ -359,6 +430,22 @@ PRECISION d_dy
 #endif
 	S[1] = dypitx*vy - dypixy;
 	S[3] = dypitn*vy - dypiyn;
+#else
+    S[0] = 0.0;
+    S[1] = 0.0;
+    S[2] = 0.0;
+    S[3] = 0.0;
+#endif
+    //=========================================================
+    // set dy terms in the source terms of baryon current; by Lipei
+    //=========================================================
+#ifdef NBMU
+#ifdef VMU
+    S[NUMBER_CONSERVED_VARIABLES] = dynbt*vy - dynby;
+#else
+    S[NUMBER_CONSERVED_VARIABLES] = 0.0;
+#endif
+#endif
 }
 
 void loadSourceTermsZ(const PRECISION * const __restrict__ K, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s, PRECISION t,
@@ -369,13 +456,27 @@ PRECISION d_dz
 	//=========================================================
 	PRECISION facZ = 1/d_dz/2;
 	int ptr = 20; // 5 * n (with n = 4 corresponding to pitt)
+#ifdef PIMUNU
 	PRECISION dnpitt = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=5;
 	PRECISION dnpitx = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=5;
 	PRECISION dnpity = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=5;
 	PRECISION dnpitn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=15; 	 
 	PRECISION dnpixn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=10;
 	PRECISION dnpiyn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;	ptr+=5;
-	PRECISION dnpinn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ; ptr+=5; 
+	PRECISION dnpinn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ; ptr+=5;
+#endif
+    //=========================================================
+    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    //=========================================================
+#ifdef PI
+    ptr+=5;
+#endif
+#ifdef VMU
+    ptr+=5;
+    PRECISION dnnbt = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ; ptr+=15;
+    PRECISION dnnbn = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ;
+#endif
+    //end; Lipei
 
 	PRECISION ut = u->ut[s];
 	PRECISION un = u->un[s];
@@ -384,6 +485,7 @@ PRECISION d_dz
 	// set dn terms in the source terms
 	//=========================================================
 	PRECISION vn = un / ut;
+#ifdef PIMUNU
 #ifndef PI
 	S[0] = dnpitt*vn - dnpitn;
 	S[3] = dnpitn*vn - dnpinn;
@@ -394,12 +496,29 @@ PRECISION d_dz
 #endif
 	S[1] = dnpitx*vn - dnpixn;
 	S[2] = dnpity*vn - dnpiyn;
+#else
+    S[0] = 0.0;
+    S[1] = 0.0;
+    S[2] = 0.0;
+    S[3] = 0.0;
+#endif
+    //=========================================================
+    // set dn terms in the source terms of baryon current; by Lipei
+    //=========================================================
+#ifdef NBMU
+#ifdef VMU
+    S[NUMBER_CONSERVED_VARIABLES] = dnnbt*vn - dnnbn;
+#else
+    S[NUMBER_CONSERVED_VARIABLES] = 0.0;
+#endif
+#endif
 }
 
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 PRECISION t, PRECISION e, const PRECISION * const __restrict__ pvec,
-int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz, const PARTICLE_SOURCE * const __restrict__ Part//by Lipei
+int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
+const PARTICLE_SOURCE * const __restrict__ Part, PRECISION rhob//part & rhob by Lipei
 ) {
 	//=========================================================
 	// conserved variables	
@@ -436,7 +555,27 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 #else
 	PRECISION Pi = 0;
 #endif
-
+    
+    //=========================================================
+    // baryon; by Lipei
+    //=========================================================
+#ifdef NBMU
+    PRECISION Nbt = Q[NUMBER_CONSERVED_VARIABLES];
+#else
+    PRECISION Nbt = 0;
+#endif
+#ifdef VMU
+    PRECISION nbt = Q[NUMBER_CONSERVED_VARIABLES+1];
+    PRECISION nbx = Q[NUMBER_CONSERVED_VARIABLES+2];
+    PRECISION nby = Q[NUMBER_CONSERVED_VARIABLES+3];
+    PRECISION nbn = Q[NUMBER_CONSERVED_VARIABLES+4];
+#else
+    PRECISION nbt = 0;
+    PRECISION nbx = 0;
+    PRECISION nby = 0;
+    PRECISION nbn = 0;
+#endif
+    
 	//=========================================================
 	// primary variables
 	//=========================================================
@@ -501,15 +640,28 @@ int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PREC
 	S[3] = Part->partn[s]-dnp + dkvk*pitn;
 #endif
 
+    //=========================================================
+    // N^{\mu} source terms; by Lipei
+    //=========================================================
+#ifdef NBMU
+    S[NUMBER_CONSERVED_VARIABLES] = Part->partb[s]- Nbt/t + dkvk*nbt;
+#endif
 	//=========================================================
-	// \pi^{\mu\nu} source terms
+	// \pi^{\mu\nu} source terms (and baryon source terms)
 	//=========================================================
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
-	setPimunuSourceTerms(pimunuRHS, nbmuRHS, t, e, p, ut, ux, uy, un, utp, uxp, uyp, unp,//nbmuRHS by Lipei
+    PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];//Lipei
+	setPimunuSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhob,//nbmuRHS, nb_mu, rhob for baryon, by Lipei
+                         t, e, p, ut, ux, uy, un, utp, uxp, uyp, unp,
 			pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
-	for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];		
+#ifdef PIMUNU
+    for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
+#endif
+#ifdef VMU
+    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//n=15 from baryon current; n from 16 to 19 of baryon diffusion current; Lipei
+#endif
 #endif		
 }
 

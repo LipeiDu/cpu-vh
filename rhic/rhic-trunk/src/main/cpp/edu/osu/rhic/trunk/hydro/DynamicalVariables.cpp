@@ -33,6 +33,7 @@ void allocateHostMemory(int len) {
     Part->partx = (PRECISION *)calloc(len, bytes);//Lipei
     Part->party = (PRECISION *)calloc(len, bytes);//Lipei
     Part->partn = (PRECISION *)calloc(len, bytes);//Lipei
+    Part->partb = (PRECISION *)calloc(len, bytes);//Lipei
     // baryon density
     rhob = (PRECISION *)calloc(len, bytes);//Lipei
     
@@ -84,6 +85,18 @@ void allocateHostMemory(int len) {
 #ifdef PI
 	q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
+    //baryon; Lipei
+#ifdef NBMU
+    q->Nbt = (PRECISION *)calloc(len, bytes);
+#endif
+#ifdef VMU
+    q->nbt = (PRECISION *)calloc(len, bytes);
+    q->nbx = (PRECISION *)calloc(len, bytes);
+    q->nby = (PRECISION *)calloc(len, bytes);
+    q->nbn = (PRECISION *)calloc(len, bytes);
+#endif
+    
+    
 	// upated variables at the n+1 time step
 	Q = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
 	Q->ttt = (PRECISION *)calloc(len, bytes);
@@ -106,6 +119,18 @@ void allocateHostMemory(int len) {
 #ifdef PI
 	Q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
+    //baryon; Lipei
+#ifdef NBMU
+    Q->Nbt = (PRECISION *)calloc(len, bytes);
+#endif
+#ifdef VMU
+    Q->nbt = (PRECISION *)calloc(len, bytes);
+    Q->nbx = (PRECISION *)calloc(len, bytes);
+    Q->nby = (PRECISION *)calloc(len, bytes);
+    Q->nbn = (PRECISION *)calloc(len, bytes);
+#endif
+    
+    
 	// updated variables at the intermediate time step
 	qS = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
 	qS->ttt = (PRECISION *)calloc(len, bytes);
@@ -127,6 +152,16 @@ void allocateHostMemory(int len) {
 	// allocate space for \Pi
 #ifdef PI
 	qS->Pi = (PRECISION *)calloc(len, bytes);
+#endif
+    //baryon; Lipei
+#ifdef NBMU
+    qS->Nbt = (PRECISION *)calloc(len, bytes);
+#endif
+#ifdef VMU
+    qS->nbt = (PRECISION *)calloc(len, bytes);
+    qS->nbx = (PRECISION *)calloc(len, bytes);
+    qS->nby = (PRECISION *)calloc(len, bytes);
+    qS->nbn = (PRECISION *)calloc(len, bytes);
 #endif
 }
 
@@ -170,6 +205,16 @@ void setConservedVariables(double t, void * latticeParams) {
 				q->ttx[s] = Ttx(e_s, p_s+Pi_s, ut_s, ux_s, pitx_s);
 				q->tty[s] = Tty(e_s, p_s+Pi_s, ut_s, uy_s, pity_s);
 				q->ttn[s] = Ttn(e_s, p_s+Pi_s, ut_s, un_s, pitn_s);
+                
+                //baryon; Lipei
+                PRECISION rhob_s = rhob[s];
+                PRECISION nbt_s = 0;
+#ifdef VMU
+                nbt_s = q->nbt[s];
+#endif
+#ifdef NBMU
+                q->Nbt[s] = Nbt(rhob_s, ut_s, nbt_s);
+#endif
 			}
 		}
 	}
@@ -177,17 +222,20 @@ void setConservedVariables(double t, void * latticeParams) {
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams
+FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
+PRECISION * const __restrict__ rhob//by Lipei
 ) {
-	setGhostCellsKernelI(q,e,p,u,latticeParams);
-	setGhostCellsKernelJ(q,e,p,u,latticeParams);
-	setGhostCellsKernelK(q,e,p,u,latticeParams);
+	setGhostCellsKernelI(q,e,p,u,latticeParams,rhob);
+	setGhostCellsKernelJ(q,e,p,u,latticeParams,rhob);
+	setGhostCellsKernelK(q,e,p,u,latticeParams,rhob);
 }
 
 void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
 FLUID_VELOCITY * const __restrict__ u,
-int s, int sBC) {
+int s, int sBC,
+PRECISION * const __restrict__ rhob//by Lipei
+) {
 	e[s] = e[sBC];
 	p[s] = p[sBC];
 	u->ut[s] = u->ut[sBC];
@@ -215,11 +263,24 @@ int s, int sBC) {
 #ifdef PI
 	q->Pi[s] = q->Pi[sBC];	
 #endif
+    
+    //baryon; Lipei
+    rhob[s] = rhob[sBC];
+#ifdef NBMU
+    q->Nbt[s] = q->Nbt[sBC];
+#endif
+#ifdef VMU
+    q->nbt[s] = q->nbt[sBC];
+    q->nbx[s] = q->nbx[sBC];
+    q->nby[s] = q->nby[sBC];
+    q->nbn[s] = q->nbn[sBC];
+#endif
 }
 
 void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams
+FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
+PRECISION * const __restrict__ rhob//by Lipei
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -236,13 +297,13 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams
 			for (int i = 0; i <= 1; ++i) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);	
 				sBC = columnMajorLinearIndex(iBC, j, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 			iBC = nx + 1;
 			for (int i = nx + 2; i <= nx + 3; ++i) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(iBC, j, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 		}
 	}
@@ -250,7 +311,8 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams
 
 void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams
+FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
+PRECISION * const __restrict__ rhob//by Lipei
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -267,13 +329,13 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams
 			for (int j = 0; j <= 1; ++j) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, jBC, k, ncx, ncy);	
-				setGhostCellVars(q,e,p,u,s,sBC);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 			jBC = ny + 1;
 			for (int j = ny + 2; j <= ny + 3; ++j) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, jBC, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC);		
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 		}
 	}
@@ -281,7 +343,8 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams
 
 void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams
+FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
+PRECISION * const __restrict__ rhob//by Lipei
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -297,13 +360,13 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams
 			for (int k = 0; k <= 1; ++k) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, j, kBC, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 			kBC = nz + 1;
 			for (int k = nz + 2; k <= nz + 3; ++k) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, j, kBC, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob);
 			}
 		}
 	}
@@ -331,6 +394,18 @@ void freeHostMemory() {
     free(Part->party);//Lipei
     free(Part->partn);//Lipei
     free(rhob);//Lipei
+    //baryon; Lipei
+#ifdef NBMU
+    free(q->Nbt);
+#endif
+#ifdef VMU
+    free(q->nbt);
+    free(q->nbx);
+    free(q->nby);
+    free(q->nbn);
+#endif
+    
+    
 	free(e);
 	free(p);
 	free(u->ut);
