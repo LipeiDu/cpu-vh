@@ -18,12 +18,12 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 		PRECISION t, PRECISION ePrev
 ) {
 	// left and right cells
-	PRECISION qR[NUMBER_CONSERVED_VARIABLES], qL[NUMBER_CONSERVED_VARIABLES];
+	PRECISION qR[ALL_NUMBER_CONSERVED_VARIABLES], qL[ALL_NUMBER_CONSERVED_VARIABLES];
 
 	// left and right extrapolated values of the conserved variables
 	int ptr = 0;
 	PRECISION qmm, qm, q, qp, qpp;
-	for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+	for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 		qmm 	= *(data+ptr);
 		qm 	= *(data+ptr+1);
 		q 		= *(data+ptr+2);
@@ -42,7 +42,7 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 
 	PRECISION a,qR_n,qL_n,FqR,FqL,res;
 	a = localPropagationSpeed(utR,uxR,uyR,unR,utL,uxL,uyL,unL,spectralRadius);
-	for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
+	for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 		qR_n = qR[n];
 		qL_n = qL[n];
 		FqR = fluxFunction(qR_n, utR, uxR, uyR, unR);

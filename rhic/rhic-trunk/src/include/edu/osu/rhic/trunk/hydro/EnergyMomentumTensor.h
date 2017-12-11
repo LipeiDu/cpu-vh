@@ -17,7 +17,7 @@ PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION 
 
 void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, 
-PRECISION t, void * latticeParams
+PRECISION t, void * latticeParams, PRECISION * const __restrict__ rhob//rhob by Lipei
 );
 
 PRECISION Ttt(PRECISION e, PRECISION p, PRECISION ut, PRECISION pitt);

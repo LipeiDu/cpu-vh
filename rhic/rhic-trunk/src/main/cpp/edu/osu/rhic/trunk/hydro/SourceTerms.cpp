@@ -295,18 +295,30 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * 
 #endif
     
     /*********************************************************\
-     * time derivative of the diffusion current of baryon, by Lipei//to be fixed
+     * for the diffusion current of baryon, by Lipei
     /*********************************************************/
-    PRECISION NBI1 = 0;//(stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
-    PRECISION NBI2 = 0;//(sxt * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
-    PRECISION NBI3 = 0;//(syt * nbt - syx * nbx - syy * nby - t2 * syn * nbn);
-    PRECISION NBI4 = 0;//(snt * nbt - snx * nbx - sny * nby - t2 * snn * nbn);
-    //rhob to get mub? not used here yet
+    PRECISION NBI1t = ut * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
+    PRECISION NBI1x = ux * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
+    PRECISION NBI1y = uy * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
+    PRECISION NBI1n = un * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
+    PRECISION NBI2t = 1/tau_n * delta_nn * nbt * theta;
+    PRECISION NBI2x = 1/tau_n * delta_nn * nbx * theta;
+    PRECISION NBI2y = 1/tau_n * delta_nn * nby * theta;
+    PRECISION NBI2n = 1/tau_n * delta_nn * nbn * theta;
+    PRECISION NBI3t = -nbx * wxt - nby * wyt - t2 * nbn * wnt;
+    PRECISION NBI3x = -nbt * wtx + nby * wyx + t2 * nbn * wnx;
+    PRECISION NBI3y = -nbt * wty + nbx * wxy + t2 * nbn * wny;
+    PRECISION NBI3n = -1/t2 * nbt * wtn + 1/t2 * nbx * wxn + 1/t2 * nby * wyn;
+    PRECISION NBI4t = lambda_nn/tau_n * (stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
+    PRECISION NBI4x = lambda_nn/tau_n * (stx * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
+    PRECISION NBI4y = lambda_nn/tau_n * (sty * nbt - sxy * nbx - syy * nby - t2 * syn * nbn);
+    PRECISION NBI4n = lambda_nn/tau_n * (stn * nbt - sxn * nbx - syn * nby - t2 * snn * nbn);
+
 #ifdef VMU
-    nbmuRHS[0] = 0;//-1/tau_n * (nbt + delta_nn * nbt * theta - lambda_nn * NBI1);
-    nbmuRHS[1] = 0;//-1/tau_n * (nbx + delta_nn * nbx * theta - lambda_nn * NBI2);
-    nbmuRHS[2] = 0;//-1/tau_n * (nby + delta_nn * nby * theta - lambda_nn * NBI3);
-    nbmuRHS[3] = 0;//-1/tau_n * (nbn + delta_nn * nbn * theta - lambda_nn * NBI4);
+    nbmuRHS[0] = 1/ut * (1/tau_n * nbt + NBI1t + NBI2t + NBI3t + NBI4t - 1/tau_n * t * un * nbn) + ut * dkvk;
+    nbmuRHS[1] = 1/ut * (1/tau_n * nbx + NBI1x + NBI2x + NBI3x + NBI4x) + ux * dkvk;
+    nbmuRHS[2] = 1/ut * (1/tau_n * nby + NBI1y + NBI2y + NBI3y + NBI4y) + uy * dkvk;
+    nbmuRHS[3] = 1/ut * (1/tau_n * nbn + NBI1n + NBI2n + NBI3n + NBI4n - 1/tau_n * (1/t * ut * nbn + 1/t * un * nbt)) + un * dkvk;
 #endif
 }
 
@@ -644,7 +656,7 @@ const PARTICLE_SOURCE * const __restrict__ Part, PRECISION rhob//part & rhob by 
     // N^{\mu} source terms; by Lipei
     //=========================================================
 #ifdef NBMU
-    S[NUMBER_CONSERVED_VARIABLES] = Part->partb[s]- Nbt/t + dkvk*nbt;
+    S[NUMBER_CONSERVED_VARIABLES] = Part->partb[s] - Nbt/t + dkvk*nbt;
 #endif
 	//=========================================================
 	// \pi^{\mu\nu} source terms (and baryon source terms)
@@ -660,7 +672,7 @@ const PARTICLE_SOURCE * const __restrict__ Part, PRECISION rhob//part & rhob by 
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
 #endif
 #ifdef VMU
-    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//n=15 from baryon current; n from 16 to 19 of baryon diffusion current; Lipei
+    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//n=15 from baryon current, see above; n from 16 to 19 of baryon diffusion current; Lipei
 #endif
 #endif		
 }

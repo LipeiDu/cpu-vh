@@ -32,7 +32,8 @@ void sampleWoodsSaxon(int A, double * const __restrict__ x, double * const __res
 	}
 }
 
-int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double * const __restrict__ y, double snn) {
+int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double * const __restrict__ y, double snn, int * const __restrict__ participant, double * const __restrict__ x1p, double * const __restrict__ y1p, double * const __restrict__ x2p, double * const __restrict__ y2p//participant&x1p&y1p&x2p&y2p by Lipei
+                          ) {
 	double x1[A], y1[A], x2[A], y2[A];
 	int l1[A], l2[A];
 	sampleWoodsSaxon(A,x1,y1);
@@ -57,17 +58,26 @@ int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double
 			}
 		}
 	}
+                              
 	int n = 0;
 	for(int i = 0; i < A; ++i) {
 		if (l1[i] > 0) {
 			x[n] = x1[i];
 			y[n] = y1[i];
 			n++;
+            int n1=participant[0];//Lipei
+            x1p[n1] = x1[i];//Lipei
+            y1p[n1] = y1[i];//Lipei
+            participant[0]++;//Lipei
 		}
 		if (l2[i] > 0) {
 			x[n] = x2[i];
 			y[n] = y2[i];
 			n++;
+            int n2=participant[1];//Lipei
+            x2p[n2] = x2[i];//Lipei
+            y2p[n2] = y2[i];//Lipei
+            participant[1]++;//Lipei
 		}
 	}
 	return n;
@@ -75,7 +85,7 @@ int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double
 
 void 
 monteCarloGlauberEnergyDensityTransverseProfile(double * const __restrict__ energyDensityTransverse, 
-int nx, int ny, double dx, double dy, void * initCondParams
+int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB//Ta&Tb by Lipei
 ) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int NA = initCond->numberOfNucleonsPerNuclei;
@@ -87,22 +97,45 @@ int nx, int ny, double dx, double dy, void * initCondParams
 	double SIG0 = 0.46;
 
 	double xp[2*NA], yp[2*NA];
+    double x1p[NA], y1p[NA], x2p[NA], y2p[NA];//Lipei
+    int participant[2];//Lipei
+    participant[0] = 0;//Lipei
+    participant[1] = 0;//Lipei
+
    srand(1328398221);
-	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn);
+	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn,participant,x1p,y1p,x2p,y2p);//n1&n2&x1p&y1p&x2p&y2p by Lipei
 	printf("==> Found %d wounded nucleons.\n", nNucleons);
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
       	energyDensityTransverse[i + nx*j] = 0;
+        TA[i + nx*j] = 0;//Lipei
+        TB[i + nx*j] = 0;//Lipei
       }
 	}
+    
+    int n1, n2;//Lipei
+    n1 = participant[0];//Lipei
+    n2 = participant[1];//Lipei
+    
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
-      	for (int n = 0; n < nNucleons; ++n) {
-         	double x = (i - ((double)nx-1.)/2.)*dx - xp[n]; 
-            double y = (j - ((double)ny-1.)/2.)*dy - yp[n]; 
-				// assumes gaussion bump in density
+        for (int n = 0; n < nNucleons; ++n) {
+            double x = (i - ((double)nx-1.)/2.)*dx - xp[n];
+            double y = (j - ((double)ny-1.)/2.)*dy - yp[n];
+            // assumes gaussion bump in density
             energyDensityTransverse[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
-         }
+        }
+        //TA&TB below by Lipei
+        for (int n = 0; n < n1; ++n) {
+            double x = (i - ((double)nx-1.)/2.)*dx - x1p[n];
+            double y = (j - ((double)ny-1.)/2.)*dy - y1p[n];
+            TA[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+        }
+        for (int n = 0; n < n2; ++n) {
+            double x = (i - ((double)nx-1.)/2.)*dx - x2p[n];
+            double y = (j - ((double)ny-1.)/2.)*dy - y2p[n];
+            TB[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+        }
 		}
 	}
 }

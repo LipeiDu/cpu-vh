@@ -102,7 +102,7 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
             
             // Thickness function to construct baryon density;Lipei
             TA[i+j*nx] = TAplus;
-            TB[i+j*nx] = TBminus;
+            TB[i+j*nx] = TAminus;
 			// Binary collision energy density profile
 			double ed = nbcNorm * binaryCollisionPairs(x,y,TAplus,TBminus,snn);
 			ed *= alpha;

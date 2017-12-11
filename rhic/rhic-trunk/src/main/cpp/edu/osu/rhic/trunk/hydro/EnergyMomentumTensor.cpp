@@ -134,7 +134,7 @@ PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION 
 
 void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, 
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, 
-PRECISION t, void * latticeParams
+PRECISION t, void * latticeParams, PRECISION * const __restrict__ rhob//rhob by Lipei
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -148,7 +148,7 @@ PRECISION t, void * latticeParams
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 
-				PRECISION q_s[NUMBER_CONSERVED_VARIABLES],_e,_p,ut,ux,uy,un;
+				PRECISION q_s[ALL_NUMBER_CONSERVED_VARIABLES],_e,_p,ut,ux,uy,un;
 				q_s[0] = q->ttt[s];
 				q_s[1] = q->ttx[s];
 				q_s[2] = q->tty[s];
@@ -170,7 +170,20 @@ PRECISION t, void * latticeParams
 #ifdef PI
 				q_s[14] = q->Pi[s];
 #endif
-				getInferredVariables(t,q_s,e[s],&_e,&_p,&ut,&ux,&uy,&un);
+#ifdef NBMU
+                q_s[NUMBER_CONSERVED_VARIABLES] = q->Nbt[s];
+#endif
+#ifdef VMU
+                q_s[NUMBER_CONSERVED_VARIABLES+1] = q->nbt[s];
+                q_s[NUMBER_CONSERVED_VARIABLES+2] = q->nbx[s];
+                q_s[NUMBER_CONSERVED_VARIABLES+3] = q->nby[s];
+                q_s[NUMBER_CONSERVED_VARIABLES+4] = q->nbn[s];
+#endif
+                
+				getInferredVariables(t,q_s,e[s],&_e,&_p,&ut,&ux,&uy,&un);//need to be fixed for baryon, Lipei
+#ifdef NBMU
+                rhob[s] = q_s[NUMBER_CONSERVED_VARIABLES];
+#endif
 				e[s] = _e;
 				p[s] = _p;
 				u->ut[s] = ut;

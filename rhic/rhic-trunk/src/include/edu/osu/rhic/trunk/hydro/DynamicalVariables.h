@@ -11,12 +11,12 @@
 
 #define NUMBER_CONSERVATION_LAWS 4
 
-#define PIMUNU
+//#define PIMUNU
 //#define PI
 
 //Lipei
 #define NBMU
-//#define VMU
+#define VMU
 
 #ifndef NBMU
 #define NUMBER_BARYON_COMPONENTS 0

@@ -856,7 +856,7 @@ void * latticeParams, void * hydroParams
 
 	t+=dt;
 
-	setInferredVariablesKernel(qS, e, p, uS, t, latticeParams);
+	setInferredVariablesKernel(qS, e, p, uS, t, latticeParams, rhob);//rhob by lipei
 
 #ifdef REGULATE_DISSIPATIVE_CURRENTS
 	regulateDissipativeCurrents(t, qS, e, p, uS, ncx, ncy, ncz);
@@ -876,7 +876,7 @@ void * latticeParams, void * hydroParams
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
 	swapFluidVelocity(&up, &u);
-	setInferredVariablesKernel(Q, e, p, u, t, latticeParams);
+	setInferredVariablesKernel(Q, e, p, u, t, latticeParams, rhob);//rhob by lipei
 
 #ifdef REGULATE_DISSIPATIVE_CURRENTS
 	regulateDissipativeCurrents(t, Q, e, p, u, ncx, ncy, ncz);

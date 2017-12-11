@@ -343,15 +343,17 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
     //Baryon distribution in longitudinal direction; lipei
     double Ta[nx*ny], Tb[nx*ny];
     double rhoLa[nz], rhoLb[nz];
-    double etaFlat = initCond->rapidityMean;
+    double etaVariance1 = 0.1;
+    double etaVariance2 = 1;
+    double etaMean = 2;
+    double etaNorm = 0.7;
     for(int k = 0; k < nz; ++k) {
         double eta = (k - (nz-1)/2)*dz;
-        double etaScaled_a = (etaFlat/2 - 2*eta)/(etaFlat+2);
-        double etaScaled_b = (etaFlat/2 + 2*eta)/(etaFlat+2);
-        rhoLa[k] = etaScaled_a;
-        rhoLb[k] = etaScaled_b;
+        rhoLa[k] = etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)+etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
+        rhoLb[k] = etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)+etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
     }
-    //Lipei rhoLa/b=(eta_beam -/+ eta)/2*y_beam
+    //Lipei
+
     
     char rhobb[] = "output/baryon_density.dat";//Lipei
     ofstream baryondens(rhobb);//Lipei
@@ -371,25 +373,14 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
 				p[s] = equilibriumPressure(e[s]);
-                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx]; //+ rhoLb[k-2]*Tb[i-2+(j-2)*nx];
-                //Lipei rhob=(eta_beam -/+ eta)/2*y_beam*Plateau*Ta/b
-                //baryondens << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;
-                //Lipei
+                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]; //Lipei
+                baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}
 	}
 
-    for(int i = 2; i < nx+2; ++i) {
-        for(int j = 2; j < ny+2; ++j) {
-            for(int k = 2; k < nz+2; ++k) {
-                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;
-                //Lipei
-            }
-        }
-    }
-
     baryondens.close();//Lipei
+    printf("Baryon density is initialized.\n");
 }
 
 /*********************************************************************************************************\
@@ -412,11 +403,30 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	double T0 = 2.03;
 //	e0 *= pow(T0,4);
 	e0 = (double) equilibriumEnergyDensity(T0);
+    
+    //Baryon distribution in longitudinal direction; lipei
+    char rhobb[] = "output/baryon_density.dat";//Lipei
+    ofstream baryondens(rhobb);//Lipei    
+    double Ta[nx*ny], Tb[nx*ny];
+    double rhoLa[nz], rhoLb[nz];
+    double etaVariance1 = 0.1;
+    double etaVariance2 = 1;
+    double etaMean = 2;
+    double etaNorm = 0.7;
+    for(int k = 0; k < nz; ++k) {
+        double eta = (k - (nz-1)/2)*dz;
+        rhoLa[k] = etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)+etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
+        rhoLb[k] = etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)+etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
+  //      baryondens << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhoLa[k] << setprecision(6) << setw(18) << rhoLb[k] << endl;//Lipei
+    }
+    //Lipei
+    
 
-	double eT[nx*ny], eL[nz];
-	monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams);
-	longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
 
+    double eT[nx*ny], eL[nz];
+    monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb);
+    longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
+    
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
 			double energyDensityTransverse = e0 * eT[i-2 + nx*(j-2)];
@@ -425,10 +435,15 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double energyDensityLongitudinal = eL[k-2];
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);	
+				p[s] = equilibriumPressure(e[s]);
+                rhob[s] = 100*(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]); //Lipei
+                baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}
 	}
+
+    baryondens.close();//Lipei
+    printf("Baryon density is initialized.\n");
 }
 
 /*********************************************************************************************************\
@@ -624,6 +639,7 @@ void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams
 	double dz = lattice->latticeSpacingRapidity;
 
 	double e0 = initCond->initialEnergyDensity;
+    double initialBaryonDensity = initCond->initialBaryonDensity;//Lipei
 
 	for(int i = 2; i < nx+2; ++i) {
 		double x = (i-2 - (nx-1)/2.)*dx;
@@ -652,7 +668,9 @@ void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams
 				u->ux[s] = 0;
 				u->uy[s] = 0;
 				u->un[s] = 0;
-				u->ut[s] = 1;							
+				u->ut[s] = 1;
+                
+                rhob[s] = (PRECISION) initialBaryonDensity;//Lipei
 			}
 		}
 	}
@@ -787,6 +805,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			setGlauberInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
 		case 3: {
@@ -799,6 +818,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			setMCGlauberInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;		
 		}
 		case 5: {
@@ -809,6 +829,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 		case 6: {
 			printf("Implosion in a box test.\n");
 			setImplosionBoxInitialCondition(latticeParams, initCondParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
 

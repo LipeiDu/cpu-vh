@@ -31,7 +31,7 @@
 #include "edu/osu/rhic/trunk/hydro/SourcePart.h"//lipei
 
 #define FREQ 100 //write output to file every FREQ timesteps
-#define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
+#define FOFREQ 1000 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
 
@@ -39,10 +39,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   output(u->ux, t, outputDir, "ux", latticeParams);
-  output(u->uy, t, outputDir, "uy", latticeParams);
-  //	output(u->un, t, outputDir, "un", latticeParams);
+  //output(u->uy, t, outputDir, "uy", latticeParams);
+  output(u->un, t, outputDir, "un", latticeParams);
   output(u->ut, t, outputDir, "ut", latticeParams);
-  //	output(q->ttt, t, outputDir, "ttt", latticeParams);
+  output(q->ttt, t, outputDir, "ttt", latticeParams);
   //	output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   //output(q->pixx, t, outputDir, "pixx", latticeParams);
@@ -66,7 +66,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 #ifdef VMU
   output(q->nbt, t, outputDir, "nbt", latticeParams);
   output(q->nbx, t, outputDir, "nbx", latticeParams);
-  output(q->nby, t, outputDir, "nby", latticeParams);
+  //output(q->nby, t, outputDir, "nby", latticeParams);
   output(q->nbn, t, outputDir, "nbn", latticeParams);
 #endif
 
