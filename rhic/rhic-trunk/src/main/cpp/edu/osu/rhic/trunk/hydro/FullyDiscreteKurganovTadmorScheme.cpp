@@ -698,7 +698,11 @@ int ncx, int ncy, int ncz
 				Q->piyn[s] /= 2;
 				Q->pinn[s] += q->pinn[s];
 				Q->pinn[s] /= 2;
-				#endif 
+				#endif
+                #ifdef PI
+                Q->Pi[s] += q->Pi[s];
+                Q->Pi[s] /= 2.0;
+                #endif
                 //===================================================
                 // baryon; by Lipei
                 //===================================================
@@ -776,8 +780,9 @@ int ncx, int ncy, int ncz
 				PRECISION t2 = t*t;
 		//		PRECISION pipi = pitt*pitt-2*(pitx*pitx+pity*pity-pixy*pixy+t2*(pitn*pitn-pixn*pixn-piyn*piyn))+pixx*pixx+piyy*piyy+pinn*pinn*t2*t2;
 				PRECISION pipi = pitt*pitt-2*pitx*pitx-2*pity*pity+pixx*pixx+2*pixy*pixy+piyy*piyy-2*pitn*pitn*t2+2*pixn*pixn*t2+2*piyn*piyn*t2+pinn*pinn*t2*t2;
-		if(isnan(pipi)==1) printf("found pipi Nan\n");
+		        if(isnan(pipi)==1) printf("found pipi Nan\n");
 				PRECISION spipi = sqrt(fabs(pipi+3*Pi*Pi));
+                if(isnan(spipi)==1) printf("found spipi Nan\n");
 				PRECISION pimumu = pitt - pixx - piyy - pinn*t*t;
 				PRECISION piu0 = -(pitn*t2*un) + pitt*ut - pitx*ux - pity*uy;
 				PRECISION piu1 = -(pixn*t2*un) + pitx*ut - pixx*ux - pixy*uy;
@@ -785,7 +790,7 @@ int ncx, int ncy, int ncz
 				PRECISION piu3 = -(pinn*t2*un) + pitn*ut - pixn*ux - piyn*uy;
 
 				PRECISION a1 = spipi/rhomax/sqrtf(e[s]*e[s]+3*p[s]*p[s]);
-		//if(isnan(a1)==1) printf("found a1 Nan\n");
+		        if(isnan(a1)==1) printf("found a1 Nan\n");
 				PRECISION a2 = pimumu/xi0/rhomax/spipi;
 				PRECISION a3 = piu0/xi0/rhomax/spipi;
 				PRECISION a4 = piu1/xi0/rhomax/spipi;
@@ -797,11 +802,11 @@ int ncx, int ncy, int ncz
 				PRECISION a3456 = fmax(a34,a56);
 				PRECISION rho = fmax(a12,a3456);
 
-		//		if(isnan(rho)==1) printf("found rho Nan\n");
+				if(isnan(rho)==1) printf("found rho Nan\n");
 				PRECISION fac = tanh(rho)/rho;
 				if(fabs(rho)<1.e-7) fac = 1;
 		//		PRECISION fac = 1;
-		//		if(isnan(fac)==1) printf("found Nan\n");
+				if(isnan(fac)==1) printf("found Nan\n");
 		//		fac = 1;
 
 #ifdef PIMUNU

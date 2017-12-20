@@ -11,12 +11,12 @@
 
 #define NUMBER_CONSERVATION_LAWS 4
 
-//#define PIMUNU
-//#define PI
+#define PIMUNU
+#define PI
 
 //Lipei
-#define NBMU
-#define VMU
+//#define NBMU
+//#define VMU
 
 #ifndef NBMU
 #define NUMBER_BARYON_COMPONENTS 0
@@ -66,7 +66,7 @@
 
 /*********************************************************/
 
-#define PRECISION float
+#define PRECISION double
 
 typedef struct 
 {

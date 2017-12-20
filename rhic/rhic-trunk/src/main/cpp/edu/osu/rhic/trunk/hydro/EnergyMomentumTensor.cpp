@@ -13,7 +13,7 @@
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
  
-#define MAX_ITERS 100000
+#define MAX_ITERS 10000000
 //const PRECISION ACC = 1e-2;
 
 PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi) {
@@ -109,13 +109,15 @@ PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION 
 		Pi = M / M0 - M0;
 #endif
 /****************************************************************************/
-	//if (ePrev <= 0.1) {
-	//	*e = M0 - M / M0;
-	//} else {
+	if (ePrev <= 0.1) {
+        *e = M0 - M / M0;
+	} else {
 		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi);
-		//}
+    }
 	if (isnan(*e)) {
 		printf("M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
+        printf("ttt=%.3f,\t ttx=%.3f,\t tty=%.3f,\t ttn=%.3f\n", ttt, ttx, tty, ttn);
+        printf("pitt=%.3f,\t pitx=%.3f,\t pity=%.3f,\t pitn=%.3f\n", pitt, pitx, pity, pitn);
 	}
 	*p = equilibriumPressure(*e);
 	if (*e < 1.e-7) {
