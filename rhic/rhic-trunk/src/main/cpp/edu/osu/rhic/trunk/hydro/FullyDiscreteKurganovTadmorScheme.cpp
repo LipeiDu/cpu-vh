@@ -822,8 +822,10 @@ int ncx, int ncy, int ncz
 }
 #endif
 /**************************************************************************************************************************************************/
+#ifndef IDEAL
+#define REGULATE_DISSIPATIVE_CURRENTS
+#endif
 
-//#define REGULATE_DISSIPATIVE_CURRENTS
 void
 rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q, CONSERVED_VARIABLES * __restrict__ Q,
 void * latticeParams, void * hydroParams
