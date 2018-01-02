@@ -34,9 +34,9 @@ PRECISION d_dz
 
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
-PRECISION t, PRECISION e, const PRECISION * const __restrict__ pvec,
+PRECISION t, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
-const PARTICLE_SOURCE * const __restrict__ Part, PRECISION rhob//Part & rhob by Lipei
+const PARTICLE_SOURCE * const __restrict__ Part, const PRECISION * const __restrict__ rhob//Part & rhob by Lipei
 );
 
 

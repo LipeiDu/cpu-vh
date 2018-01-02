@@ -16,11 +16,16 @@
 //#define EOS_FACTOR 15.6269 // Nc=3, Nf=3
 #define EOS_FACTOR 13.8997 // Nc=3, Nf=2.5
 
+PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION equilibriumPressure(PRECISION e);
 
+PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION speedOfSoundSquared(PRECISION e);
 
+PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION effectiveTemperature(PRECISION e);
+
+PRECISION chemicalPotential(PRECISION e, PRECISION rhob);//rhob lipei
 
 PRECISION equilibriumEnergyDensity(PRECISION T);
 

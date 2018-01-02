@@ -15,7 +15,7 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 		PRECISION (* const leftHalfCellExtrapolation)(PRECISION qmm, PRECISION qm, PRECISION q, PRECISION qp, PRECISION qpp),
 		PRECISION (* const spectralRadius)(PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un),
 		PRECISION (* const fluxFunction)(PRECISION q, PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un),
-		PRECISION t, PRECISION ePrev
+		PRECISION t, PRECISION ePrev, PRECISION rhobPrev//Lipei
 );
 
 #endif /* SEMIDISCRETEKURGANOVTADMORSCHEME_H_ */

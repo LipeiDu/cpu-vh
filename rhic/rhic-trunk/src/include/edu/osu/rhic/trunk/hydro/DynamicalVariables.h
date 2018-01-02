@@ -15,8 +15,8 @@
 #define PI
 
 //Lipei
-//#define NBMU
-//#define VMU
+#define NBMU
+#define VMU
 
 #ifndef NBMU
 #define NUMBER_BARYON_COMPONENTS 0
@@ -89,7 +89,7 @@ typedef struct
 #ifdef PI
 	PRECISION *Pi;
 #endif
-    //baryon; Lipei
+//baryon; Lipei
 #ifdef NBMU
     PRECISION *Nbt;
 #endif

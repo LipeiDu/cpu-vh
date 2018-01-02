@@ -48,8 +48,8 @@ void readInSourcePart(void * latticeParams, void * initCondParams)
          for(int j = 2; j < ny+2; ++j){
             for(int k = 2; k < nz+2; ++k){
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-               fscanf(sourcefile,"%f %f %f %f %f", & Part->partt[s], & Part->partx[s], & Part->party[s], & Part->partn[s], & Part->partb[s]);
-               printf("%f %f %f %f %f\n", Part->partt[s], Part->partx[s], Part->party[s], Part->partn[s], Part->partb[s]);
+               fscanf(sourcefile,"%lf %lf %lf %lf %lf", & Part->partt[s], & Part->partx[s], & Part->party[s], & Part->partn[s], & Part->partb[s]);
+               printf("%lf %lf %lf %lf %lf\n", Part->partt[s], Part->partx[s], Part->party[s], Part->partn[s], Part->partb[s]);
              }
           }
        }

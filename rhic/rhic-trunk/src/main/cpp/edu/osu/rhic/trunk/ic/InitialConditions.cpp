@@ -173,16 +173,6 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 
 void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
-//    int initializePimunuNavierStokes = hydro->initializePimunuNavierStokes;
-//    if (initializePimunuNavierStokes==1) {
-//        printf("Initialize \\pi^\\mu\\nu to its asymptotic Navier-Stokes value.\n");
-//#ifdef PI
-//        printf("Initialize \\Pi to its asymptotic Navier-Stokes value.\n");
-//#endif
-//        setPimunuNavierStokesInitialCondition(latticeParams, initCondParams, hydroParams);
-//        return;
-//    }
-//    else {
         printf("Initialize \\nb^\\mu to zero.\n");
         struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
         int nx = lattice->numLatticePointsX;
@@ -202,7 +192,6 @@ void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void *
             }
         }
         return;
-//    }
 }
 
 /*********************************************************************************************************\
@@ -225,8 +214,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);
                 rhob[s] = (PRECISION) initialBaryonDensity;//Lipei
+                p[s] = equilibriumPressure(e[s]);
 			}
 		}
 	}
@@ -417,7 +406,6 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
         double eta = (k - (nz-1)/2)*dz;
         rhoLa[k] = etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)+etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
         rhoLb[k] = etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)+etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
-  //      baryondens << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhoLa[k] << setprecision(6) << setw(18) << rhoLb[k] << endl;//Lipei
     }
     //Lipei
     
@@ -436,7 +424,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
 				p[s] = equilibriumPressure(e[s]);
-                rhob[s] = 100*(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]); //Lipei
+                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]; //Lipei
                 baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}

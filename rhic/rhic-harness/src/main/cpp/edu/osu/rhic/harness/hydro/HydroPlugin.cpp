@@ -38,11 +38,11 @@
 void outputDynamicalQuantities(double t, const char *outputDir, void * latticeParams)
 {
   output(e, t, outputDir, "e", latticeParams);
-  output(u->ux, t, outputDir, "ux", latticeParams);
+  //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
-  output(u->un, t, outputDir, "un", latticeParams);
-  output(u->ut, t, outputDir, "ut", latticeParams);
-  output(q->ttt, t, outputDir, "ttt", latticeParams);
+  //output(u->un, t, outputDir, "un", latticeParams);
+  //output(u->ut, t, outputDir, "ut", latticeParams);
+  //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //	output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   //output(q->pixx, t, outputDir, "pixx", latticeParams);
@@ -59,17 +59,16 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   /************************************************************************************\
    * baryon; by Lipei
   /************************************************************************************/
-  output(rhob, t, outputDir, "rhob", latticeParams);
+  //output(rhob, t, outputDir, "rhob", latticeParams);
 #ifdef NBMU
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
 #endif
 #ifdef VMU
-  output(q->nbt, t, outputDir, "nbt", latticeParams);
-  output(q->nbx, t, outputDir, "nbx", latticeParams);
+  //output(q->nbt, t, outputDir, "nbt", latticeParams);
+  //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  output(q->nbn, t, outputDir, "nbn", latticeParams);
+  //output(q->nbn, t, outputDir, "nbn", latticeParams);
 #endif
-
 }
 
 void run(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory, const char *outputDir)
@@ -110,7 +109,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // allocate memory
   allocateHostMemory(nElements);
 
-  //initialize cornelius for freezeout surface finding
+  /************************************************************************************\
+  * initialize cornelius for freezeout surface finding
+  /************************************************************************************/
+    
   //see example_4d() in example_cornelius
   //this works only for full 3+1 d simulation? need to find a way to generalize to n+1 d
   int dim;
@@ -160,20 +162,21 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   ofstream freezeoutSurfaceFile;
   if (FOFORMAT == 0) freezeoutSurfaceFile.open("output/freezeoutSurface.dat");
   else freezeoutSurfaceFile.open("output/freezeoutSurface.dat", ios::binary);
-  /************************************************************************************	\
+    
+  /************************************************************************************\
   * Fluid dynamic initialization
   /************************************************************************************/
   double t = t0;
   // generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
-  //Read in source terms from particles
+  // Read in source terms from particles
   setSourcePart(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob);//rhob by Lipei
 
-  /************************************************************************************	\
+  /************************************************************************************\
   * Evolve the system in time
   /************************************************************************************/
   int ictr = (nx % 2 == 0) ? ncx/2 : (ncx-1)/2;
@@ -191,10 +194,12 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // evolve in time
   for (int n = 1; n <= nt+1; ++n)
   {
+
+      
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0) {
-      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (T = %.3f [GeV]),\t",
-      n - 1, nt, t, e[sctr], p[sctr], effectiveTemperature(e[sctr])*hbarc);
+      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\t",
+      n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr])*hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
@@ -202,7 +207,12 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       //break;
       //}
     }
+      
 
+      
+    /************************************************************************************\
+    * Freeze-out finder
+    /************************************************************************************/
     //append the energy density and all hydro variables to storage arrays
     int nFO = n % FOFREQ;
 
@@ -440,6 +450,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       break;
     }
 
+    /************************************************************************************\
+    * Evolution by RungeKutta
+    /************************************************************************************/
+
     t1 = std::clock();
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
@@ -449,7 +463,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     ++nsteps;
 
     setCurrentConservedVariables();
-
+      
     t = t0 + n * dt;
   }
   printf("Average time/step: %.3f ms\n",totalTime/((double)nsteps));

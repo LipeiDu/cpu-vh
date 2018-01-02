@@ -89,7 +89,7 @@ const PRECISION * const __restrict__ rhob//rhob by Lipei
                 Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part, rhob[s]);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part, rhob);
                 //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
@@ -139,7 +139,7 @@ const PRECISION * const __restrict__ rhob//rhob by Lipei
 void eulerStepKernelX(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
 const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
+int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const __restrict__ rhob
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
@@ -149,9 +149,9 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
 
 				// calculate neighbor cell indices;
-				int sim = s-1;
+				int sim  = s-1;
 				int simm = sim-1;
-				int sip = s+1;
+				int sip  = s+1;
 				int sipp = sip+1;
 
 				int ptr=0;
@@ -185,15 +185,16 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
                 setNeighborCellsJK2(currrentVars->nbx,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nby,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nbn,I,s,ptr,simm,sim,sip,sipp);
-#endif//end; Lipei
+#endif
+                //end; Lipei
                 
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s]);
+				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
-				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s]);
+				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dx;
@@ -283,7 +284,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx
 void eulerStepKernelY(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
 const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
+int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const __restrict__ rhob
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
@@ -333,11 +334,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 #endif//end; Lipei
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s]);
+				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
-				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s]);
+				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dy;
@@ -417,7 +418,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy
 void eulerStepKernelZ(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
 const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
+int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const __restrict__ rhob
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
@@ -467,11 +468,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 #endif//end; Lipei
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s]);
+				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = -*(H+n);
 				}
-				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s]);
+				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dz;
@@ -548,117 +549,6 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
 	}
 }
 
-/*//***************\Lipeis copy; delete later/
-void eulerStepKernelZ2(PRECISION t,
-                      const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-                      const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-                      int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz
-                      )
-{
-    char ttt[100], ttx[100], tty[100], ttn[100];//Lipei
-    sprintf(ttt, "source_output/net_source_ttt%f.dat", t);//Lipei
-    sprintf(ttx, "source_output/net_source_ttx%f.dat", t);//Lipei
-    sprintf(tty, "source_output/net_source_tty%f.dat", t);//Lipei
-    sprintf(ttn, "source_output/net_source_ttn%f.dat", t);//Lipei
-    ofstream netsourcettt(ttt, ios::app);//Lipei
-    ofstream netsourcettx(ttx, ios::app);//Lipei
-    ofstream netsourcetty(tty, ios::app);//Lipei
-    ofstream netsourcettn(ttn, ios::app);//Lipei
-    
-    for(int i = 2; i < ncx-2; ++i) {
-        for(int j = 2; j < ncy-2; ++j) {
-            for(int k = 2; k < ncz-2; ++k) {
-                int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-                PRECISION K[5 * NUMBER_CONSERVED_VARIABLES];
-                PRECISION H[NUMBER_CONSERVED_VARIABLES];
-                
-                // calculate neighbor cell indices;
-                int stride = ncx * ncy;
-                int skm = s-stride;
-                int skmm = skm-stride;
-                int skp = s+stride;
-                int skpp = skp+stride;
-                
-                int ptr=0;
-                setNeighborCellsJK2(currrentVars->ttt,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->ttx,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->tty,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->ttn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-#ifdef PIMUNU
-                setNeighborCellsJK2(currrentVars->pitt,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pitx,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pity,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pitn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pixx,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pixy,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pixn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->piyy,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->piyn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->pinn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-#endif
-#ifdef PI
-                setNeighborCellsJK2(currrentVars->Pi,K,s,ptr,skmm,skm,skp,skpp);
-#endif
-                
-                PRECISION result[NUMBER_CONSERVED_VARIABLES];
-                flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s]);
-                for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) = -*(H+n);
-                }
-                flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s]);
-                for (unsigned int n = 0; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) += *(H+n);
-                    *(result+n) /= dz;
-                }
-#ifndef IDEAL
-                loadSourceTermsZ(K, H, u, s, t, dz);
-                for (unsigned int n = 0; n < 4; ++n) {
-                    *(result+n) += *(H+n);
-                    *(result+n) *= dt;
-                }
-#else
-                for (unsigned int n = 0; n < 4; ++n) {
-                    *(result+n) *= dt;
-                }
-#endif
-                for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) *= dt;
-                }
-                
-                updatedVars->ttt[s] += result[0];
-                updatedVars->ttx[s] += result[1];
-                updatedVars->tty[s] += result[2];
-                updatedVars->ttn[s] += result[3];
-#ifdef PIMUNU
-                updatedVars->pitt[s] += result[4];
-                updatedVars->pitx[s] += result[5];
-                updatedVars->pity[s] += result[6];
-                updatedVars->pitn[s] += result[7];
-                updatedVars->pixx[s] += result[8];
-                updatedVars->pixy[s] += result[9];
-                updatedVars->pixn[s] += result[10];
-                updatedVars->piyy[s] += result[11];
-                updatedVars->piyn[s] += result[12];
-                updatedVars->pinn[s] += result[13];
-#endif
-#ifdef PI
-                updatedVars->Pi[s] += result[14];
-#endif
-                netsourcettt << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << updatedVars->ttt[s] << endl;//Lipei
-                netsourcettx << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << updatedVars->ttx[s] << endl;//Lipei
-                netsourcetty << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << updatedVars->tty[s] << endl;//Lipei
-                netsourcettn << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << updatedVars->ttn[s] << endl;//Lipei
-            }
-        }
-    }
-    
-    netsourcettt.close();//Lipei
-    netsourcettx.close();//Lipei
-    netsourcetty.close();//Lipei
-    netsourcettn.close();//Lipei
-}
-/***************\
-*/
 /**************************************************************************************************************************************************\
 
 /**************************************************************************************************************************************************/
@@ -700,25 +590,25 @@ int ncx, int ncy, int ncz
 				Q->pinn[s] /= 2;
 				#endif
                 #ifdef PI
-                Q->Pi[s] += q->Pi[s];
-                Q->Pi[s] /= 2.0;
+                Q->Pi[s]   += q->Pi[s];
+                Q->Pi[s]   /= 2;
                 #endif
                 //===================================================
                 // baryon; by Lipei
                 //===================================================
 #ifdef NBMU
-                Q->Nbt[s] += q->Nbt[s];
-                Q->Nbt[s] /= 2;
+                Q->Nbt[s]   += q->Nbt[s];
+                Q->Nbt[s]   /= 2;
 #endif
 #ifdef VMU
-                Q->nbt[s] += q->nbt[s];
-                Q->nbt[s] /= 2;
-                Q->nbx[s] += q->nbx[s];
-                Q->nbx[s] /= 2;
-                Q->nby[s] += q->nby[s];
-                Q->nby[s] /= 2;
-                Q->nbn[s] += q->nbn[s];
-                Q->nbn[s] /= 2;
+                Q->nbt[s]   += q->nbt[s];
+                Q->nbt[s]   /= 2;
+                Q->nbx[s]   += q->nbx[s];
+                Q->nbx[s]   /= 2;
+                Q->nby[s]   += q->nby[s];
+                Q->nby[s]   /= 2;
+                Q->nbn[s]   += q->nbn[s];
+                Q->nbn[s]   /= 2;
 #endif
             }
 		}
@@ -856,15 +746,17 @@ void * latticeParams, void * hydroParams
 	//===================================================
     
 	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
-	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx);
-	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy);
-    eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz);
+	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
+	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
+    eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
     
 
 	t+=dt;
 
+
 	setInferredVariablesKernel(qS, e, p, uS, t, latticeParams, rhob);//rhob by lipei
 
+    
 #ifdef REGULATE_DISSIPATIVE_CURRENTS
 	regulateDissipativeCurrents(t, qS, e, p, uS, ncx, ncy, ncz);
 #endif
@@ -876,15 +768,18 @@ void * latticeParams, void * hydroParams
 	//===================================================
     
 	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
-	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx);
-	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy);
-	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz);
+	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
+	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
+	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
 	swapFluidVelocity(&up, &u);
+    
+    
 	setInferredVariablesKernel(Q, e, p, u, t, latticeParams, rhob);//rhob by lipei
-
+    
+    
 #ifdef REGULATE_DISSIPATIVE_CURRENTS
 	regulateDissipativeCurrents(t, Q, e, p, u, ncx, ncy, ncz);
 #endif
