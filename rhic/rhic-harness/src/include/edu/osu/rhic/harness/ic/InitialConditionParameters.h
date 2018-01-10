@@ -15,8 +15,8 @@ struct InitialConditionParameters
 	int initialConditionType;
 
 	int numberOfNucleonsPerNuclei;
-    
-    int particleSourceType;//Lipei
+
+    int sourceType;//Lipei
     double initialBaryonDensity;//Lipei
 
 	double initialEnergyDensity;

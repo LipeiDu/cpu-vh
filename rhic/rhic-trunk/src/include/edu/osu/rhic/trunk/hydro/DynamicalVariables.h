@@ -68,7 +68,7 @@
 
 #define PRECISION double
 
-typedef struct 
+typedef struct
 {
 	PRECISION *ttt;
 	PRECISION *ttx;
@@ -101,7 +101,7 @@ typedef struct
 #endif
 } CONSERVED_VARIABLES;
 
-typedef struct 
+typedef struct
 {
 	PRECISION *ut;
 	PRECISION *ux;
@@ -111,18 +111,18 @@ typedef struct
 
 typedef struct
 {
-    PRECISION *partt;
-    PRECISION *partx;
-    PRECISION *party;
-    PRECISION *partn;
-    PRECISION *partb;
-} PARTICLE_SOURCE;//lipei
+    PRECISION *sourcet;
+    PRECISION *sourcex;
+    PRECISION *sourcey;
+    PRECISION *sourcen;
+    PRECISION *sourceb;
+} DYNAMICAL_SOURCE;//lipei
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
 extern PRECISION *e, *p;
 extern PRECISION *rhob;//Lipei
-extern PARTICLE_SOURCE *Part;//Lipei
+extern DYNAMICAL_SOURCE *Source;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
 
@@ -132,26 +132,26 @@ void setConservedVariables(double t, void * latticeParams);
 void setCurrentConservedVariables();
 void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) ;
 
-void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q, 
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
+void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
+PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
 PRECISION * const __restrict__ rhob//by Lipei
 );
 
-void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q, 
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
+void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q,
+PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
 PRECISION * const __restrict__ rhob//by Lipei
 );
 
-void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q, 
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
+void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q,
+PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
 PRECISION * const __restrict__ rhob//by Lipei
 );
 
-void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q, 
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
+void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q,
+PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
 PRECISION * const __restrict__ rhob//by Lipei
 );

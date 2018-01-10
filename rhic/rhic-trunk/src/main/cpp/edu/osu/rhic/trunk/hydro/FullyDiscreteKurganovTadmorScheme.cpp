@@ -89,7 +89,7 @@ const PRECISION * const __restrict__ rhob//rhob by Lipei
                 Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Part, rhob);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob);
                 //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
