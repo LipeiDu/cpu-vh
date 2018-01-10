@@ -112,7 +112,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   /************************************************************************************\
   * initialize cornelius for freezeout surface finding
   /************************************************************************************/
-    
+
   //see example_4d() in example_cornelius
   //this works only for full 3+1 d simulation? need to find a way to generalize to n+1 d
   int dim;
@@ -162,7 +162,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   ofstream freezeoutSurfaceFile;
   if (FOFORMAT == 0) freezeoutSurfaceFile.open("output/freezeoutSurface.dat");
   else freezeoutSurfaceFile.open("output/freezeoutSurface.dat", ios::binary);
-    
+
   /************************************************************************************\
   * Fluid dynamic initialization
   /************************************************************************************/
@@ -194,8 +194,6 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // evolve in time
   for (int n = 1; n <= nt+1; ++n)
   {
-
-      
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0) {
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\t",
@@ -207,9 +205,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       //break;
       //}
     }
-      
 
-      
     /************************************************************************************\
     * Freeze-out finder
     /************************************************************************************/
@@ -455,6 +451,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     /************************************************************************************/
 
     t1 = std::clock();
+    setDynamicalSources(latticeParams, initCondParams); //set hydro source terms from external code
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
     double delta_time = (t2 - t1) / (double)(CLOCKS_PER_SEC / 1000);
@@ -463,7 +460,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     ++nsteps;
 
     setCurrentConservedVariables();
-      
+
     t = t0 + n * dt;
   }
   printf("Average time/step: %.3f ms\n",totalTime/((double)nsteps));

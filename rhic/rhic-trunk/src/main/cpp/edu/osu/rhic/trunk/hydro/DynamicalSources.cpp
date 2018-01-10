@@ -76,9 +76,9 @@ void noSource(void * latticeParams, void * initCondParams)
                 Source->sourcey[s] = 0;
                 Source->sourcen[s] = 0;
                 Source->sourceb[s] = 0;
-            }
-        }
-    }
+            }//k
+        }//j
+    }//i
 }
 
 /*********************************************************************************************************\
@@ -104,4 +104,34 @@ void setSource(void * latticeParams, void * initCondParams, void * hydroParams)
             printf("dynamical sources initialized.\n");
             return;}
 	}
+}
+
+void setDynamicalSources(void * latticeParams, void * initCondParams)
+{
+	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+
+	int nx = lattice->numLatticePointsX;
+	int ny = lattice->numLatticePointsY;
+	int nz = lattice->numLatticePointsRapidity;
+
+	PRECISION dummy = updateDynamicalSources();
+
+	for(int i = 2; i < nx+2; ++i){
+			for(int j = 2; j < ny+2; ++j){
+					for(int k = 2; k < nz+2; ++k){
+							int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+							Source->sourcet[s] = dummy;
+							Source->sourcex[s] = dummy;
+							Source->sourcey[s] = dummy;
+							Source->sourcen[s] = dummy;
+							Source->sourceb[s] = dummy;
+					}//k
+			}//j
+	}//i
+}
+
+PRECISION updateDynamicalSources()
+{
+	return 0.0;
 }

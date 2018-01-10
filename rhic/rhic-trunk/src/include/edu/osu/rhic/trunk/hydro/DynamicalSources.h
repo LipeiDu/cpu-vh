@@ -11,5 +11,6 @@
 void readInSource(void * latticeParams, void * initCondParams);
 void noSource(void * latticeParams, void * initCondParams);
 void setSource(void * latticeParams, void * initCondParams, void * hydroParams);
-
+void setDynamicalSources(void * latticeParams, void * initCondParams); //function to set dynamical source terms for stress tensor and baryon current
+PRECISION updateDynamicalSources(); //this function reads in source terms from external code
 #endif /* SOURCEPART_H_ */
