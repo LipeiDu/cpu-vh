@@ -49,7 +49,7 @@ void readInSource(void * latticeParams, void * initCondParams)
             for(int k = 2; k < nz+2; ++k){
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                fscanf(sourcefile,"%lf %lf %lf %lf %lf", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
-               printf("%lf %lf %lf %lf %lf\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
+               //printf("%lf %lf %lf %lf %lf\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
              }
           }
        }
