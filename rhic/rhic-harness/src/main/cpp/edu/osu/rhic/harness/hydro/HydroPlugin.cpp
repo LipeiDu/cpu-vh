@@ -59,13 +59,13 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   /************************************************************************************\
    * baryon; by Lipei
   /************************************************************************************/
-  //output(rhob, t, outputDir, "rhob", latticeParams);
+  output(rhob, t, outputDir, "rhob", latticeParams);
 #ifdef NBMU
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
 #endif
 #ifdef VMU
-  //output(q->nbt, t, outputDir, "nbt", latticeParams);
-  //output(q->nbx, t, outputDir, "nbx", latticeParams);
+  output(q->nbt, t, outputDir, "nbt", latticeParams);
+  output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
   //output(q->nbn, t, outputDir, "nbn", latticeParams);
 #endif

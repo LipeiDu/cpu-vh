@@ -10,8 +10,7 @@
 
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
 
-void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, 
+void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION * const __restrict__ uy, PRECISION * const __restrict__ un,
 PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob by Lipei
 );

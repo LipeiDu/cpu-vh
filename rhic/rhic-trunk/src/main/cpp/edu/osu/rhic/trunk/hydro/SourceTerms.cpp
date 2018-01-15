@@ -21,7 +21,7 @@
 
 //#define USE_CARTESIAN_COORDINATES
 
-// parameters for the analytic parameterization of the bulk viscosity \zeta/S
+//parameters for the analytic parameterization of the bulk viscosity \zeta/S
 #define A_1 -13.77
 #define A_2 27.55
 #define A_3 13.45
@@ -51,21 +51,17 @@ const PRECISION tau_pipi = 1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
-//Baryon related; Lipei
-//const PRECISION tau_n = 1.0;
-const PRECISION delta_nn = 0.5;
-const PRECISION lambda_nn = 1.0;
-//const PRECISION kappa_n = 1.0;
-const PRECISION Cb = 1.0;
+//Transport coefficents of the baryon evolution; Lipei
+#define Cb 4.0
 
-inline PRECISION baryonRelaxationTime(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
-    PRECISION cotangent_alpha = cos(mub/T)/sin(mub/T);
-    if (isnan(cotangent_alpha)) printf("Cotangent alpha_B is nan.\n");
-    return Cb/T * rhob * (0.3333333*cotangent_alpha - rhob*T/(e+p));
+inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
+    PRECISION alphaB = mub/T;
+    PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
+    return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
-void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
-        PRECISION nbt, PRECISION nbx, PRECISION nby, PRECISION nbn, PRECISION rhob, PRECISION mub, PRECISION Nablat_mub_over_t, PRECISION Nablax_mub_over_t, PRECISION Nablay_mub_over_t, PRECISION Nablan_mub_over_t,//nbmuRHS & nbmu & rhob for baryon by Lipei
+void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
+        PRECISION nbt, PRECISION nbx, PRECISION nby, PRECISION nbn, PRECISION rhob, PRECISION mub, PRECISION Nablat_alphaB, PRECISION Nablax_alphaB, PRECISION Nablay_alphaB, PRECISION Nablan_alphaB, PRECISION T,//nbmuRHS & nbmu & rhob for baryon by Lipei
 		PRECISION t, PRECISION e, PRECISION p,
 		PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un, PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 		PRECISION pitt, PRECISION pitx, PRECISION pity,
@@ -78,7 +74,7 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * 
 	/*********************************************************\
 	 * Temperature dependent shear transport coefficients
 	/*********************************************************/
-	PRECISION T = effectiveTemperature(e);
+    //PRECISION T = effectiveTemperature(e); T as an input now, by Lipei
 	PRECISION taupiInv = T / 5  / d_etabar;
 	PRECISION beta_pi = (e + p) / 5;
 
@@ -227,34 +223,6 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * 
 	/*********************************************************\
 	 * I
 	/*********************************************************/
-//	PRECISION ps = 0;
-/*
-//	PRECISION ps = pitt*stt + 2*(pixy*sxy - pitx*stx - pity*sty + (pixn*sxn + piyn*syn - pitn*stn)*t2) + pixx*sxx + piyy*syy + pinn*snn*t2*t2;
-	PRECISION ps = pitt*stt-2*pitx*stx-2*pity*sty+pixx*sxx+2*pixy*sxy+piyy*syy-2*pitn*stn*t2+2*pixn*sxn*t2+2*piyn*syn*t2+pinn*snn*t2*t2;
-	PRECISION I4tt = 0;
-	PRECISION I4tx = 0;
-	PRECISION I4ty = 0;
-	PRECISION I4tn = 0;
-	PRECISION I4xx = 0;
-	PRECISION I4xy = 0;
-	PRECISION I4xn = 0;
-	PRECISION I4yy = 0;
-	PRECISION I4yn = 0;
-	PRECISION I4nn = 0;
-//*/
-/*
-	PRECISION I3tt = 0;
-	PRECISION I3tx = 0;
-	PRECISION I3ty = 0;
-	PRECISION I3tn = 0;
-	PRECISION I3xx = 0;
-	PRECISION I3xy = 0;
-	PRECISION I3xn = 0;
-	PRECISION I3yy = 0;
-	PRECISION I3yn = 0;
-	PRECISION I3nn = 0;
-//*/
-
 	PRECISION Itt = I1tt + delta_pipi * I2tt - I3tt + tau_pipi * I4tt - lambda_piPi * Pi * stt;
 	PRECISION Itx = I1tx + delta_pipi * I2tx - I3tx + tau_pipi * I4tx - lambda_piPi * Pi * stx;
 	PRECISION Ity = I1ty + delta_pipi * I2ty - I3ty + tau_pipi * I4ty - lambda_piPi * Pi * sty;
@@ -308,8 +276,10 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * 
      * for the diffusion current of baryon, by Lipei
     /*********************************************************/
 
-    PRECISION kappa_n = 1.0;//baryonRelaxationTime(T, rhob, mub, e, p);
-    PRECISION tau_n = 1.0;//Cb/T;
+    PRECISION kappaB = 1.0;//Cb * rhob/mub;//baryonDiffusionCoefficient(T, rhob, mub, e, p);
+    PRECISION tau_n = Cb/T;
+    PRECISION delta_nn = tau_n;
+    PRECISION lambda_nn = 0.60 * tau_n;
 
     PRECISION NBI1t = ut * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
     PRECISION NBI1x = ux * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
@@ -327,12 +297,14 @@ void setPimunuSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * 
     PRECISION NBI4x = lambda_nn/tau_n * (stx * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
     PRECISION NBI4y = lambda_nn/tau_n * (sty * nbt - sxy * nbx - syy * nby - t2 * syn * nbn);
     PRECISION NBI4n = lambda_nn/tau_n * (stn * nbt - sxn * nbx - syn * nby - t2 * snn * nbn);
+    PRECISION GBt   = -t * un/ut * nbn;
+    PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
 
 #ifdef VMU
-    nbmuRHS[0] = 1/ut * (1/tau_n * nbt -1/tau_n * kappa_n * Nablat_mub_over_t + NBI1t + NBI2t + NBI3t + NBI4t - 1/tau_n * t * un * nbn) ;//+ ut * dkvk;
-    nbmuRHS[1] = 1/ut * (1/tau_n * nbx -1/tau_n * kappa_n * Nablax_mub_over_t + NBI1x + NBI2x + NBI3x + NBI4x) ;//+ ux * dkvk;
-    nbmuRHS[2] = 1/ut * (1/tau_n * nby -1/tau_n * kappa_n * Nablay_mub_over_t + NBI1y + NBI2y + NBI3y + NBI4y) ;//+ uy * dkvk;
-    nbmuRHS[3] = 1/ut * (1/tau_n * nbn -1/tau_n * kappa_n * Nablan_mub_over_t + NBI1n + NBI2n + NBI3n + NBI4n - 1/tau_n * (1/t * ut * nbn + 1/t * un * nbt)) ;//+ un * dkvk;
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
 #endif
 }
 
@@ -359,7 +331,7 @@ PRECISION d_dx
     // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
     //=========================================================
 #ifdef PI
-    ptr+=5;
+    ptr+=5; // here starts with Nbt
 #endif
 #ifdef VMU
     ptr+=5; // increased by 5 to start with nbt
@@ -372,7 +344,7 @@ PRECISION d_dx
 	PRECISION ux = u->ux[s];
 
 	//=========================================================
-	// set dx terms in the source terms
+	// set dx terms in the source terms of T^\tau\mu
 	//=========================================================
 	PRECISION vx = ux / ut;
 #ifdef PIMUNU
@@ -396,7 +368,7 @@ PRECISION d_dx
     // set dx terms in the source terms of baryon current; by Lipei
     //=========================================================
     //above source terms are for T^{\mu\nu}; but S is defined to have components for  pi^{\mu\nu} also; below are sources for nb^\mu; by Lipei
-    //the demension of S was 4+1+10; now it's 5+1+10+4 to include baryon compoments by Lipei
+    //the demension of S was 4+1+10; now it's 5+1+10+4 to include baryon compoments; by Lipei
     //only one component for the conservation law of baryon number; no need for baryon diffusion currents
 #ifdef NBMU
 #ifdef VMU
@@ -673,8 +645,9 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     S[NUMBER_CONSERVED_VARIABLES] = Source->sourceb[s] - Nbt/t + dkvk*nbt;
 #endif
 
+    //Calculate the gradient of chemical potential to temperature ratio
 #ifdef NBMU
-    PRECISION rhob    = rhobvec[s];
+    PRECISION rhobs   = rhobvec[s];
     PRECISION rhobsp1 = rhobvec[s+1];
     PRECISION rhobsm1 = rhobvec[s-1];
     PRECISION rhobspd = rhobvec[s+d_ncx];
@@ -690,7 +663,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION esps = e[s+stride];
     PRECISION esms = e[s-stride];
 
-    PRECISION mub    = chemicalPotential(es, rhob);
+    PRECISION mubs   = chemicalPotential(es, rhobs);
     PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1);
     PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1);
     PRECISION mubspd = chemicalPotential(espd, rhobspd);
@@ -698,11 +671,12 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION mubsps = chemicalPotential(esps, rhobsps);
     PRECISION mubsms = chemicalPotential(esms, rhobsms);
 
+    PRECISION dtmub = 0;//need to be fixed
     PRECISION dxmub = (mubsp1 - mubsm1) * facX;
     PRECISION dymub = (mubspd - mubsmd) * facY;
     PRECISION dnmub = (mubsps - mubsms) * facZ;
 
-    PRECISION T    = effectiveTemperature(es, rhob);
+    PRECISION T    = effectiveTemperature(es, rhobs);
     PRECISION Tsp1 = effectiveTemperature(esp1, rhobsp1);
     PRECISION Tsm1 = effectiveTemperature(esm1, rhobsm1);
     PRECISION Tspd = effectiveTemperature(espd, rhobspd);
@@ -710,48 +684,50 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Tsps = effectiveTemperature(esps, rhobsps);
     PRECISION Tsms = effectiveTemperature(esms, rhobsms);
 
+    PRECISION dtT = 0;//need to be fixed
     PRECISION dxT = (Tsp1 - Tsm1) * facX;
     PRECISION dyT = (Tspd - Tsmd) * facY;
     PRECISION dnT = (Tsps - Tsms) * facZ;
 
-    PRECISION ukdk_mub = ux * dxmub + uy * dymub + pow(t,2) * un * dnmub;
-    PRECISION ukdk_T = ux * dxT + uy * dyT + pow(t,2) * un * dnT;
-    PRECISION Nablat_mub = - ut * (-ukdk_mub);
-    PRECISION Nablax_mub = dxmub - ux * (-ukdk_mub);
-    PRECISION Nablay_mub = dymub - uy * (-ukdk_mub);
-    PRECISION Nablan_mub = dnmub - un * (-ukdk_mub);
-    PRECISION Nablat_T = - ut * (-ukdk_T);
-    PRECISION Nablax_T = dxT - ux * (-ukdk_T);
-    PRECISION Nablay_T = dyT - uy * (-ukdk_T);
-    PRECISION Nablan_T = dnT - un * (-ukdk_T);
+    PRECISION ukdk_mub = -ut * dtmub + ux * dxmub + uy * dymub + pow(t,2) * un * dnmub;
+    PRECISION ukdk_T   = -ut * dtT   + ux * dxT   + uy * dyT   + pow(t,2) * un * dnT;
+    PRECISION Nablat_mub = dtmub + ut * ukdk_mub;
+    PRECISION Nablax_mub = dxmub + ux * ukdk_mub;
+    PRECISION Nablay_mub = dymub + uy * ukdk_mub;
+    PRECISION Nablan_mub = dnmub + un * ukdk_mub;
+    PRECISION Nablat_T = dtT + ut * ukdk_T;
+    PRECISION Nablax_T = dxT + ux * ukdk_T;
+    PRECISION Nablay_T = dyT + uy * ukdk_T;
+    PRECISION Nablan_T = dnT + un * ukdk_T;
 
-    PRECISION Nablat_mub_over_t = 0;
-    PRECISION Nablax_mub_over_t = 1/T * Nablax_mub - mub/pow(T,2) * Nablax_T;
-    PRECISION Nablay_mub_over_t = 1/T * Nablay_mub - mub/pow(T,2) * Nablay_T;
-    PRECISION Nablan_mub_over_t = 1/T * Nablan_mub - mub/pow(T,2) * Nablan_T;
+    PRECISION Nablat_alphaB = 1/T * Nablat_mub - mubs/pow(T,2) * Nablat_T;;
+    PRECISION Nablax_alphaB = 1/T * Nablax_mub - mubs/pow(T,2) * Nablax_T;
+    PRECISION Nablay_alphaB = 1/T * Nablay_mub - mubs/pow(T,2) * Nablay_T;
+    PRECISION Nablan_alphaB = 1/T * Nablan_mub - mubs/pow(T,2) * Nablan_T;
 #else
-    PRECISION rhob = 0;
-    PRECISION mub  = 0;
-    PRECISION Nablat_mub_over_t = 0;
-    PRECISION Nablax_mub_over_t = 0;
-    PRECISION Nablay_mub_over_t = 0;
-    PRECISION Nablan_mub_over_t = 0;
+    PRECISION rhobs = 0;
+    PRECISION mubs  = 0;
+    PRECISION Nablat_alphaB = 0;
+    PRECISION Nablax_alphaB = 0;
+    PRECISION Nablay_alphaB = 0;
+    PRECISION Nablan_alphaB = 0;
 #endif
+    
 	//=========================================================
-	// \pi^{\mu\nu} source terms (and baryon source terms)
+	// \pi^{\mu\nu} source terms and nb^\mu source terms
 	//=========================================================
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
     PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];//Lipei
-	setPimunuSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhob, mub, Nablat_mub_over_t, Nablax_mub_over_t, Nablay_mub_over_t, Nablan_mub_over_t,//nbmuRHS, nb_mu, rhob for baryon, by Lipei
-                         t, e[s], p, ut, ux, uy, un, utp, uxp, uyp, unp,
+	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB, T,//nbmuRHS, nb_mu, rhob for baryon, by Lipei
+                         t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp,
 			pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
 #endif
 #ifdef VMU
-    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//n=15 from baryon current, see above; n from 16 to 19 of baryon diffusion current; Lipei
+    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//n=15 for baryon current, see above; n from 16 to 19 for baryon diffusion currents; Lipei
 #endif
 #endif
 }

@@ -93,7 +93,6 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	PRECISION pity = 0;
 	PRECISION pitn = 0;
 #endif
-	// \Pi
 #ifdef PI
 	PRECISION Pi = q[14];
 #else
@@ -116,35 +115,6 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
     PRECISION nby = 0;
     PRECISION nbn = 0;
 #endif
-/****************************************************************************\
-#ifndef IDEAL
-	PRECISION pixx = q[8];
-	PRECISION pixy = q[9];
-	PRECISION pixn = q[10];
-	PRECISION piyy = q[11];
-	PRECISION piyn = q[12];
-	PRECISION pinn = q[13];
-	PRECISION xi0 = (PRECISION)(0.05);
-	PRECISION rhomax = (PRECISION)(0.7);
-	PRECISION t2 = t*t;
-	PRECISION pipi = pitt*pitt-2*pitx*pitx-2*pity*pity+pixx*pixx+2*pixy*pixy+piyy*piyy-2*pitn*pitn*t2+2*pixn*pixn*t2+2*piyn*piyn*t2+pinn*pinn*t2*t2;
-	if(isnan(pipi)==1) printf("found pipi Nan\n");
-	PRECISION spipi = sqrtf(fabsf(pipi+3*Pi*Pi));
-	PRECISION pimumu = pitt - pixx - piyy - pinn*t*t;
-
-	PRECISION pPrev = equilibriumPressure(ePrev);
-	PRECISION a1 = spipi/rhomax/sqrtf(ePrev*ePrev+3*pPrev*pPrev);
-	PRECISION a2 = pimumu/xi0/rhomax/spipi;
-	PRECISION rho = fmaxf(a1,a2);
-	PRECISION fac = tanh(rho)/rho;
-	if(fabsf(rho)<1.e-7) fac = 1;
-	pitt *= fac;
-	pitx *= fac;
-	pity *= fac;
-	pitn *= fac;
-#endif
-/****************************************************************************/
-
     
 	PRECISION M0 = ttt - pitt;
 	PRECISION M1 = ttx - pitx;
@@ -152,6 +122,9 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	PRECISION M3 = ttn - pitn;
 	PRECISION M = M1 * M1 + M2 * M2 + t * t * M3 * M3;
 
+    //===================================================================
+    // When baryon density is not involved in the root solver
+    //===================================================================
 #ifndef RootSolver_with_Baryon
     
 #ifdef Pi
@@ -185,12 +158,13 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	*uy = M2 * E2;
 	*un = M3 * E2;
 
-    //baryon by Lipei; to be fixed
-    *rhob = rhobPrev;
+    //baryon by Lipei; baryon density is evolved as a background field
+    *rhob = 0.5*(Nbt - nbt)/ *ut;
     
-/****************************************************************************/
+    //===================================================================
+    // When baryon number is involved in the root solver
+    //===================================================================
 #else
-    
     
     M = sqrt(M);
 #ifdef Pi
@@ -255,21 +229,18 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 q_s[5] = q->pitx[s];
                 q_s[6] = q->pity[s];
                 q_s[7] = q->pitn[s];
-                /****************************************************************************/
                 q_s[8] = q->pixx[s];
                 q_s[9] = q->pixy[s];
                 q_s[10] = q->pixn[s];
                 q_s[11] = q->piyy[s];
                 q_s[12] = q->piyn[s];
                 q_s[13] = q->pinn[s];
-                /****************************************************************************/
 #endif
 #ifdef PI
                 q_s[14] = q->Pi[s];
 #endif
 #ifdef NBMU
                 q_s[NUMBER_CONSERVED_VARIABLES] = q->Nbt[s];
-                
 #endif
 #ifdef VMU
                 q_s[NUMBER_CONSERVED_VARIABLES+1] = q->nbt[s];
@@ -286,8 +257,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 u->ux[s] = ux;
                 u->uy[s] = uy;
                 u->un[s] = un;
-                
-                rhob[s] = _rhob;//Lipei
+                rhob[s]  = _rhob;//Lipei
                 
             }
         }
