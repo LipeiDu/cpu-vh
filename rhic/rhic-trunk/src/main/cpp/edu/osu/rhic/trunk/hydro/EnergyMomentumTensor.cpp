@@ -121,6 +121,10 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	PRECISION M2 = tty - pity;
 	PRECISION M3 = ttn - pitn;
 	PRECISION M = M1 * M1 + M2 * M2 + t * t * M3 * M3;
+    
+    if (isnan(M)) {
+        printf("M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
+    }//Lipei
 
     //===================================================================
     // When baryon density is not involved in the root solver
@@ -159,7 +163,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	*un = M3 * E2;
 
     //baryon by Lipei; baryon density is evolved as a background field
-    *rhob = 0.5*(Nbt - nbt)/ *ut;
+    *rhob = (Nbt - nbt)/ *ut;
     
     //===================================================================
     // When baryon number is involved in the root solver
@@ -182,7 +186,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
     }
     
     *e    = M0 - v0 * M;
-    *rhob = (Nbt - nbt) * sqrt(1 - v0*v0);
+    *rhob = delta_nbt * sqrt(1 - v0*v0);
     *p = equilibriumPressure(*e, *rhob);
     if (*e < 1.e-7) {
         *e = 1.e-7;

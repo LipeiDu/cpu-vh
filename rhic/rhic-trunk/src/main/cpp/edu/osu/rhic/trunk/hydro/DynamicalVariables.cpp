@@ -15,10 +15,10 @@ CONSERVED_VARIABLES *q,*Q,*qS;
 
 FLUID_VELOCITY *u,*up,*uS;
 
-PRECISION *e, *p;
+PRECISION *e, *ep, *eS, *p;
 
 DYNAMICAL_SOURCE *Source;//Lipei
-PRECISION *rhob;//Lipei
+PRECISION *rhob, *rhobp, *rhobS;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
@@ -36,11 +36,15 @@ void allocateHostMemory(int len) {
     Source->sourceb = (PRECISION *)calloc(len, bytes);//Lipei
     // baryon density
     rhob = (PRECISION *)calloc(len, bytes);//Lipei
+    rhobp= (PRECISION *)calloc(len, bytes);//Lipei
+    rhobS= (PRECISION *)calloc(len, bytes);//Lipei
 
 	//=======================================================
 	// Primary variables
 	//=======================================================
 	e = (PRECISION *)calloc(len, bytes);
+    ep= (PRECISION *)calloc(len, bytes);//Lipei
+    eS= (PRECISION *)calloc(len, bytes);//Lipei
 	p = (PRECISION *)calloc(len, bytes);
 	// fluid velocity at current time step
 	u = (FLUID_VELOCITY *)calloc(1, sizeof(FLUID_VELOCITY));
@@ -81,7 +85,6 @@ void allocateHostMemory(int len) {
 	q->piyn = (PRECISION *)calloc(len, bytes);
 	q->pinn = (PRECISION *)calloc(len, bytes);
 #endif
-	// allocate space for \Pi
 #ifdef PI
 	q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
@@ -115,7 +118,6 @@ void allocateHostMemory(int len) {
 	Q->piyn = (PRECISION *)calloc(len, bytes);
 	Q->pinn = (PRECISION *)calloc(len, bytes);
 #endif
-	// allocate space for \Pi
 #ifdef PI
 	Q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
@@ -149,7 +151,6 @@ void allocateHostMemory(int len) {
 	qS->piyn = (PRECISION *)calloc(len, bytes);
 	qS->pinn = (PRECISION *)calloc(len, bytes);
 #endif
-	// allocate space for \Pi
 #ifdef PI
 	qS->Pi = (PRECISION *)calloc(len, bytes);
 #endif
@@ -388,12 +389,21 @@ void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) {
 	*arr2 = tmp;
 }
 
+//swap energy density or baryon density; Lipei
+void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2) {
+    PRECISION *tmp = *arr1;
+    *arr1 = *arr2;
+    *arr2 = tmp;
+}
+
 void freeHostMemory() {
     free(Source->sourcet);//Lipei
     free(Source->sourcex);//Lipei
     free(Source->sourcey);//Lipei
     free(Source->sourcen);//Lipei
     free(rhob);//Lipei
+    free(rhobp);
+    free(rhobS);
     //baryon; Lipei
 #ifdef NBMU
     free(q->Nbt);
@@ -407,6 +417,8 @@ void freeHostMemory() {
 
 
 	free(e);
+    free(ep);//Lipei
+    free(eS);
 	free(p);
 	free(u->ut);
 	free(u->ux);

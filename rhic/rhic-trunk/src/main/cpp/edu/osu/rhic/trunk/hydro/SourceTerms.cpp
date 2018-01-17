@@ -36,6 +36,9 @@
 #define SIGMA_3 0.0025
 #define SIGMA_4 0.022
 
+//Transport coefficents of the baryon evolution; Lipei
+#define Cb 4.0
+
 inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 	PRECISION x = T/1.01355;
 	if(x > 1.05)
@@ -50,9 +53,6 @@ const PRECISION delta_pipi = 1.33333;
 const PRECISION tau_pipi = 1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
-
-//Transport coefficents of the baryon evolution; Lipei
-#define Cb 4.0
 
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
     PRECISION alphaB = mub/T;
@@ -276,7 +276,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
      * for the diffusion current of baryon, by Lipei
     /*********************************************************/
 
-    PRECISION kappaB = 1.0;//Cb * rhob/mub;//baryonDiffusionCoefficient(T, rhob, mub, e, p);
+    PRECISION kappaB = baryonDiffusionCoefficient(T, rhob, mub, e, p);
     PRECISION tau_n = Cb/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
@@ -514,9 +514,9 @@ PRECISION d_dz
 
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
-PRECISION t, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ pvec,
+PRECISION t, const PRECISION * const __restrict__ evec, PRECISION ep, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
-const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec//part & rhob by Lipei, PRECISION e is changed to be PRECISION  * const __restrict__ e
+const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, PRECISION rhobp//part & rhob by Lipei, PRECISION e is changed to be PRECISION  * const __restrict__ e
 ) {
 	//=========================================================
 	// conserved variables
@@ -582,7 +582,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 	PRECISION *uyvec = u->uy;
 	PRECISION *unvec = u->un;
 
-	PRECISION p = pvec[s];
+	PRECISION p  = pvec[s];
 	PRECISION ut = utvec[s];
 	PRECISION ux = uxvec[s];
 	PRECISION uy = uyvec[s];
@@ -618,7 +618,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 	//=========================================================
 	// T^{\mu\nu} source terms
 	//=========================================================
-	PRECISION tnn = Tnn(e[s],p+Pi,un,pinn,t);
+	PRECISION tnn = Tnn(evec[s],p+Pi,un,pinn,t);
 	PRECISION vx = ux/ut;
 	PRECISION vy = uy/ut;
 	PRECISION vn = un/ut;
@@ -655,13 +655,13 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION rhobsps = rhobvec[s+stride];
     PRECISION rhobsms = rhobvec[s-stride];
 
-    PRECISION es   = e[s];
-    PRECISION esp1 = e[s+1];
-    PRECISION esm1 = e[s-1];
-    PRECISION espd = e[s+d_ncx];
-    PRECISION esmd = e[s-d_ncx];
-    PRECISION esps = e[s+stride];
-    PRECISION esms = e[s-stride];
+    PRECISION es   = evec[s];
+    PRECISION esp1 = evec[s+1];
+    PRECISION esm1 = evec[s-1];
+    PRECISION espd = evec[s+d_ncx];
+    PRECISION esmd = evec[s-d_ncx];
+    PRECISION esps = evec[s+stride];
+    PRECISION esms = evec[s-stride];
 
     PRECISION mubs   = chemicalPotential(es, rhobs);
     PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1);
@@ -670,8 +670,9 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION mubsmd = chemicalPotential(esmd, rhobsmd);
     PRECISION mubsps = chemicalPotential(esps, rhobsps);
     PRECISION mubsms = chemicalPotential(esms, rhobsms);
+    PRECISION mubPs  = chemicalPotential(ep, rhobp);
 
-    PRECISION dtmub = 0;//need to be fixed
+    PRECISION dtmub = (mubs - mubPs)/d_dt;
     PRECISION dxmub = (mubsp1 - mubsm1) * facX;
     PRECISION dymub = (mubspd - mubsmd) * facY;
     PRECISION dnmub = (mubsps - mubsms) * facZ;
@@ -683,8 +684,9 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Tsmd = effectiveTemperature(esmd, rhobsmd);
     PRECISION Tsps = effectiveTemperature(esps, rhobsps);
     PRECISION Tsms = effectiveTemperature(esms, rhobsms);
+    PRECISION TPs  = effectiveTemperature(ep, rhobp);
 
-    PRECISION dtT = 0;//need to be fixed
+    PRECISION dtT = (T - TPs)/d_dt;
     PRECISION dxT = (Tsp1 - Tsm1) * facX;
     PRECISION dyT = (Tspd - Tsmd) * facY;
     PRECISION dnT = (Tsps - Tsms) * facZ;

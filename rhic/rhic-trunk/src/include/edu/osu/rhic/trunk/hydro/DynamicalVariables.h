@@ -9,14 +9,17 @@
 #define DYNAMICALVARIABLES_H_
 
 
-#define NUMBER_CONSERVATION_LAWS 4
-
 #define PIMUNU
 #define PI
 
 //Lipei
 #define NBMU
 #define VMU
+
+/*********************************************************/
+//Conservation laws//
+
+#define NUMBER_CONSERVATION_LAWS 4
 
 #ifndef NBMU
 #define NUMBER_BARYON_COMPONENTS 0
@@ -27,8 +30,9 @@
 #define ALL_NUMBER_CONSERVATION_LAWS (NUMBER_CONSERVATION_LAWS+NUMBER_BARYON_COMPONENTS)
 //Lipei
 
-
 /*********************************************************/
+//Pressures//
+
 #ifndef PI
 #define NUMBER_PI_COMPONENTS 0
 #else
@@ -36,19 +40,22 @@
 #endif
 // bulk pressure; Lipei's comment
 
-#ifndef VMU
-#define NUMBER_PROPAGATED_VMU_COMPONENTS 0
-#else
-#define NUMBER_PROPAGATED_VMU_COMPONENTS 4
-#endif
-// baryon diffusion current; Lipei's comment
-
 #ifndef PIMUNU
 #define NUMBER_PROPAGATED_PIMUNU_COMPONENTS 0
 #else
 #define NUMBER_PROPAGATED_PIMUNU_COMPONENTS 10
 #endif
 // shear stress tensor; Lipei's comment
+
+/*********************************************************/
+//Dissipative currents//
+
+#ifndef VMU
+#define NUMBER_PROPAGATED_VMU_COMPONENTS 0
+#else
+#define NUMBER_PROPAGATED_VMU_COMPONENTS 4
+#endif
+// baryon diffusion current; Lipei's comment
 
 #define NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
 
@@ -121,8 +128,8 @@ typedef struct
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
-extern PRECISION *e, *p;
-extern PRECISION *rhob;//Lipei
+extern PRECISION *e, *ep, *eS, *p;
+extern PRECISION *rhob, *rhobp, *rhobS;//Lipei
 extern DYNAMICAL_SOURCE *Source;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
@@ -132,6 +139,7 @@ void allocateHostMemory(int len);
 void setConservedVariables(double t, void * latticeParams);
 void setCurrentConservedVariables();
 void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) ;
+void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2);//Lipei
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,

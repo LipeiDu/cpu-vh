@@ -267,9 +267,9 @@ PRECISION effectiveTemperature(PRECISION e) {
 }
 
 PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {//Lipei for testing only
-    double T = 1.0;//effectiveTemperature(e, rhob);
-    double nb = (double) rhob;
-    return 0.0;//(-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) +
+    //double T = effectiveTemperature(e);
+    //double nb = (double) rhob;
+    return 1.0;//(-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) +
     //1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
 }
 

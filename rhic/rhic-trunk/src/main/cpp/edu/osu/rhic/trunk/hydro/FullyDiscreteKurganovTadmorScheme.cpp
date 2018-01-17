@@ -32,7 +32,7 @@ using namespace std;//Lipei
 void setNeighborCellsJK2(const PRECISION * const __restrict__ in, PRECISION * const __restrict__ out,
 int s, int ptr, int smm, int sm, int sp, int spp
 ) {
-	PRECISION data_ns = in[s];
+	PRECISION data_ns= in[s];
 	*(out + ptr    ) = in[smm];
 	*(out + ptr + 1) = in[sm];
 	*(out + ptr + 2) = data_ns;
@@ -42,10 +42,10 @@ int s, int ptr, int smm, int sm, int sp, int spp
 
 void eulerStepKernelSource(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
+const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ ep, const PRECISION * const __restrict__ p,
 const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
 int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
-const PRECISION * const __restrict__ rhob//rhob by Lipei
+const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ rhobp//ep, rhob, rhobp by Lipei
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
@@ -89,7 +89,7 @@ const PRECISION * const __restrict__ rhob//rhob by Lipei
                 Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, ep[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, rhobp[s]);
                 //Load part of the source of energy-momentum tensor and also the source terms of the stress tensor; Lipei's comment
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
@@ -616,7 +616,6 @@ int ncx, int ncy, int ncz
 }
 
 /**************************************************************************************************************************************************/
-#ifndef IDEAL
 void
 regulateDissipativeCurrents(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars,
@@ -715,7 +714,7 @@ int ncx, int ncy, int ncz
 		}
 	}
 }
-#endif
+
 /**************************************************************************************************************************************************/
 #ifndef IDEAL
 #define REGULATE_DISSIPATIVE_CURRENTS
@@ -745,8 +744,8 @@ void * latticeParams, void * hydroParams
 	// STEP 1:
 	//===================================================
     
-	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
-	eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
+	eulerStepKernelSource(t, q, qS, e, ep, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, rhobp);//ep, rhobp by lipei
+    eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
     eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
     
@@ -754,27 +753,29 @@ void * latticeParams, void * hydroParams
 	t+=dt;
 
 
-	setInferredVariablesKernel(qS, e, p, uS, t, latticeParams, rhob);//rhob by lipei
+	setInferredVariablesKernel(qS, eS, p, uS, t, latticeParams, rhobS);//rhob by lipei
 
     
 #ifdef REGULATE_DISSIPATIVE_CURRENTS
-	regulateDissipativeCurrents(t, qS, e, p, uS, ncx, ncy, ncz);
+	regulateDissipativeCurrents(t, qS, eS, p, uS, ncx, ncy, ncz);
 #endif
 
-	setGhostCells(qS, e, p, uS, latticeParams, rhob);
+	setGhostCells(qS, eS, p, uS, latticeParams, rhobS);
 
 	//===================================================
 	// STEP 2:
 	//===================================================
     
-	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob);
-	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
-	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
-	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
+	eulerStepKernelSource(t, qS, Q, eS, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhobS, rhob);//ep, rhobp by lipei
+	eulerStepKernelX(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dx, rhobS);
+	eulerStepKernelY(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dy, rhobS);
+	eulerStepKernelZ(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dz, rhobS);
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
 	swapFluidVelocity(&up, &u);
+    swapPrimaryVariables(&ep, &e);//Lipei
+    swapPrimaryVariables(&rhobp, &rhob);//Lipei
     
     
 	setInferredVariablesKernel(Q, e, p, u, t, latticeParams, rhob);//rhob by lipei
