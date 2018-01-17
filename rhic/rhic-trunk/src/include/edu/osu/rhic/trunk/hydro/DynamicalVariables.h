@@ -13,8 +13,8 @@
 #define PI
 
 //Lipei
-#define NBMU
-#define VMU
+//#define NBMU
+//#define VMU
 
 /*********************************************************/
 //Conservation laws//

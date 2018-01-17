@@ -28,6 +28,24 @@
  * g2 0.5
 /****************************************************************************/
 
+PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {//Lipei for testing only
+    //double T = effectiveTemperature(e);
+    //double nb = (double) rhob;
+    return 1.0;//(-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) +
+    //1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
+}
+
+PRECISION chemicalPotential(PRECISION e, PRECISION rhob, PRECISION T) {//Lipei for testing only
+    //double T = effectiveTemperature(e);
+    double nb = (double) rhob;
+    return (-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) +
+    1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
+}
+
+PRECISION dPdRhob(PRECISION e, PRECISION rhob){
+    return 1.0;
+}
+
 PRECISION equilibriumPressure(PRECISION e) {
 #ifndef CONFORMAL_EOS
     // Equation of state from the Wuppertal-Budapest collaboration
@@ -266,12 +284,7 @@ PRECISION effectiveTemperature(PRECISION e) {
 #endif
 }
 
-PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {//Lipei for testing only
-    //double T = effectiveTemperature(e);
-    //double nb = (double) rhob;
-    return 1.0;//(-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) +
-    //1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
-}
+
 
 PRECISION equilibriumEnergyDensity(PRECISION T) {
 #ifndef CONFORMAL_EOS

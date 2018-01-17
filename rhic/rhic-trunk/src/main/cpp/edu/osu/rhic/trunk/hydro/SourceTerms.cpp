@@ -663,20 +663,6 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION esps = evec[s+stride];
     PRECISION esms = evec[s-stride];
 
-    PRECISION mubs   = chemicalPotential(es, rhobs);
-    PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1);
-    PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1);
-    PRECISION mubspd = chemicalPotential(espd, rhobspd);
-    PRECISION mubsmd = chemicalPotential(esmd, rhobsmd);
-    PRECISION mubsps = chemicalPotential(esps, rhobsps);
-    PRECISION mubsms = chemicalPotential(esms, rhobsms);
-    PRECISION mubPs  = chemicalPotential(ep, rhobp);
-
-    PRECISION dtmub = (mubs - mubPs)/d_dt;
-    PRECISION dxmub = (mubsp1 - mubsm1) * facX;
-    PRECISION dymub = (mubspd - mubsmd) * facY;
-    PRECISION dnmub = (mubsps - mubsms) * facZ;
-
     PRECISION T    = effectiveTemperature(es, rhobs);
     PRECISION Tsp1 = effectiveTemperature(esp1, rhobsp1);
     PRECISION Tsm1 = effectiveTemperature(esm1, rhobsm1);
@@ -691,6 +677,20 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION dyT = (Tspd - Tsmd) * facY;
     PRECISION dnT = (Tsps - Tsms) * facZ;
 
+    PRECISION mubs   = chemicalPotential(es, rhobs, T);
+    PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1, T);
+    PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1, T);
+    PRECISION mubspd = chemicalPotential(espd, rhobspd, T);
+    PRECISION mubsmd = chemicalPotential(esmd, rhobsmd, T);
+    PRECISION mubsps = chemicalPotential(esps, rhobsps, T);
+    PRECISION mubsms = chemicalPotential(esms, rhobsms, T);
+    PRECISION mubPs  = chemicalPotential(ep, rhobp, TPs);
+    
+    PRECISION dtmub = (mubs - mubPs)/d_dt;
+    PRECISION dxmub = (mubsp1 - mubsm1) * facX;
+    PRECISION dymub = (mubspd - mubsmd) * facY;
+    PRECISION dnmub = (mubsps - mubsms) * facZ;
+    
     PRECISION ukdk_mub = -ut * dtmub + ux * dxmub + uy * dymub + pow(t,2) * un * dnmub;
     PRECISION ukdk_T   = -ut * dtT   + ux * dxT   + uy * dyT   + pow(t,2) * un * dnT;
     PRECISION Nablat_mub = dtmub + ut * ukdk_mub;
@@ -706,6 +706,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablax_alphaB = 1/T * Nablax_mub - mubs/pow(T,2) * Nablax_T;
     PRECISION Nablay_alphaB = 1/T * Nablay_mub - mubs/pow(T,2) * Nablay_T;
     PRECISION Nablan_alphaB = 1/T * Nablan_mub - mubs/pow(T,2) * Nablan_T;
+    //printf("Nablat_alphaB=%lf,\t Nablax_alphaB=%lf,\t Nablay_alphaB=%lf,\t Nablan_alphaB=%lf. \n", Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB);
 #else
     PRECISION rhobs = 0;
     PRECISION mubs  = 0;
@@ -713,6 +714,8 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablax_alphaB = 0;
     PRECISION Nablay_alphaB = 0;
     PRECISION Nablan_alphaB = 0;
+    PRECISION es = evec[s];
+    PRECISION T = effectiveTemperature(es, rhobs);
 #endif
     
 	//=========================================================
@@ -721,10 +724,10 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
     PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];//Lipei
-	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB, T,//nbmuRHS, nb_mu, rhob for baryon, by Lipei
+	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB, T,
                          t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp,
 			pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
-			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
+			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);//nbmuRHS, nb_mu, rhob for baryon, by Lipei
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
 #endif

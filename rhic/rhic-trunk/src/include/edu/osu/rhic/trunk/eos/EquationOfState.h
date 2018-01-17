@@ -26,6 +26,9 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION effectiveTemperature(PRECISION e);
 
 PRECISION chemicalPotential(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION chemicalPotential(PRECISION e, PRECISION rhob, PRECISION T);
+
+PRECISION dPdRhob(PRECISION e, PRECISION rhob);//rhob lipei
 
 PRECISION equilibriumEnergyDensity(PRECISION T);
 
