@@ -170,6 +170,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
   // Read in source terms from particles
+
+  getEquationOfState(latticeParams, initCondParams);//Lipei
+
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);

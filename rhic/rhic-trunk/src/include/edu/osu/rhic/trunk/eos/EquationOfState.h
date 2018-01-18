@@ -16,6 +16,9 @@
 //#define EOS_FACTOR 15.6269 // Nc=3, Nf=3
 #define EOS_FACTOR 13.8997 // Nc=3, Nf=2.5
 
+
+void getEquationOfState(void * latticeParams, void * initCondParams);//Lipei
+
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION equilibriumPressure(PRECISION e);
 

@@ -126,11 +126,19 @@ typedef struct
     PRECISION *sourceb;
 } DYNAMICAL_SOURCE;//lipei
 
+typedef struct
+{
+    PRECISION *chemicalPotential;
+    PRECISION *Pressure;
+    PRECISION *Temperature;
+} EQUATIONOFSTATE;//Lipei
+
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
 extern PRECISION *e, *ep, *eS, *p;
 extern PRECISION *rhob, *rhobp, *rhobS;//Lipei
 extern DYNAMICAL_SOURCE *Source;//Lipei
+extern EQUATIONOFSTATE *EOS;//lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
 
