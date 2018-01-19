@@ -164,7 +164,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	*un = M3 * E2;
 
     //baryon by Lipei; baryon density is evolved as a background field
-    *rhob = (Nbt - nbt)/ *ut;
+    *rhob = rhobPrev;
     
     //===================================================================
     // When baryon number is involved in the root solver

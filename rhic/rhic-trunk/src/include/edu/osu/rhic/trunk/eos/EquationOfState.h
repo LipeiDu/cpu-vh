@@ -17,7 +17,7 @@
 #define EOS_FACTOR 13.8997 // Nc=3, Nf=2.5
 
 
-void getEquationOfState(void * latticeParams, void * initCondParams);//Lipei
+void getEquationOfStateTable();//Lipei
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION equilibriumPressure(PRECISION e);
@@ -29,7 +29,6 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION effectiveTemperature(PRECISION e);
 
 PRECISION chemicalPotential(PRECISION e, PRECISION rhob);//rhob lipei
-PRECISION chemicalPotential(PRECISION e, PRECISION rhob, PRECISION T);
 
 PRECISION dPdRhob(PRECISION e, PRECISION rhob);//rhob lipei
 

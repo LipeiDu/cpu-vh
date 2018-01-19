@@ -128,17 +128,17 @@ typedef struct
 
 typedef struct
 {
-    PRECISION *chemicalPotential;
+    PRECISION *ChemicalPotential;
     PRECISION *Pressure;
     PRECISION *Temperature;
-} EQUATIONOFSTATE;//Lipei
+} EQUATION_OF_STATE;//Lipei
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS,*uSS;
 extern PRECISION *e, *ep, *eS, *p;
 extern PRECISION *rhob, *rhobp, *rhobS;//Lipei
 extern DYNAMICAL_SOURCE *Source;//Lipei
-extern EQUATIONOFSTATE *EOS;//lipei
+extern EQUATION_OF_STATE *EOState;//lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
 

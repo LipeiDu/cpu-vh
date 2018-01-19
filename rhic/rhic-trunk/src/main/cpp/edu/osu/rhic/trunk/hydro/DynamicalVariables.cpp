@@ -17,7 +17,7 @@ FLUID_VELOCITY *u,*up,*uS;
 
 PRECISION *e, *ep, *eS, *p;
 
-EQUATIONOFSTATE *EOS;//Lipei
+EQUATION_OF_STATE *EOState;//Lipei
 DYNAMICAL_SOURCE *Source;//Lipei
 PRECISION *rhob, *rhobp, *rhobS;//Lipei
 
@@ -40,12 +40,10 @@ void allocateHostMemory(int len) {
     rhobp= (PRECISION *)calloc(len, bytes);//Lipei
     rhobS= (PRECISION *)calloc(len, bytes);//Lipei
     // equation of state table
-#ifdef EOS_with_baryon
-    EOS = (EQUATIONOFSTATE *)calloc(1, sizeof(EQUATIONOFSTATE));
-    EOS->chemicalPotential = (PRECISION *)calloc(len, bytes);//Lipei
-    EOS->Pressure   = (PRECISION *)calloc(len, bytes);//Lipei
-    EOS->Temperature   = (PRECISION *)calloc(len, bytes);//Lipei
-#endif
+    EOState = (EQUATION_OF_STATE *)calloc(1, sizeof(EQUATION_OF_STATE));
+    EOState->ChemicalPotential = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->Pressure          = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->Temperature       = (PRECISION *)calloc(188580, bytes);//Lipei
     
 	//=======================================================
 	// Primary variables
@@ -409,11 +407,12 @@ void freeHostMemory() {
     free(Source->sourcex);//Lipei
     free(Source->sourcey);//Lipei
     free(Source->sourcen);//Lipei
-#ifdef EOS_with_baryon
-    free(EOS->chemicalPotential);//Lipei
-    free(EOS->Pressure);//Lipei
-    free(EOS->Temperature);//Lipei
-#endif
+    free(Source->sourceb);
+
+    free(EOState->ChemicalPotential);//Lipei
+    free(EOState->Pressure);//Lipei
+    free(EOState->Temperature);//Lipei
+
     free(rhob);//Lipei
     free(rhobp);
     free(rhobS);

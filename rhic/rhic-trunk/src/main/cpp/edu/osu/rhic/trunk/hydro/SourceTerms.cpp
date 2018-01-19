@@ -677,14 +677,14 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION dyT = (Tspd - Tsmd) * facY;
     PRECISION dnT = (Tsps - Tsms) * facZ;
 
-    PRECISION mubs   = chemicalPotential(es, rhobs, T);
-    PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1, T);
-    PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1, T);
-    PRECISION mubspd = chemicalPotential(espd, rhobspd, T);
-    PRECISION mubsmd = chemicalPotential(esmd, rhobsmd, T);
-    PRECISION mubsps = chemicalPotential(esps, rhobsps, T);
-    PRECISION mubsms = chemicalPotential(esms, rhobsms, T);
-    PRECISION mubPs  = chemicalPotential(ep, rhobp, TPs);
+    PRECISION mubs   = chemicalPotential(es, rhobs);
+    PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1);
+    PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1);
+    PRECISION mubspd = chemicalPotential(espd, rhobspd);
+    PRECISION mubsmd = chemicalPotential(esmd, rhobsmd);
+    PRECISION mubsps = chemicalPotential(esps, rhobsps);
+    PRECISION mubsms = chemicalPotential(esms, rhobsms);
+    PRECISION mubPs  = chemicalPotential(ep, rhobp);
     
     PRECISION dtmub = (mubs - mubPs)/d_dt;
     PRECISION dxmub = (mubsp1 - mubsm1) * facX;
