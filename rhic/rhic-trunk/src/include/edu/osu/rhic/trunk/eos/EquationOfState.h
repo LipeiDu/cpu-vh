@@ -18,6 +18,7 @@
 
 
 void getEquationOfStateTable();//Lipei
+void testEOS();
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION equilibriumPressure(PRECISION e);

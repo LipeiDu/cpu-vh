@@ -172,6 +172,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Read in source terms from particles
 
   getEquationOfStateTable();//Lipei
+  //testEOS();//Lipei
 
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities

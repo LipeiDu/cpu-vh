@@ -218,6 +218,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
     ncy = lattice->numComputationalLatticePointsY;
     ncz = lattice->numComputationalLatticePointsRapidity;
     
+    //printf("==Start=====================================\n setInferredVariablesKernel\n");
     for(int i = 2; i < ncx-2; ++i) {
         for(int j = 2; j < ncy-2; ++j) {
             for(int k = 2; k < ncz-2; ++k) {
@@ -266,6 +267,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
             }
         }
     }
+    //printf("==End=====================================\n");
 }
 
 //===================================================================
