@@ -10,16 +10,16 @@ DIR_OBJ        = $(DIR_BUILD)rhic
 DEBUG =
 FLOWTRACE =
 LDFLAGS=
-CFLAGS = $(DEBUG) $(OPTIMIZATION) $(FLOWTRACE) $(OPTIONS) -Wno-comment
+CFLAGS = $(DEBUG) $(OPTIMIZATION) $(FLOWTRACE) $(OPTIONS)
 
 ifdef NVCC
 COMPILER = nvcc
 OPTIMIZATION = -O5
-OPTIONS := $(OPTIONS) --relocatable-device-code=true -Wno-deprecated-gpu-targets
-LINK_OPTIONS := $(LINK_OPTIONS) --cudart static --relocatable-device-code=true -link -Wno-deprecated-gpu-targets
+OPTIONS := $(OPTIONS)
+LINK_OPTIONS := $(LINK_OPTIONS) -link
 endif
 ifndef NVCC
-COMPILER = gcc
+COMPILER = g++
 OPTIMIZATION = -O3
 endif
 
@@ -30,7 +30,7 @@ ifeq ($(UNAME), Darwin)
 LIBS = -L /usr/local/lib -lm -lgsl -lgslcblas -lconfig -largp -lc++
 endif
 
-INCLUDES = -I /usr/local/include -I rhic/rhic-core/src/include -I rhic/rhic-harness/src/main/include -I rhic/rhic-trunk/src/include -I rhic/rhic-harness/src/include -I freezeout
+INCLUDES = -I /usr/local/include -I rhic/rhic-core/src/include -I rhic/rhic-harness/src/main/include -I rhic/rhic-trunk/src/include -I rhic/rhic-harness/src/include -I freezeout -I jet
 
 CPP := $(shell find $(DIR_SRC) -name '*.cpp' -and -not -name '*Test.cpp' )
 CPP_OBJ  = $(CPP:$(DIR_SRC)%.cpp=$(DIR_OBJ)%.o)

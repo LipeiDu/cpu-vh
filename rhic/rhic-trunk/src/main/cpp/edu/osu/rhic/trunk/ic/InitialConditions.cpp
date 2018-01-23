@@ -424,7 +424,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
 				p[s] = equilibriumPressure(e[s]);
-                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx] + 1.e-3; //Lipei
+                rhob[s] = 0.0;//rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx] + 1.e-3; //Lipei
                 baryondens << setprecision(3) << setw(5) << i <<setprecision(3) << setw(5) << j <<setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}

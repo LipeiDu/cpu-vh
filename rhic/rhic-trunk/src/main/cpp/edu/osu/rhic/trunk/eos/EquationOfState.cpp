@@ -191,10 +191,10 @@ void testEOS(){
 
 PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {
 #ifndef EOS_with_baryon
-    return 1.0;
-    //double T = effectiveTemperature(e);
-    //double nb = (double) rhob;
-    //return (-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) + 1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
+    //return 1.0;
+    double T = effectiveTemperature(e);
+    double nb = (double) rhob;
+    return (-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) + 1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
 #else
     return primaryVariablesEOS(e, rhob, EOState->ChemicalPotential)/HBARC;
 #endif

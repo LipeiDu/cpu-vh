@@ -4,7 +4,6 @@
 *  Created on: Oct 23, 2015
 *      Author: bazow
 */
-
 #include <stdlib.h>
 #include <stdio.h> // for printf
 
@@ -17,6 +16,9 @@
 #include "cornelius-c++-1.3/cornelius.cpp"
 #include "FreezeOut.cpp"
 #include "Memory.cpp"
+
+//for jet-medium interactions
+#include "ToyJetClass.cpp"
 
 #include "edu/osu/rhic/harness/hydro/HydroPlugin.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
@@ -43,7 +45,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
-  //	output(q->ttn, t, outputDir, "ttn", latticeParams);
+  //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   //output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
@@ -70,6 +72,8 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->nbn, t, outputDir, "nbn", latticeParams);
 #endif
 }
+
+
 
 void run(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory, const char *outputDir)
 {
@@ -108,6 +112,23 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
   // allocate memory
   allocateHostMemory(nElements);
+
+  /************JET STUFF**************/
+  //declare a jet parton instance
+  printf("declaring jet parton at center of grid with momentum in y direction \n");
+  jetParton parton;
+  //initialize four momenta and position to zero
+  for (int ip = 0; ip < 4; ip++)
+  {
+    parton.p[ip] = 0.0;
+    parton.x[ip] = 0.0;
+  }
+  // initialize jet at center of coordinate grid with momenta along y direction
+  parton.mass = 0.1;
+  parton.x[0] = t0; //same as hydro start time
+  parton.p[0] = 2.0; //nonzero p^tau
+  parton.p[2] = 10.0; //nonzero p^y
+  /************JET STUFF**************/
 
   /************************************************************************************\
   * initialize cornelius for freezeout surface finding
@@ -172,7 +193,6 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Read in source terms from particles
 
   getEquationOfStateTable();//Lipei
-  //testEOS();//Lipei
 
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
@@ -455,7 +475,17 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     /************************************************************************************/
 
     t1 = std::clock();
-    setDynamicalSources(latticeParams, initCondParams); //set hydro source terms from external code
+
+    /****************JET STUFF************/
+    //get the local fluid velocity and energy density/temperature and evolve jet momentum
+    parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e);
+    //evolve the jet parton position
+    parton.updatePosition(dt);
+
+    //set hydro source terms
+    setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.x);
+    /****************JET STUFF************/
+
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
     double delta_time = (t2 - t1) / (double)(CLOCKS_PER_SEC / 1000);
