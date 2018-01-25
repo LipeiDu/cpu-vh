@@ -55,9 +55,9 @@ const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
-    PRECISION alphaB = mub/T;
-    PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
-    return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
+    //PRECISION alphaB = mub/T;
+    //PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
+    return 0.0;//Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
 void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
@@ -301,10 +301,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
 
 #ifdef VMU
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    nbmuRHS[0] = 0.00;//-1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
+    nbmuRHS[1] = 0.00;//-1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    nbmuRHS[2] = 0.00;//-1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    nbmuRHS[3] = 0.00;//-1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
 #endif
 }
 
@@ -646,7 +646,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #endif
 
     //Calculate the gradient of chemical potential to temperature ratio
-#ifdef NBMU
+#ifdef VMU
     PRECISION rhobs   = rhobvec[s];
     PRECISION rhobsp1 = rhobvec[s+1];
     PRECISION rhobsm1 = rhobvec[s-1];

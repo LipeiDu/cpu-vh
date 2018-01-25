@@ -372,7 +372,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 				}
 #endif
                 //for baryon; Lipei
-#ifdef NBMU
+#ifdef VMU
                 for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
                     *(result+n) *= dt;
                 }
@@ -506,7 +506,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
 				}
 #endif
                 //for baryon; Lipei
-#ifdef NBMU
+#ifdef VMU
                 for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
                     *(result+n) *= dt;
                 }

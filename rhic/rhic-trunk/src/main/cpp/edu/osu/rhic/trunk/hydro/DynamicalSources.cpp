@@ -131,7 +131,7 @@ void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp
 
 	//construct an array of the gaussian smeared jet position
 	double smearedPosition[ncx * ncy * ncz];
-	double width = 0.01; //width of gaussian smearing
+	double width = 0.1; //width of gaussian smearing
 
 	for(int i = 2; i < nx+2; ++i){
 			for(int j = 2; j < ny+2; ++j){
@@ -151,10 +151,10 @@ void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp
 			for(int j = 2; j < ny+2; ++j){
 					for(int k = 2; k < nz+2; ++k){
 							int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-							Source->sourcet[s] = -dp_dtau[0] * smearedPosition[s];
-							Source->sourcex[s] = -dp_dtau[1] * smearedPosition[s];
-							Source->sourcey[s] = -dp_dtau[2] * smearedPosition[s];
-							Source->sourcen[s] = -dp_dtau[3] * smearedPosition[s];
+							Source->sourcet[s] = -dp_dtau[0] * smearedPosition[s]*100;
+							Source->sourcex[s] = -dp_dtau[1] * smearedPosition[s]*100;
+							Source->sourcey[s] = -dp_dtau[2] * smearedPosition[s]*100;
+							Source->sourcen[s] = -dp_dtau[3] * smearedPosition[s]*100;
 							Source->sourceb[s] = dummy;
 					}//k
 			}//j

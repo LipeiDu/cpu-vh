@@ -120,14 +120,14 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   //initialize four momenta and position to zero
   for (int ip = 0; ip < 4; ip++)
   {
-    parton.p[ip] = 0.0;
-    parton.x[ip] = 0.0;
+    parton.momentum[ip] = 0.0;
+    parton.position[ip] = 0.0;
   }
   // initialize jet at center of coordinate grid with momenta along y direction
-  parton.mass = 0.1;
-  parton.x[0] = t0; //same as hydro start time
-  parton.p[0] = 2.0; //nonzero p^tau
-  parton.p[2] = 10.0; //nonzero p^y
+  parton.mass = 1;
+  parton.position[0] = t0; //same as hydro start time
+  parton.momentum[0] = 12.0; //nonzero p^tau
+  parton.momentum[2] = 10.0; //nonzero p^y
   /************JET STUFF**************/
 
   /************************************************************************************\
@@ -476,6 +476,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
     t1 = std::clock();
 
+      
     /****************JET STUFF************/
     //get the local fluid velocity and energy density/temperature and evolve jet momentum
     parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e);
@@ -483,8 +484,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     parton.updatePosition(dt);
 
     //set hydro source terms
-    setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.x);
+    setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
     /****************JET STUFF************/
+     
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
