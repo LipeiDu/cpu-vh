@@ -99,7 +99,6 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 #else
 	PRECISION Pi = 0;
 #endif
-    // baryon by Lipei
 #ifdef NBMU
     PRECISION Nbt = q[NUMBER_CONSERVED_VARIABLES];
 #else
@@ -123,13 +122,11 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	PRECISION M3 = ttn - pitn;
 	PRECISION M = M1 * M1 + M2 * M2 + t * t * M3 * M3;
     
-    if (isnan(M)) {
-        printf("M is nan.\n M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
-    }//Lipei
 
     //===================================================================
     // When baryon density is not involved in the root solver
     //===================================================================
+    
 #ifndef RootSolver_with_Baryon
     
 #ifdef Pi
@@ -164,28 +161,27 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob//rhob Lipei
 	*un = M3 * E2;
 
     //baryon by Lipei; baryon density is evolved as a background field
-    *rhob = rhobPrev;
+    *rhob = (Nbt-nbt)/(*ut);
     
     //===================================================================
     // When baryon number is involved in the root solver
     //===================================================================
 #else
     
-    M = sqrt(M);
+    PRECISION Ms = sqrt(M);
 #ifdef Pi
-    if(M0 + Pi - M < 0)
-        Pi = M - M0;
+    if(M0 + Pi - Ms < 0)
+        Pi = Ms - M0;
 #endif
     
-    printf("rhobPrev = %lf. \n", rhobPrev);
     PRECISION delta_nbt = Nbt - nbt;
-    PRECISION v0 = velocityFromConservedVariables(ePrev, M0, M, Pi, rhobPrev, delta_nbt);
+    PRECISION v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt);
     
     if (isnan(v0)) {
-        printf("v0 = nan.\n");
+        printf("v0 = nan.\n ePrev=%.3f,\t rhobPrev=%.3f,\t M0=%.3f,\t Ms=%.3f\n", ePrev, rhobPrev, M0, Ms);
     }
     
-    *e    = M0 - v0 * M;
+    *e    = M0 - v0 * Ms;
     *rhob = delta_nbt * sqrt(1 - v0*v0);
     *p    = equilibriumPressure(*e, *rhob);
     if (*e < 1.e-7) {
@@ -218,13 +214,14 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
     ncy = lattice->numComputationalLatticePointsY;
     ncz = lattice->numComputationalLatticePointsRapidity;
     
-    //printf("==Start=====================================\n setInferredVariablesKernel\n");
     for(int i = 2; i < ncx-2; ++i) {
         for(int j = 2; j < ncy-2; ++j) {
             for(int k = 2; k < ncz-2; ++k) {
+                
                 int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 
                 PRECISION q_s[ALL_NUMBER_CONSERVED_VARIABLES],_e,_p,ut,ux,uy,un,_rhob;//rhob by Lipei
+                
                 q_s[0] = q->ttt[s];
                 q_s[1] = q->ttx[s];
                 q_s[2] = q->tty[s];
@@ -267,7 +264,6 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
             }
         }
     }
-    //printf("==End=====================================\n");
 }
 
 //===================================================================

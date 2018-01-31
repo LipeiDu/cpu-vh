@@ -13,8 +13,8 @@
 #define PI
 
 //Lipei
-//#define NBMU
-//#define VMU
+#define NBMU
+#define VMU
 
 /*********************************************************/
 //Conservation laws//
@@ -39,7 +39,6 @@
 #define NUMBER_PI_COMPONENTS 1
 #endif
 // bulk pressure; Lipei's comment
-
 #ifndef PIMUNU
 #define NUMBER_PROPAGATED_PIMUNU_COMPONENTS 0
 #else
@@ -97,7 +96,6 @@ typedef struct
 #ifdef PI
 	PRECISION *Pi;
 #endif
-//baryon; Lipei
 #ifdef NBMU
     PRECISION *Nbt;
 #endif

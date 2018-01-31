@@ -77,7 +77,7 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
 	double b = initCond->impactParameter;
 	double snn = initCond->scatteringCrossSectionNN;
 	double alpha = initCond->fractionOfBinaryCollisions;
-///*
+
 	// Normalization factors
 	double TAminusNorm = nuclearThicknessFunction(0,0,A);
 	double TAplusNorm = nuclearThicknessFunction(0,0,A);
@@ -85,11 +85,6 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
 	double TBplusNorm = TAplusNorm;
 	double nbcNorm = 1./binaryCollisionPairs(0,0,TAplusNorm,TBminusNorm,snn);
 	double wnNorm = 1./woundedNucleons(0,0,TAminusNorm,TAplusNorm,TBminusNorm,TBplusNorm,A,A,snn);
-//*/
-/*
-	double nbcNorm = 1.;
-	double wnNorm = 1.;
-//*/
 
 	for(int i = 0; i < nx; ++i) {
 		double x = (i - (nx-1)/2.)*dx;

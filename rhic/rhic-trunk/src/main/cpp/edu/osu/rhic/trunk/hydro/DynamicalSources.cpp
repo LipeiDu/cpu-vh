@@ -107,6 +107,10 @@ void setSource(void * latticeParams, void * initCondParams, void * hydroParams)
 	}
 }
 
+/*********************************************************************************************************\
+ * Dynamical source terms from the jet traversing the medium
+/*********************************************************************************************************/
+
 void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp_dtau, double *pos) //dp_dtau is the jet energy loss, pos is the jet position
 {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -134,35 +138,29 @@ void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp
 	double width = 0.1; //width of gaussian smearing
 
 	for(int i = 2; i < nx+2; ++i){
-			for(int j = 2; j < ny+2; ++j){
-					for(int k = 2; k < nz+2; ++k){
-							int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-							double x = (double)i * dx + xmin;
-							double y = (double)j * dy + ymin;
-							double z = (double)k * dz + zmin;
+        for(int j = 2; j < ny+2; ++j){
+            for(int k = 2; k < nz+2; ++k){
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                double x = (double)i * dx + xmin;
+                double y = (double)j * dy + ymin;
+                double z = (double)k * dz + zmin;
+                smearedPosition[s] = exp((-1.0)*(pos[1] - x) * (pos[1] - x) / width) * exp((-1.0)*(pos[2] - y) * (pos[2] - y) / width) * exp((-1.0)*(pos[3] - z) * (pos[3] - z) / width);
+            }//k
+        }//j
+    }//i
 
-							smearedPosition[s] = exp((-1.0)*(pos[1] - x) * (pos[1] - x) / width) * exp((-1.0)*(pos[2] - y) * (pos[2] - y) / width) * exp((-1.0)*(pos[3] - z) * (pos[3] - z) / width);
-					}//k
-			}//j
-	}//i
-
-//now multiply the smeared position by energy loss corresponding to vector components
+    //now multiply the smeared position by energy loss corresponding to vector components
 	for(int i = 2; i < nx+2; ++i){
-			for(int j = 2; j < ny+2; ++j){
-					for(int k = 2; k < nz+2; ++k){
-							int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-							Source->sourcet[s] = -dp_dtau[0] * smearedPosition[s]*100;
-							Source->sourcex[s] = -dp_dtau[1] * smearedPosition[s]*100;
-							Source->sourcey[s] = -dp_dtau[2] * smearedPosition[s]*100;
-							Source->sourcen[s] = -dp_dtau[3] * smearedPosition[s]*100;
-							Source->sourceb[s] = dummy;
-					}//k
-			}//j
-	}//i
+        for(int j = 2; j < ny+2; ++j){
+            for(int k = 2; k < nz+2; ++k){
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                Source->sourcet[s] = -dp_dtau[0] * smearedPosition[s]*100;
+                Source->sourcex[s] = -dp_dtau[1] * smearedPosition[s]*100;
+                Source->sourcey[s] = -dp_dtau[2] * smearedPosition[s]*100;
+                Source->sourcen[s] = -dp_dtau[3] * smearedPosition[s]*100;
+                Source->sourceb[s] = dummy;
+            }//k
+        }//j
+    }//i
 }
-/*
-PRECISION updateDynamicalSources()
-{
-	return 0.0;
-}
-*/
+

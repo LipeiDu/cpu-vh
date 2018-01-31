@@ -17,9 +17,11 @@ FLUID_VELOCITY *u,*up,*uS;
 
 PRECISION *e, *ep, *eS, *p;
 
-EQUATION_OF_STATE *EOState;//Lipei
-DYNAMICAL_SOURCE *Source;//Lipei
 PRECISION *rhob, *rhobp, *rhobS;//Lipei
+
+EQUATION_OF_STATE *EOState;//Lipei
+
+DYNAMICAL_SOURCE *Source;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
@@ -184,12 +186,14 @@ void setConservedVariables(double t, void * latticeParams) {
 	for (int k = N_GHOST_CELLS_M; k < nz+N_GHOST_CELLS_M; ++k) {
 		for (int j = N_GHOST_CELLS_M; j < ny+N_GHOST_CELLS_M; ++j) {
 			for (int i = N_GHOST_CELLS_M; i < nx+N_GHOST_CELLS_M; ++i) {
+                
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 
 				PRECISION ux_s = u->ux[s];
 				PRECISION uy_s = u->uy[s];
 				PRECISION un_s = u->un[s];
 				PRECISION ut_s = u->ut[s];
+                
 				PRECISION e_s = e[s];
 				PRECISION p_s = p[s];
 
@@ -238,39 +242,39 @@ PRECISION * const __restrict__ rhob//by Lipei
 }
 
 void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
-FLUID_VELOCITY * const __restrict__ u,
-int s, int sBC,
-PRECISION * const __restrict__ rhob//by Lipei
+                      PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
+                      FLUID_VELOCITY * const __restrict__ u,
+                      int s, int sBC,
+                      PRECISION * const __restrict__ rhob//by Lipei
 ) {
-	e[s] = e[sBC];
-	p[s] = p[sBC];
-	u->ut[s] = u->ut[sBC];
-	u->ux[s] = u->ux[sBC];
-	u->uy[s] = u->uy[sBC];
-	u->un[s] = u->un[sBC];
-	q->ttt[s] = q->ttt[sBC];
-	q->ttx[s] = q->ttx[sBC];
-	q->tty[s] = q->tty[sBC];
-	q->ttn[s] = q->ttn[sBC];
-	// set \pi^\mu\nu ghost cells if evolved
+    e[s] = e[sBC];
+    p[s] = p[sBC];
+    u->ut[s] = u->ut[sBC];
+    u->ux[s] = u->ux[sBC];
+    u->uy[s] = u->uy[sBC];
+    u->un[s] = u->un[sBC];
+    q->ttt[s] = q->ttt[sBC];
+    q->ttx[s] = q->ttx[sBC];
+    q->tty[s] = q->tty[sBC];
+    q->ttn[s] = q->ttn[sBC];
+    // set \pi^\mu\nu ghost cells if evolved
 #ifdef PIMUNU
-	q->pitt[s] = q->pitt[sBC];
-	q->pitx[s] = q->pitx[sBC];
-	q->pity[s] = q->pity[sBC];
-	q->pitn[s] = q->pitn[sBC];
-	q->pixx[s] = q->pixx[sBC];
-	q->pixy[s] = q->pixy[sBC];
-	q->pixn[s] = q->pixn[sBC];
-	q->piyy[s] = q->piyy[sBC];
-	q->piyn[s] = q->piyn[sBC];
-	q->pinn[s] = q->pinn[sBC];
+    q->pitt[s] = q->pitt[sBC];
+    q->pitx[s] = q->pitx[sBC];
+    q->pity[s] = q->pity[sBC];
+    q->pitn[s] = q->pitn[sBC];
+    q->pixx[s] = q->pixx[sBC];
+    q->pixy[s] = q->pixy[sBC];
+    q->pixn[s] = q->pixn[sBC];
+    q->piyy[s] = q->piyy[sBC];
+    q->piyn[s] = q->piyn[sBC];
+    q->pinn[s] = q->pinn[sBC];
 #endif
-	// set \Pi ghost cells if evolved
+    // set \Pi ghost cells if evolved
 #ifdef PI
-	q->Pi[s] = q->Pi[sBC];
+    q->Pi[s] = q->Pi[sBC];
 #endif
-
+    
     //baryon; Lipei
     rhob[s] = rhob[sBC];
 #ifdef NBMU
@@ -380,9 +384,9 @@ PRECISION * const __restrict__ rhob//by Lipei
 }
 
 void swap(CONSERVED_VARIABLES **arr1, CONSERVED_VARIABLES **arr2) {
-	CONSERVED_VARIABLES *tmp = *arr1;
-	*arr1 = *arr2;
-	*arr2 = tmp;
+    CONSERVED_VARIABLES *tmp = *arr1;
+    *arr1 = *arr2;
+    *arr2 = tmp;
 }
 
 void setCurrentConservedVariables() {
@@ -407,15 +411,15 @@ void freeHostMemory() {
     free(Source->sourcex);//Lipei
     free(Source->sourcey);//Lipei
     free(Source->sourcen);//Lipei
-    free(Source->sourceb);
+    free(Source->sourceb);//Lipei
 
     free(EOState->ChemicalPotential);//Lipei
     free(EOState->Pressure);//Lipei
     free(EOState->Temperature);//Lipei
 
     free(rhob);//Lipei
-    free(rhobp);
-    free(rhobS);
+    free(rhobp);//Lipei
+    free(rhobS);//Lipei
     //baryon; Lipei
 #ifdef NBMU
     free(q->Nbt);
@@ -430,7 +434,7 @@ void freeHostMemory() {
 
 	free(e);
     free(ep);//Lipei
-    free(eS);
+    free(eS);//Lipei
 	free(p);
 	free(u->ut);
 	free(u->ux);

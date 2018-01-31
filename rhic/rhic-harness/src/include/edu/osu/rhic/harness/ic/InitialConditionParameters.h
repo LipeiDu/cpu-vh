@@ -17,8 +17,8 @@ struct InitialConditionParameters
 	int numberOfNucleonsPerNuclei;
 
     int sourceType;//Lipei
+    
     double initialBaryonDensity;//Lipei
-
 	double initialEnergyDensity;
 	double scatteringCrossSectionNN;
 	double impactParameter;

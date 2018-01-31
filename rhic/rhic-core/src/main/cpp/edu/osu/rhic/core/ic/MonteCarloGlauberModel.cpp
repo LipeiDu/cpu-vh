@@ -125,16 +125,15 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
             // assumes gaussion bump in density
             energyDensityTransverse[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
         }
-        //TA&TB below by Lipei
         for (int n = 0; n < n1; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x1p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y1p[n];
-            TA[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+            TA[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
         }
         for (int n = 0; n < n2; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x2p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y2p[n];
-            TB[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+            TB[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
         }
 		}
 	}

@@ -4,6 +4,7 @@
  *  Created on: Oct 22, 2015
  *      Author: bazow
  */
+
 #include <math.h> // for math functions
 #include <cmath>
 #include <iostream>//Lipei
@@ -170,9 +171,9 @@ PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * con
     }
 }
 
+// To test the interpolatin function to see it reproduce the EOS table
 void testEOS(){
-    // To test the interpolatin function to see it reproduce the EOS table
-    
+
     char EOStable[] = "output/EOS_table_test.dat";
     ofstream eos_table(EOStable);
     
@@ -191,9 +192,8 @@ void testEOS(){
 
 PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {
 #ifndef EOS_with_baryon
-    //return 1.0;
     double T = effectiveTemperature(e);
-    double nb = (double) rhob;
+    double nb = (double) fabs(rhob);
     return (-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) + 1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
 #else
     return primaryVariablesEOS(e, rhob, EOState->ChemicalPotential)/HBARC;

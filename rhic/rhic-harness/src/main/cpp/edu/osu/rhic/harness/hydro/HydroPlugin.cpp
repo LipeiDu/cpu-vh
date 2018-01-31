@@ -5,7 +5,8 @@
 *      Author: bazow
 */
 #include <stdlib.h>
-#include <stdio.h> // for printf
+// for printf
+#include <stdio.h>
 
 // for timing
 #include <ctime>
@@ -43,11 +44,11 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
-  //output(u->ut, t, outputDir, "ut", latticeParams);
-  //output(q->ttt, t, outputDir, "ttt", latticeParams);
+  output(u->ut, t, outputDir, "ut", latticeParams);
+  output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
-  //output(q->pixx, t, outputDir, "pixx", latticeParams);
+  output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
@@ -55,22 +56,18 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
   #ifdef PI
-  //output(q->Pi, t, outputDir, "Pi", latticeParams);
+  output(q->Pi, t, outputDir, "Pi", latticeParams);
   #endif
-
-  /************************************************************************************\
-   * baryon; by Lipei
-  /************************************************************************************/
+  #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-#ifdef NBMU
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
-#endif
-#ifdef VMU
+  #endif
+  #ifdef VMU
   output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
   //output(q->nbn, t, outputDir, "nbn", latticeParams);
-#endif
+  #endif
 }
 
 
@@ -113,7 +110,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // allocate memory
   allocateHostMemory(nElements);
 
-  /************JET STUFF**************/
+  /************************************************************************************\
+  * Jet stuff
+  /************************************************************************************/
   //declare a jet parton instance
   printf("declaring jet parton at center of grid with momentum in y direction \n");
   jetParton parton;
@@ -128,12 +127,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   parton.position[0] = t0; //same as hydro start time
   parton.momentum[0] = 12.0; //nonzero p^tau
   parton.momentum[2] = 10.0; //nonzero p^y
-  /************JET STUFF**************/
 
   /************************************************************************************\
   * initialize cornelius for freezeout surface finding
   /************************************************************************************/
-
   //see example_4d() in example_cornelius
   //this works only for full 3+1 d simulation? need to find a way to generalize to n+1 d
   int dim;
@@ -188,16 +185,15 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   * Fluid dynamic initialization
   /************************************************************************************/
   double t = t0;
-  // generate initial conditions
+  // Generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
-  // Read in source terms from particles
-
+  // Read in the table of Equation of State
   getEquationOfStateTable();//Lipei
-
+  // Read in source terms from particles
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
-  // impose boundary conditions with ghost cells
+  // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob);//rhob by Lipei
 
   /************************************************************************************\
@@ -219,7 +215,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   for (int n = 1; n <= nt+1; ++n)
   {
     // copy variables back to host and write to disk
-    if ((n-1) % FREQ == 0) {
+    if ((n-1) % FREQ == 0)
+    {
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\t",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr])*hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
@@ -479,12 +476,12 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       
     /****************JET STUFF************/
     //get the local fluid velocity and energy density/temperature and evolve jet momentum
-    parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e);
+    //parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e);
     //evolve the jet parton position
-    parton.updatePosition(dt);
+    //parton.updatePosition(dt);
 
     //set hydro source terms
-    setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
+    //setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
     /****************JET STUFF************/
      
 
