@@ -584,13 +584,12 @@ int ncx, int ncy, int ncz
 
 /**************************************************************************************************************************************************/
 
-void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ u, int ncx, int ncy, int ncz) {
+void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p, const PRECISION * const __restrict__ rhob, const FLUID_VELOCITY * const __restrict__ u, int ncx, int ncy, int ncz) {
     
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-
 #ifdef PIMUNU
 				PRECISION pitt = currrentVars->pitt[s];
 				PRECISION pitx = currrentVars->pitx[s];
@@ -619,6 +618,17 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 #else
 				PRECISION Pi = 0;
 #endif
+#ifdef VMU
+                PRECISION nbt = currrentVars->nbt[s];
+                PRECISION nbx = currrentVars->nbx[s];
+                PRECISION nby = currrentVars->nby[s];
+                PRECISION nbn = currrentVars->nbn[s];
+#else
+                PRECISION nbt = 0;
+                PRECISION nbx = 0;
+                PRECISION nby = 0;
+                PRECISION nbn = 0;
+#endif
 
 				PRECISION ut = u->ut[s];
 				PRECISION ux = u->ux[s];
@@ -627,14 +637,10 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 
 				PRECISION xi0 = (PRECISION)(1.0);
 				PRECISION rhomax = (PRECISION)(10.0);
-				//PRECISION xi0 = (PRECISION)(0.1);
-				//PRECISION rhomax = (PRECISION)(0.8);
 				PRECISION t2 = t*t;
-		//		PRECISION pipi = pitt*pitt-2*(pitx*pitx+pity*pity-pixy*pixy+t2*(pitn*pitn-pixn*pixn-piyn*piyn))+pixx*pixx+piyy*piyy+pinn*pinn*t2*t2;
 				PRECISION pipi = pitt*pitt-2*pitx*pitx-2*pity*pity+pixx*pixx+2*pixy*pixy+piyy*piyy-2*pitn*pitn*t2+2*pixn*pixn*t2+2*piyn*piyn*t2+pinn*pinn*t2*t2;
-		        if(isnan(pipi)==1) printf("found pipi Nan\n");
 				PRECISION spipi = sqrt(fabs(pipi+3*Pi*Pi));
-                if(isnan(spipi)==1) printf("found spipi Nan\n");
+                
 				PRECISION pimumu = pitt - pixx - piyy - pinn*t*t;
 				PRECISION piu0 = -(pitn*t2*un) + pitt*ut - pitx*ux - pity*uy;
 				PRECISION piu1 = -(pixn*t2*un) + pitx*ut - pixx*ux - pixy*uy;
@@ -642,7 +648,6 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION piu3 = -(pinn*t2*un) + pitn*ut - pixn*ux - piyn*uy;
 
 				PRECISION a1 = spipi/rhomax/sqrtf(e[s]*e[s]+3*p[s]*p[s]);
-		        if(isnan(a1)==1) printf("found a1 Nan\n");
 				PRECISION a2 = pimumu/xi0/rhomax/spipi;
 				PRECISION a3 = piu0/xi0/rhomax/spipi;
 				PRECISION a4 = piu1/xi0/rhomax/spipi;
@@ -653,13 +658,27 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION a56 = fmax(a5,a6);
 				PRECISION a3456 = fmax(a34,a56);
 				PRECISION rho = fmax(a12,a3456);
+                
+				PRECISION fac = 1;
+				if(fabs(rho)>1.e-7) fac = tanh(rho)/rho;
 
-				if(isnan(rho)==1) printf("found rho Nan\n");
-				PRECISION fac = tanh(rho)/rho;
-				if(fabs(rho)<1.e-7) fac = 1;
-		//		PRECISION fac = 1;
-				if(isnan(fac)==1) printf("found Nan\n");
-		//		fac = 1;
+                if(isnan(pipi))  printf("found pipi Nan\n");
+                if(isnan(spipi)) printf("found spipi Nan\n");
+                if(isnan(a1))    printf("found a1 Nan\n");
+                if(isnan(rho))   printf("found rho Nan\n");
+				if(isnan(fac))   printf("found fac Nan\n");
+                
+                PRECISION xibmax = (PRECISION)(0.1);
+                PRECISION prefactor = 300;
+                PRECISION nb2 = nbt*nbt - nbx*nbx - nby*nby - nbn*nbn*t2;
+                PRECISION edec = (PRECISION)(3.5);
+                PRECISION scale = tanh(e[s]/edec);
+                PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/prefactor/scale;
+                PRECISION facb = 1;
+                if(xib>xibmax) facb = xibmax/xib;
+                if(isnan(rhob[s]))  printf("found rhob Nan\n");
+                if(isnan(scale))    printf("found scale Nan\n");
+                if(isnan(facb))     printf("found facb Nan\n");
 
 #ifdef PIMUNU
 				currrentVars->pitt[s] *= fac;
@@ -672,6 +691,12 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				currrentVars->piyy[s] *= fac;
 				currrentVars->piyn[s] *= fac;
 				currrentVars->pinn[s] *= fac;
+#endif
+#ifdef VMU
+                currrentVars->nbt[s] *= facb;
+                currrentVars->nbx[s] *= facb;
+                currrentVars->nby[s] *= facb;
+                currrentVars->nbn[s] *= facb;
 #endif
 			}
 		}
@@ -713,7 +738,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	setInferredVariablesKernel(qS, eS, p, uS, t, latticeParams, rhobS);
 
 #ifndef IDEAL
-	regulateDissipativeCurrents(t, qS, eS, p, uS, ncx, ncy, ncz);
+	regulateDissipativeCurrents(t, qS, eS, p, rhobS, uS, ncx, ncy, ncz);
 #endif
 
 	setGhostCells(qS, eS, p, uS, latticeParams, rhobS);
@@ -737,7 +762,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	setInferredVariablesKernel(Q, e, p, u, t, latticeParams, rhob);
     
 #ifndef IDEAL
-	regulateDissipativeCurrents(t, Q, e, p, u, ncx, ncy, ncz);
+	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
 #endif
 
 	setGhostCells(Q, e, p, u, latticeParams, rhob);

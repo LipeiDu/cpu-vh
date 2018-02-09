@@ -189,6 +189,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
   // Read in the table of Equation of State
   getEquationOfStateTable();//Lipei
+  testEOS();
   // Read in source terms from particles
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
@@ -217,7 +218,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
     {
-      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\t",
+      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr])*hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature

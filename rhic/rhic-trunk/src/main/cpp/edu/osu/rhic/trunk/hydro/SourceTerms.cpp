@@ -56,10 +56,10 @@ const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
-    //PRECISION alphaB = fabs(mub/T);
-    //PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
-    //if(isnan(HyCotangent)) printf("kappaB is nan.\n");
-    return 1.0;//Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
+    PRECISION alphaB = fabs(mub/T);
+    PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
+    if(isnan(HyCotangent)) printf("kappaB is nan.\n");
+    return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
 void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
