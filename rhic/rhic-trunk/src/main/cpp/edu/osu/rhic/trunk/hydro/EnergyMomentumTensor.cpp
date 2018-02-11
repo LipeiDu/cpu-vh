@@ -17,7 +17,7 @@
 
 //#define RootSolver_with_Baryon
 PRECISION Fake_equilibriumPressure(PRECISION e0, PRECISION rhob0){
-    return 0.33333333 * e0 + 0.5* rhob0;
+    return 0.33333333 * e0 + 0.5 *rhob0;
 }
 PRECISION Fake_speedOfSoundSquared(PRECISION e0, PRECISION rhob0){
     return 0.33333333;
@@ -184,11 +184,6 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
 	}
     else {
 		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi);
-        //for testing my root solver
-        //PRECISION Ms = sqrt(M);
-        //PRECISION v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, 0, 0);
-        //PRECISION TestE= M0 - v0 * Ms;
-        //printf("e = %.5f, TestE= %.5f\n", *e, TestE);
     }
     
 	if (isnan(*e)) {
@@ -375,14 +370,3 @@ PRECISION Nbt(PRECISION rhob, PRECISION ut, PRECISION nbt){
     return rhob*ut+nbt;
 }
 
-PRECISION Nbx(PRECISION rhob, PRECISION ux, PRECISION nbx){
-    return rhob*ux+nbx;
-}
-
-PRECISION Nby(PRECISION rhob, PRECISION uy, PRECISION nby){
-    return rhob*uy+nby;
-}
-
-PRECISION Nbn(PRECISION rhob, PRECISION un, PRECISION nbn){
-    return rhob*un+nbn;
-}

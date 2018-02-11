@@ -10,16 +10,7 @@
 
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
 
-void loadSourceTerms(
-const PRECISION * const __restrict__ I, const PRECISION * const __restrict__ J, const PRECISION * const __restrict__ K,
-const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S,
-const PRECISION * const __restrict__ utvec, const PRECISION * const __restrict__ uxvec,
-const PRECISION * const __restrict__ uyvec, const PRECISION * const __restrict__ unvec,
-PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
-PRECISION t, PRECISION e, const PRECISION * const __restrict__ pvec,
-int s
-);
-//=================================================================
+
 void loadSourceTermsX(const PRECISION * const __restrict__ I, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dx
 );

@@ -639,7 +639,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION rhomax = (PRECISION)(10.0);
 				PRECISION t2 = t*t;
 				PRECISION pipi = pitt*pitt-2*pitx*pitx-2*pity*pity+pixx*pixx+2*pixy*pixy+piyy*piyy-2*pitn*pitn*t2+2*pixn*pixn*t2+2*piyn*piyn*t2+pinn*pinn*t2*t2;
-				PRECISION spipi = sqrt(fabs(pipi+3*Pi*Pi));
+				PRECISION spipi = sqrt(fabs(pipi));
                 
 				PRECISION pimumu = pitt - pixx - piyy - pinn*t*t;
 				PRECISION piu0 = -(pitn*t2*un) + pitt*ut - pitx*ux - pity*uy;
@@ -671,7 +671,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 PRECISION xibmax = (PRECISION)(0.1);
                 PRECISION prefactor = 300;
                 PRECISION nb2 = nbt*nbt - nbx*nbx - nby*nby - nbn*nbn*t2;
-                PRECISION edec = (PRECISION)(3.5);
+                PRECISION edec = (PRECISION)(1.81);
                 PRECISION scale = tanh(e[s]/edec);
                 PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/prefactor/scale;
                 PRECISION facb = 1;

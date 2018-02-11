@@ -50,22 +50,57 @@ using namespace std;//Lipei
 // Read in the table of the Equation of State
 void getEquationOfStateTable(){
     
-    FILE *eosfile;
+    FILE *eosfilet, *eosfilep, *eosfilemb;
+    PRECISION energy;
+    PRECISION baryon;
     
-    eosfile = fopen ("eos/eos_p.dat","r");
-    if(eosfile==NULL){
-        printf("The EOS file mb.dat was not opened...\n");
+    // temperature table
+    eosfilet = fopen ("eos/eos_t.dat","r");
+    if(eosfilet==NULL){
+        printf("The EOS file eos_t.dat was not opened...\n");
         exit(-1);
     }
     else
     {
-        fseek(eosfile,0L,SEEK_SET);
+        fseek(eosfilet,0L,SEEK_SET);
         for(int i = 0; i < 188580; ++i){
-            fscanf(eosfile,"%lf %lf %lf", & EOState->Temperature[i], & EOState->ChemicalPotential[i], & EOState->Pressure[i]);
+            fscanf(eosfilet,"%lf %lf %lf", & energy, & baryon, & EOState->Temperature[i]);
         }
     }
+    fclose(eosfilet);
+    
+    // pressure table
+    eosfilep = fopen ("eos/eos_p.dat","r");
+    if(eosfilep==NULL){
+        printf("The EOS file eos_p.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(eosfilep,0L,SEEK_SET);
+        for(int i = 0; i < 188580; ++i){
+            fscanf(eosfilep,"%lf %lf %lf", & energy, & baryon, & EOState->Pressure[i]);
+        }
+    }
+    fclose(eosfilep);
+    
+    // baryon chemical potential table
+    eosfilemb = fopen ("eos/eos_mb.dat","r");
+    if(eosfilemb==NULL){
+        printf("The EOS file eos_mb.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(eosfilemb,0L,SEEK_SET);
+        for(int i = 0; i < 188580; ++i){
+            fscanf(eosfilemb,"%lf %lf %lf", & energy, & baryon, & EOState->ChemicalPotential[i]);
+        }
+    }
+    fclose(eosfilemb);
+    
     printf("Equation of State table is read in.\n");
-    fclose(eosfile);
+
 }
 
 int columnIndex(int i, int j, int nrhob){
@@ -167,7 +202,7 @@ void InferredPrimaryVariableTilt1(PRECISION e, PRECISION rhob, PRECISION e_start
     *derivative = _derivative;
 }
 
-void InferredPrimaryVariableTilt2(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable, PRECISION * const __restrict__ variable, PRECISION * const __restrict__ derivative){
+void InferredPrimaryVariableTilt(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, int shift, const PRECISION * const __restrict__ EOS_Variable, PRECISION * const __restrict__ variable, PRECISION * const __restrict__ derivative){
     
     int m, n, nb, nf;
     int s11, s12, s21, s22;
@@ -186,155 +221,8 @@ void InferredPrimaryVariableTilt2(PRECISION e, PRECISION rhob, PRECISION e_start
     
     //shift backwards and forwards
     mx = (e-e1)/d_e;
-    nb = floor(12*mx);
-    nf = 12 - floor(12*mx);
-    
-    int nmin = nb;
-    int nmax = nrhob - nf;
-    if(nmax-15>n&&n>nmin)
-    {
-        nb = n - nb;
-        nf = n + nf;
-    }else{
-        nb = n;
-        nf = n;
-    }
-    
-    s11 = index_start + columnIndex(m,nb,nrhob);
-    s12 = index_start + columnIndex(m,nb+1,nrhob);
-    s21 = index_start + columnIndex(m+1,nf,nrhob);
-    s22 = index_start + columnIndex(m+1,nf+1,nrhob);
-    
-    Q11 = EOS_Variable[s11];
-    Q12 = EOS_Variable[s12];
-    Q21 = EOS_Variable[s21];
-    Q22 = EOS_Variable[s22];
-    
-    PRECISION _variable, _derivative;
-    biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2, &_variable, &_derivative);
-    *variable   = _variable;
-    *derivative = _derivative;
-}
-
-void InferredPrimaryVariableTilt3(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable, PRECISION * const __restrict__ variable, PRECISION * const __restrict__ derivative){
-    
-    int m, n, nb, nf;
-    int s11, s12, s21, s22;
-    PRECISION mx;
-    PRECISION e1, e2, rhob1, rhob2;
-    PRECISION Q11, Q12, Q21, Q22;
-    
-    m = floor((e-e_start)/d_e);
-    n = floor(rhob/d_rhob);
-    
-    e1 = e_start + d_e * m;
-    e2 = e_start + d_e * (m+1);
-    
-    rhob1 = d_rhob * n;
-    rhob2 = d_rhob * (n+1);
-    
-    //shift backwards and forwards
-    mx = (e-e1)/d_e;
-    nb = floor(3*mx);
-    nf = 3 - floor(3*mx);
-    
-    int nmin = nb;
-    int nmax = nrhob - nf;
-    if(nmax-1>n&&n>nmin)
-    {
-        nb = n - nb;
-        nf = n + nf;
-    }else{
-        nb = n;
-        nf = n;
-    }
-    
-    s11 = index_start + columnIndex(m,nb,nrhob);
-    s12 = index_start + columnIndex(m,nb+1,nrhob);
-    s21 = index_start + columnIndex(m+1,nf,nrhob);
-    s22 = index_start + columnIndex(m+1,nf+1,nrhob);
-    
-    Q11 = EOS_Variable[s11];
-    Q12 = EOS_Variable[s12];
-    Q21 = EOS_Variable[s21];
-    Q22 = EOS_Variable[s22];
-    
-    PRECISION _variable, _derivative;
-    biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2, &_variable, &_derivative);
-    *variable   = _variable;
-    *derivative = _derivative;
-}
-
-void InferredPrimaryVariableTilt4(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable, PRECISION * const __restrict__ variable, PRECISION * const __restrict__ derivative){
-    
-    int m, n, nb, nf;
-    int s11, s12, s21, s22;
-    PRECISION mx;
-    PRECISION e1, e2, rhob1, rhob2;
-    PRECISION Q11, Q12, Q21, Q22;
-    
-    m = floor((e-e_start)/d_e);
-    n = floor(rhob/d_rhob);
-    
-    e1 = e_start + d_e * m;
-    e2 = e_start + d_e * (m+1);
-    
-    rhob1 = d_rhob * n;
-    rhob2 = d_rhob * (n+1);
-    
-    //shift backwards and forwards
-    mx = (e-e1)/d_e;
-    nb = floor(7*mx);
-    nf = 7 - floor(7*mx);
-    
-    int nmin = nb;
-    int nmax = nrhob - nf;
-    if(nmax-1>n&&n>nmin)
-    {
-        nb = n - nb;
-        nf = n + nf;
-    }else{
-        nb = n;
-        nf = n;
-    }
-    
-    s11 = index_start + columnIndex(m,nb,nrhob);
-    s12 = index_start + columnIndex(m,nb+1,nrhob);
-    s21 = index_start + columnIndex(m+1,nf,nrhob);
-    s22 = index_start + columnIndex(m+1,nf+1,nrhob);
-    
-    Q11 = EOS_Variable[s11];
-    Q12 = EOS_Variable[s12];
-    Q21 = EOS_Variable[s21];
-    Q22 = EOS_Variable[s22];
-    
-    PRECISION _variable, _derivative;
-    biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2, &_variable, &_derivative);
-    *variable   = _variable;
-    *derivative = _derivative;
-}
-
-void InferredPrimaryVariableTilt5(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable, PRECISION * const __restrict__ variable, PRECISION * const __restrict__ derivative){
-    
-    int m, n, nb, nf;
-    int s11, s12, s21, s22;
-    PRECISION mx;
-    PRECISION e1, e2, rhob1, rhob2;
-    PRECISION Q11, Q12, Q21, Q22;
-    
-    m = floor((e-e_start)/d_e);
-    n = floor(rhob/d_rhob);
-    
-    e1 = e_start + d_e * m;
-    e2 = e_start + d_e * (m+1);
-    
-    rhob1 = d_rhob * n;
-    rhob2 = d_rhob * (n+1);
-    
-    //shift backwards and forwards
-    mx = (e-e1)/d_e;
-    nb = floor(mx);
-    nf = 1 - floor(mx);
+    nb = floor(shift * mx);
+    nf = shift - floor(shift * mx);
     
     int nmin = nb;
     int nmax = nrhob - nf;
@@ -380,42 +268,42 @@ void primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * const __
     else if((0.0036<=e0) && (e0<=0.015))
     {
         if((0<=rhob0) && (rhob0<=0.01495))//zone 2
-            InferredPrimaryVariableTilt2(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, EOS_Variable, &_variable, &_derivative);
     }
     else if((0.015<e0) && (e0<0.045))
     {
         if((0<=rhob0) && (rhob0<=0.04475))//zone 3
-            InferredPrimaryVariableTilt3(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, EOS_Variable, &_variable, &_derivative);
     }
     else if((0.045<=e0) && (e0<0.455))
     {
         if((0<=rhob0) && (rhob0<=0.498))//zone 4
-            InferredPrimaryVariableTilt3(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, EOS_Variable, &_variable, &_derivative);
     }
     else if((0.455<=e0) && (e0<20.355))
     {
         if((0<=rhob0) && (rhob0<=3.49))//zone 5
-            InferredPrimaryVariableTilt4(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, EOS_Variable, &_variable, &_derivative);
     }
     else if((20.355<=e0)&(e0<219.355))
     {
         if((0<=rhob0) && (rhob0<=12.45))//zone 6
-            InferredPrimaryVariableTilt5(e0, rhob0, 20.355, 1, 250, 0.05, 98580, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, EOS_Variable, &_variable, &_derivative);
     }
     else
     {
         if((0<=rhob0) && (rhob0<=39.8))//zone 7
-            InferredPrimaryVariableTilt5(e0, rhob0, 219.355, 10, 200, 0.2, 148580, EOS_Variable, &_variable, &_derivative);
+            InferredPrimaryVariableTilt(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOS_Variable, &_variable, &_derivative);
         else
             InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, EOS_Variable, &_variable, &_derivative);
     }
@@ -429,12 +317,12 @@ void testEOS(){
     char EOStable[] = "output/EOS_table_test.dat";
     ofstream eos_table(EOStable);
     
-    for(int i = 1; i < 100; ++i) {
-        for(int j = 0; j < 1500; ++j){
-            PRECISION etest = (i*0.0003)/HBARC;
-            PRECISION rhobtest = j*0.00002/HBARC;
+    for(int i = 0; i < 140; ++i) {
+        for(int j = 0; j < 600; ++j){
+            PRECISION etest = (0.00015+i*0.00003)/HBARC;
+            PRECISION rhobtest = j*0.00001/HBARC;
             PRECISION _variable, _derivative;
-            primaryVariablesEOS(etest, rhobtest, EOState->Pressure, &_variable, &_derivative);
+            primaryVariablesEOS(etest, rhobtest, EOState->ChemicalPotential, &_variable, &_derivative);
             eos_table << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
                       << setprecision(6) << setw(18) << _variable*HBARC   << endl;//<< setprecision(6) << setw(18) << _derivative << endl;
         }
