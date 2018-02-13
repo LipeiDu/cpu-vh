@@ -26,12 +26,463 @@
 
 using namespace std;//Lipei
 
-/*********************************************************************************************************\
- * Set initial flow profile
- *	- u^\mu = (1, 0, 0, 0)
- * 	- No transverse flow (ux = uy = 0)
- *	- Longitudinal scaling flow (u_z = z/t, i.e. un = 0)
-/*********************************************************************************************************/
+
+//*********************************************************************************************************\
+//* Read in all initial profiles from a single or seperate file
+//*********************************************************************************************************/
+
+//this reads all hydro variables from a single file; this way we do not need to fetch the coordinates many times
+//note that the file must contain values for all dissipative currents, even if they are zero !!!
+void setInitialTmunuFromFile(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+    float x, y, z, e_in, p_in, ut_in, ux_in, uy_in, un_in;
+    //#ifdef PIMUNU
+    float pitt_in, pitx_in, pity_in, pitn_in, pixx_in, pixy_in, pixn_in, piyy_in, piyn_in, pinn_in;
+    //#endif
+    //#ifdef PI
+    float Pi_in;
+    //#endif
+    FILE *fileIn;
+    char fname[255];
+    
+    sprintf(fname, "%s/%s", rootDirectory, "/input/Tmunu.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open Tmunu.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", &x, &y, &z, &e_in, &p_in, &ut_in, &ux_in, &uy_in, &un_in, &pitt_in, &pitx_in, &pity_in, &pitn_in, &pixx_in, &pixy_in, &pixn_in, &piyy_in, &piyn_in, &pinn_in, &Pi_in);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    e[s] =  (PRECISION) e_in;
+                    ep[s] = (PRECISION) e_in; //set previous step to same value
+                    p[s] = p_in;
+                    u->ut[s] = ut_in;
+                    u->ux[s] = ux_in;
+                    u->uy[s] = uy_in;
+                    u->un[s] = un_in;
+                    up->ut[s] = ut_in; //set previous step to same value
+                    up->ux[s] = ux_in; //...
+                    up->uy[s] = uy_in;
+                    up->un[s] = un_in;
+#ifdef PIMUNU
+                    q->pitt[s] = pitt_in;
+                    q->pitx[s] = pitx_in;
+                    q->pity[s] = pity_in;
+                    q->pitn[s] = pitn_in;
+                    q->pixx[s] = pixx_in;
+                    q->pixy[s] = pixy_in;
+                    q->pixn[s] = pixn_in;
+                    q->piyy[s] = piyy_in;
+                    q->piyn[s] = piyn_in;
+                    q->pinn[s] = pinn_in;
+#endif
+#ifdef PI
+                    q->Pi[s] = Pi_in;
+#endif
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+}
+
+//this function reads a separate file for every hydrodynamic variable
+void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+    float x, y, z, value;
+    FILE *fileIn;
+    char fname[255];
+    
+    //energy density
+    sprintf(fname, "%s/%s", rootDirectory, "/input/e.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open e.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    e[s] =  (PRECISION) value;
+                    ep[s] = (PRECISION) value;
+                    //printf("e [ %d ] = %f\n", s, e[s]);
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pressure
+    sprintf(fname, "%s/%s", rootDirectory, "/input/p.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open p.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    p[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //ut
+    sprintf(fname, "%s/%s", rootDirectory, "/input/ut.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open ut.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    u->ut[s] =  (PRECISION) value;
+                    up->ut[s] = (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //ux
+    sprintf(fname, "%s/%s", rootDirectory, "/input/ux.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open ux.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    u->ux[s] =  (PRECISION) value;
+                    up->ux[s] = (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //uy
+    sprintf(fname, "%s/%s", rootDirectory, "/input/uy.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open uy.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    u->uy[s] =  (PRECISION) value;
+                    up->uy[s] = (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //un
+    sprintf(fname, "%s/%s", rootDirectory, "/input/un.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open un.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    u->un[s] =  (PRECISION) value;
+                    up->un[s] = (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+#ifdef PIMUNU
+    //pitt
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pitt.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pitt.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pitt[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pitx
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pitx.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pitx.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pitx[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pity
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pity.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pity.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pity[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pitn
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pitn.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pitn.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pitn[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pixx
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pixx.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pixx.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pixx[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pixy
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pixy.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pixy.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pixy[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pixn
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pixn.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pixn.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pixn[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //piyy
+    sprintf(fname, "%s/%s", rootDirectory, "/input/piyy.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open piyy.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->piyy[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //piyn
+    sprintf(fname, "%s/%s", rootDirectory, "/input/piyn.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open piyn.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->piyn[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+    
+    //pinn
+    sprintf(fname, "%s/%s", rootDirectory, "/input/pinn.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open pinn.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->pinn[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+#endif
+#ifdef PI
+    //bulk
+    sprintf(fname, "%s/%s", rootDirectory, "/input/bulk.dat");
+    fileIn = fopen(fname, "r");
+    if (fileIn == NULL)
+    {
+        printf("Couldn't open bulk.dat!\n");
+    }
+    else
+    {
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    q->Pi[s] =  (PRECISION) value;
+                }
+            }
+        }
+    }
+    fclose(fileIn);
+#endif
+}
+
+//*********************************************************************************************************\
+//* Set initial flow profile
+//*	- u^\mu = (1, 0, 0, 0)
+//* 	- No transverse flow (ux = uy = 0)
+//*	- Longitudinal scaling flow (u_z = z/t, i.e. un = 0)
+//*********************************************************************************************************/
 void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
@@ -54,18 +505,18 @@ void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) 
 				u->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
                 
                 //intialize the flow velocity of the previous step; Lipei
-                //up->ux[s] = 0;
-                //up->uy[s] = 0;
-                //up->un[s] = 0;
-                //up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
+                up->ux[s] = 0;
+                up->uy[s] = 0;
+                up->un[s] = 0;
+                up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
 			}
 		}
 	}
 }
 
-/*********************************************************************************************************\
- * Set initial baryon diffusion current//Lipei
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Set initial baryon diffusion current//Lipei
+//*********************************************************************************************************/
 void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
     printf("Initialize \\nb^\\mu to be zero.\n");
@@ -89,11 +540,11 @@ void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void *
     return;
 }
 
-/*********************************************************************************************************\
- * Set initial shear-stress tensor \pi^\mu\nu
- *	- Navier-Stokes value, i.e. \pi^\mu\nu = 2 * (\epsilon + P) / T * \eta/S * \sigma^\mu\nu
- * 	- No initial pressure anisotropies (\pi^\mu\nu = 0)
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Set initial shear-stress tensor \pi^\mu\nu
+//*	- Navier-Stokes value, i.e. \pi^\mu\nu = 2 * (\epsilon + P) / T * \eta/S * \sigma^\mu\nu
+//* 	- No initial pressure anisotropies (\pi^\mu\nu = 0)
+//*********************************************************************************************************/
 void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -114,7 +565,7 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				PRECISION T = effectiveTemperature(e[s]);
+				PRECISION T = effectiveTemperature(e[s], rhob[s]);
 				if (T == 0) T = 1.e-3;
 				PRECISION pinn = -4.0/(3*t*t*t)*etabar*(e[s]+p[s])/T;//was wrong by factor of 2
 #ifdef PIMUNU
@@ -199,9 +650,9 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 	}
 }
 
-/*********************************************************************************************************\
- * Longitudinal initial energy density distribution
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Longitudinal initial energy density distribution
+//*********************************************************************************************************/
 void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void * latticeParams, void * initCondParams) {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -221,9 +672,9 @@ void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void 
     }
 }
 
-/*********************************************************************************************************\
- * Longitudinal initial baryon density distribution
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Longitudinal initial baryon density distribution
+//*********************************************************************************************************/
 void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, double * const __restrict__ rhoLb, void * latticeParams, void * initCondParams) {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -234,21 +685,20 @@ void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, do
     double etaVariance1 = 0.1;
     double etaVariance2 = 1.0;
     double etaMean = 2.0;
-    double etaNorm = 1.0;
     
     for(int k = 0; k < nz; ++k) {
         double eta = (k - (nz-1)/2)*dz;
-        rhoLa[k] = etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)
-                 + etaNorm*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
-        rhoLb[k] = etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)
-                 + etaNorm*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
+        rhoLa[k] = exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)
+                 + exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
+        rhoLb[k] = exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)
+                 + exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
     }
 }
 
 
-/*********************************************************************************************************\
- * Constant initial energy density distribution
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Constant initial energy density distribution
+//*********************************************************************************************************/
 void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initCondParams) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	double initialEnergyDensity = initCond->initialEnergyDensity;
@@ -274,8 +724,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				e[s] = (PRECISION) ed;
-                p[s] = equilibriumPressure(e[s]);
                 rhob[s] = rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-4; //Lipei
+                p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 ep[s] = e[s];
                 rhobp[s] = rhob[s];
@@ -291,9 +741,9 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 }
 
 
-/*********************************************************************************************************\
- * Continuous optical glauber Glauber initial energy density distribution
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Continuous optical glauber Glauber initial energy density distribution
+//*********************************************************************************************************/
 void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -329,9 +779,8 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				double energyDensityLongitudinal = eL[k-2];
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);
-                
                 rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx] + 1.e-4; //Lipei
+                p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 ep[s] = e[s];
                 rhobp[s] = rhob[s];
@@ -346,12 +795,13 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
     printf("Baryon density is initialized.\n");
 }
 
-/*********************************************************************************************************\
- * Monte carlo Glauber initial energy density distribution
-/*********************************************************************************************************/
-void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
+//*********************************************************************************************************\
+//* Monte carlo Glauber initial energy density distribution
+//*********************************************************************************************************/
+void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 
 	int nx = lattice->numLatticePointsX;
 	int ny = lattice->numLatticePointsY;
@@ -364,29 +814,33 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	double e0 = initCond->initialEnergyDensity;
 	double T0 = 2.03;
 	e0 = (double) equilibriumEnergyDensity(T0);
+    
+    double t0 = hydro->initialProperTimePoint;//Lipei
+    double SIG0 = 0.46;//Lipei
+    double Prefactor = 1;//1/t0/(2*3.1415926)/(SIG0*SIG0);//Lipei
 
     double eT[nx*ny], eL[nz];
     double rhoLa[nz], rhoLb[nz];//Lipei
     double Ta[nx*ny], Tb[nx*ny];//Lipei
+    int n1, n2;//participants, Lipei
     
-    longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
-    monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb);
+    monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, n1, n2);
     longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
+    longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
 
     char rhobb[] = "output/baryon_density.dat";//Lipei
     ofstream baryondens(rhobb);//Lipei
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
-			double energyDensityTransverse = e0 * eT[i-2 + nx*(j-2)];
+			double energyDensityTransverse = Prefactor * e0 * eT[i-2 + nx*(j-2)];
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
 				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
 				e[s] = (PRECISION) ed;
-				p[s] = equilibriumPressure(e[s]);
-                
-                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx] + 1.e-4; //Lipei
+                rhob[s] = Prefactor * (rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]); //Lipei
+                p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 ep[s] = e[s];
                 rhobp[s] = rhob[s];
@@ -401,10 +855,10 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams) {
     printf("Baryon density is initialized.\n");
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the Gubser ideal hydro test
- *		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the Gubser ideal hydro test
+//*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+//*********************************************************************************************************/
 void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -442,10 +896,10 @@ void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams)
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the Gubser viscous hydro test
- *		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the Gubser viscous hydro test
+//*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+//*********************************************************************************************************/
 void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -498,10 +952,10 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the relativistic Sod shock-tube test
- *		- set energy density, pressure, fluid velocity u^\mu
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the relativistic Sod shock-tube test
+//*		- set energy density, pressure, fluid velocity u^\mu
+//*********************************************************************************************************/
 void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -539,10 +993,10 @@ void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the relativistic Sod shock-tube test
- *		- set energy density, pressure, fluid velocity u^\mu
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the relativistic Sod shock-tube test
+//*		- set energy density, pressure, fluid velocity u^\mu
+//*********************************************************************************************************/
 void set2dSodShockTubeInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -577,10 +1031,10 @@ void set2dSodShockTubeInitialCondition(void * latticeParams, void * initCondPara
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the implosion in a box test
- *		- set energy density, pressure, fluid velocity u^\mu
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the implosion in a box test
+//*		- set energy density, pressure, fluid velocity u^\mu
+//*********************************************************************************************************/
 void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -631,10 +1085,10 @@ void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the implosion in a box test
- *		- set energy density, pressure, fluid velocity u^\mu
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the implosion in a box test
+//*		- set energy density, pressure, fluid velocity u^\mu
+//*********************************************************************************************************/
 void setRayleighTaylorInstibilityInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -681,10 +1135,10 @@ void setRayleighTaylorInstibilityInitialCondition(void * latticeParams, void * i
 	}
 }
 
-/*********************************************************************************************************\
- * Initial conditions for the implosion in a box test
- *		- set energy density, pressure, fluid velocity u^\mu
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions for the implosion in a box test
+//*		- set energy density, pressure, fluid velocity u^\mu
+//*********************************************************************************************************/
 void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -727,9 +1181,9 @@ void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParam
 }
 
 
-/*********************************************************************************************************\
- * Initial conditions for the sound propagation test
- *        - set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+//*********************************************************************************************************\
+//* Initial conditions for the sound propagation test
+//*        - set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
  /*********************************************************************************************************\
 
 void setSoundPropagationInitialCondition(void * latticeParams, void * initCondParams) {
@@ -790,18 +1244,18 @@ void setSoundPropagationInitialCondition(void * latticeParams, void * initCondPa
             }
         }
     }
-}
+}*/
 
-/*********************************************************************************************************\
- * Initial conditions to use.
- *	Set the energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny.
- * 	0 - constant energy density
- *		1 - Isreal-Stewart hydrodynamic Gubser flow test
- *		2 - Continous optical Glauber
- *		3 - Ideal hydrodynamic Gubser flow test
- *		4 - Monte carlo Glauber
- *		5 - Relativistic Sod shock-tube test
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initial conditions to use.
+//*	Set the energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny.
+//* 	0 - constant energy density
+//*		1 - Isreal-Stewart hydrodynamic Gubser flow test
+//*		2 - Continous optical Glauber
+//*		3 - Ideal hydrodynamic Gubser flow test
+//*		4 - Monte carlo Glauber
+//*		5 - Relativistic Sod shock-tube test
+//*********************************************************************************************************/
 void setInitialConditions(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int initialConditionType = initCond->initialConditionType;
@@ -811,8 +1265,8 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Constant energy density.\n");
 			setConstantEnergyDensityInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
             setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
 		case 1: {
@@ -824,8 +1278,8 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Continous optical Glauber.\n");
 			setGlauberInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
             setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
 		case 3: {
@@ -835,10 +1289,10 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 		}
 		case 4: {
 			printf("Monte carlo Glauber.\n");
-			setMCGlauberInitialCondition(latticeParams, initCondParams);
+			setMCGlauberInitialCondition(latticeParams, initCondParams, hydroParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
             setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
 		case 5: {
@@ -868,6 +1322,16 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			set2dSodShockTubeInitialCondition(latticeParams, initCondParams);
 			return;
 		}
+        case 10: {
+            printf("Reading initial T ^mu nu from input/e.dat , input/p.dat , etc... \n");
+            setInitialTmunuFromFiles(latticeParams, initCondParams, hydroParams, rootDirectory);
+            return;
+        }
+        case 11: {
+            printf("Reading initial T ^mu nu from /input/Tmunu.dat \n");
+            setInitialTmunuFromFile(latticeParams, initCondParams, hydroParams, rootDirectory);
+            return;
+        }
 		default: {
 			printf("Initial condition type not defined. Exiting ...\n");
 			exit(-1);

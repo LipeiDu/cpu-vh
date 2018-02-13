@@ -18,7 +18,7 @@ public:
   //update the four position of the parton - NOT CORRECT FIX IT
   void updatePosition(double dtau);
   //get parton energy loss based on fluid variables
-  void energyLoss(int nx, int ny, int nz, double dt, double dx, double dy, double dz, double *ut, double* ux, double *uy, double* un, double *e);
+  void energyLoss(int nx, int ny, int nz, double dt, double dx, double dy, double dz, double *ut, double* ux, double *uy, double* un, double *e, double *rhob);
 };
 
 //update the four momentum of parton; just an euler step
@@ -40,7 +40,7 @@ void jetParton::updatePosition(double dtau)
 }
 
 
-void jetParton::energyLoss(int nx, int ny, int nz, double dt, double dx, double dy, double dz, double *ut, double* ux, double *uy, double* un, double *e)
+void jetParton::energyLoss(int nx, int ny, int nz, double dt, double dx, double dy, double dz, double *ut, double* ux, double *uy, double* un, double *e, double *rhob)
 {
 
   int ncx = nx + 4;
@@ -63,7 +63,7 @@ void jetParton::energyLoss(int nx, int ny, int nz, double dt, double dx, double 
   {
     //this prescription for drag/energy loss should work for the bjorken flow, may not make sense in general!
     //define a temperature dependent jet-medium 'relaxation time'
-    double t_R = 3.0 / (effectiveTemperature(e[s]) * effectiveTemperature(e[s]) * effectiveTemperature(e[s]));
+    double t_R = 3.0 / (effectiveTemperature(e[s],rhob[s]) * effectiveTemperature(e[s],rhob[s]) * effectiveTemperature(e[s],rhob[s]));
 
     dp_dtau[0] = (-1.0) * ((momentum[0] / mass) - ut[s]) / t_R;
     dp_dtau[1] = (-1.0) * ((momentum[1] / mass) - ux[s]) / t_R;

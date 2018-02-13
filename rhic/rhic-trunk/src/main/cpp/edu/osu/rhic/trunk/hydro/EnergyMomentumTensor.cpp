@@ -15,8 +15,7 @@
  
 #define MAX_ITERS 10000000
 
-//#define RootSolver_with_Baryon
-PRECISION Fake_equilibriumPressure(PRECISION e0, PRECISION rhob0){
+/*PRECISION Fake_equilibriumPressure(PRECISION e0, PRECISION rhob0){
     return 0.33333333 * e0 + 0.5 *rhob0;
 }
 PRECISION Fake_speedOfSoundSquared(PRECISION e0, PRECISION rhob0){
@@ -24,7 +23,7 @@ PRECISION Fake_speedOfSoundSquared(PRECISION e0, PRECISION rhob0){
 }
 PRECISION Fake_dPdRhob(PRECISION e0, PRECISION rhob0){
     return 0.5;
-}
+}*/
 
 PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt) {
     PRECISION e0 = ePrev;
@@ -32,9 +31,9 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
     PRECISION v0 = (M0 - ePrev)/(M+1.e-20);
     
     for(int j = 0; j < MAX_ITERS; ++j) {
-        PRECISION p    = Fake_equilibriumPressure(e0, rhob0);//for test
-        PRECISION cs2  = Fake_speedOfSoundSquared(e0, rhob0);//for test
-        PRECISION dp_drhob = Fake_dPdRhob(e0, rhob0);//for test
+        PRECISION p    = equilibriumPressure(e0, rhob0);//for test
+        PRECISION cs2  = speedOfSoundSquared(e0, rhob0);//for test
+        PRECISION dp_drhob = dPdRhob(e0, rhob0);//for test
         
         PRECISION cst2 = p/e0;
         PRECISION dcst2_de = 1/e0 * cs2 - p/e0/e0;
@@ -65,9 +64,9 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
     PRECISION u0 = sqrt(1/(1-mratio*mratio));
     
     for(int j = 0; j < MAX_ITERS; ++j) {
-        PRECISION p    = Fake_equilibriumPressure(e0, rhob0);//for test
-        PRECISION cs2  = Fake_speedOfSoundSquared(e0, rhob0);//for test
-        PRECISION dp_drhob = Fake_dPdRhob(e0, rhob0);//for test
+        PRECISION p    = equilibriumPressure(e0, rhob0);//for test
+        PRECISION cs2  = speedOfSoundSquared(e0, rhob0);//for test
+        PRECISION dp_drhob = dPdRhob(e0, rhob0);//for test
         
         PRECISION cst2 = p/e0;
         PRECISION dcst2_de = 1/e0 * cs2 - p/e0/e0;
@@ -93,12 +92,13 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
     return u0;
 }
 
-PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi) {
+PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev) {
 #ifndef CONFORMAL_EOS
 	PRECISION e0 = ePrev;	//initial guess for energy density
+    PRECISION rhob0 = rhobPrev;
 	for(int j = 0; j < MAX_ITERS; ++j) {
-		PRECISION p = equilibriumPressure(e0);
-		PRECISION cs2 = speedOfSoundSquared(e0);
+		PRECISION p = equilibriumPressure(e0, rhob0);
+		PRECISION cs2 = speedOfSoundSquared(e0, rhob0);
 		PRECISION cst2 = p/e0;
 
 		PRECISION A = M0*(1-cst2)+Pi;
@@ -183,7 +183,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e = M0 - M / M0;
 	}
     else {
-		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi);
+		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi, rhobPrev);
     }
     
 	if (isnan(*e)) {
@@ -254,6 +254,13 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
     else{
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = delta_nbt/u0;
+        *p    = equilibriumPressure(*e, *rhob);
+        if (*e < 1.e-7)
+        {
+            *e = 1.e-7;
+            *p = 1.e-7;
+        }
+        PRECISION P  = *p + Pi;
         *ut = u0;
         *ux = u0 * M1/(M0 + P);
         *uy = u0 * M2/(M0 + P);

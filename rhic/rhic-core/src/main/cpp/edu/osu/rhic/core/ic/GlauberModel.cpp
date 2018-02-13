@@ -65,9 +65,9 @@ double woundedNucleons(double x, double y,
 	return res;
 }
 
-/************************************************************************************\
+//************************************************************************************\
  * Mixture of wounded nucleon and binary collision energy density profile
-/************************************************************************************/
+//************************************************************************************/
 void energyDensityTransverseProfileAA(double * const __restrict__ energyDensityTransverse, 
 int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB//thickness TA&TB by lipei
                                       ) {

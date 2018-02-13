@@ -73,17 +73,17 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 		PRECISION dxuy, PRECISION dyuy, PRECISION dnuy, PRECISION dxun, PRECISION dyun, PRECISION dnun,
         PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt
 ) {
-	/*********************************************************\
-	 * Temperature dependent shear transport coefficients
-	/*********************************************************/
+	//*********************************************************\
+	//* Temperature dependent shear transport coefficients
+	//*********************************************************/
     //PRECISION T = effectiveTemperature(e); T is an input now, by Lipei
 	PRECISION taupiInv = T / 5  / d_etabar;
 	PRECISION beta_pi = (e + p) / 5;
 
-	/*********************************************************\
-	 * Temperature dependent bulk transport coefficients
-	/*********************************************************/
-	PRECISION cs2 = speedOfSoundSquared(e);
+	//*********************************************************\
+	//* Temperature dependent bulk transport coefficients
+	//*********************************************************/
+	PRECISION cs2 = speedOfSoundSquared(e, rhob);
 	PRECISION a = 1.0/3.0 - cs2;
 	PRECISION a2 = a*a;
 	PRECISION beta_Pi = 15*a2*(e+p);
@@ -103,9 +103,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION dtuy = (uy - uyp) / d_dt;
 	PRECISION dtun = (un - unp) / d_dt;
 
-	/*********************************************************\
-	 * covariant derivatives
-	/*********************************************************/
+	//*********************************************************\
+	//* covariant derivatives
+	//*********************************************************/
 	PRECISION Dut = ut*dtut + ux*dxut + uy*dyut + un*dnut + t*un*un;
 	PRECISION DuxUpper = ut*dtux + ux*dxux + uy*dyux + un*dnux;
 	PRECISION Dux = -DuxUpper;
@@ -119,14 +119,14 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION duy = ut*dtuy + ux*dxuy + uy*dyuy + un*dnuy;
 	PRECISION dun = ut*dtun + ux*dxun + uy*dyun + un*dnun;
 
-	/*********************************************************\
-	 * expansion rate
-	/*********************************************************/
+	//*********************************************************\
+	//* expansion rate
+	//*********************************************************/
 	PRECISION theta = ut / t + dtut + dxux + dyuy + dnun;
 
-	/*********************************************************\
-	 * shear tensor
-	/*********************************************************/
+	//*********************************************************\
+	//* shear tensor
+	//*********************************************************/
 	PRECISION stt = -t * ut * un2 + (dtut - ut * dut) + (ut2 - 1) * theta / 3;
 	PRECISION stx = -(t * un2 * ux) / 2 + (dtux - dxut) / 2 - (ux * dut + ut * dux) / 2 + ut * ux * theta / 3;
 	PRECISION sty = -(t * un2 * uy) / 2 + (dtuy - dyut) / 2 - (uy * dut + ut * duy) / 2 + ut * uy * theta / 3;
@@ -138,9 +138,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION syn = -ut * uy * un / t - (dyun + dnuy / t2) / 2 - (un * duy + uy * dun) / 2 + uy * un * theta / 3;
 	PRECISION snn = -ut * (1 + 2 * t2 * un2) / t3 - dnun / t2 - un * dun + (1 / t2 + un2) * theta / 3;
 
-	/*********************************************************\
-	 * vorticity tensor
-	/*********************************************************/
+	//*********************************************************\
+	//* vorticity tensor
+	//*********************************************************/
 	PRECISION wtx = (dtux + dxut) / 2 + (ux * dut - ut * dux) / 2 + t * un2 * ux / 2;
 	PRECISION wty = (dtuy + dyut) / 2 + (uy * dut - ut * duy) / 2 + t * un2 * uy / 2;
 	PRECISION wtn = (t2 * dtun + 2 * t * un + dnut) / 2 + (t2 * un * dut - ut * Dun) + t3 * un*un2 / 2;
@@ -156,9 +156,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION wny = -wyn / t2;
 
 #ifdef PIMUNU
-	/*********************************************************\
-	 * I1
-	/*********************************************************/
+	//*********************************************************\
+	//* I1
+	//*********************************************************/
 	PRECISION I1tt = 2 * ut * (pitt * Dut + pitx * Dux + pity * Duy + pitn * Dun);
 	PRECISION I1tx = (pitt * ux + pitx * ut) * Dut + (pitx * ux + pixx * ut) * Dux + (pity * ux + pixy * ut) * Duy + (pitn * ux + pixn * ut) * Dun;
 	PRECISION I1ty = (pitt * uy + pity * ut) * Dut + (pitx * uy + pixy * ut) * Dux + (pity * uy + piyy * ut) * Duy + (pitn * uy + piyn * ut) * Dun;
@@ -170,9 +170,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION I1yn = (pity * un + pitn * uy) * Dut + (pixy * un + pixn * uy) * Dux + (piyy * un + piyn * uy) * Duy + (piyn * un + pinn * uy) * Dun;
 	PRECISION I1nn = 2 * un * (pitn * Dut + pixn * Dux + piyn * Duy + pinn * Dun);
 
-	/*********************************************************\
-	 * I2
-	/*********************************************************/
+	//*********************************************************\
+	//* I2
+	//*********************************************************/
 	PRECISION I2tt = theta * pitt;
 	PRECISION I2tx = theta * pitx;
 	PRECISION I2ty = theta * pity;
@@ -185,9 +185,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION I2nn = theta * pinn;
 
 
-	/*********************************************************\
-	 * I3
-	/*********************************************************/
+	//*********************************************************\
+	//* I3
+	//*********************************************************/
 	PRECISION I3tt = 2 * (pitx * wtx + pity * wty + pitn * wtn);
 	PRECISION I3tx = pitt * wxt + pity * wxy + pitn * wxn + pixx * wtx + pixy * wty + pixn * wtn;
 	PRECISION I3ty = pitt * wyt + pitx * wyx + pitn * wyn + pixy * wtx + piyy * wty + piyn * wtn;
@@ -199,9 +199,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION I3yn = pity * wnt + pitn * wyt + pixy * wnx + pixn * wyx + piyy * wny + pinn * wyn;
 	PRECISION I3nn = 2 * (pitn * wnt + pixn * wnx + piyn * wny);
 
-	/*********************************************************\
-	 * I4
-	/*********************************************************/
+	//*********************************************************\
+	//* I4
+	//*********************************************************/
 	PRECISION ux2 = ux*ux;
 	PRECISION uy2 = uy*uy;
 	PRECISION ps  = pitt*stt-2*pitx*stx-2*pity*sty+pixx*sxx+2*pixy*sxy+piyy*syy - 2*pitn*stn*t2+2*pixn*sxn*t2+2*piyn*syn*t2+pinn*snn*t2*t2;
@@ -217,9 +217,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION I4yn = (pity * stn + pitn * sty) / 2 - (pixy * sxn + pixn * sxy) / 2 - (piyy * syn + piyn * syy) / 2 - t2 * (piyn * snn + pinn * syn) / 2 + (uy * un) * ps / 3;
 	PRECISION I4nn = (pitn * stn - pixn * sxn  - piyn * syn - t2 * pinn * snn) + (1 / t2 + un2) * ps / 3;
 
-	/*********************************************************\
-	 * I
-	/*********************************************************/
+	//*********************************************************\
+	//* I
+	//*********************************************************/
 	PRECISION Itt = I1tt + delta_pipi * I2tt - I3tt + tau_pipi * I4tt - lambda_piPi * Pi * stt;
 	PRECISION Itx = I1tx + delta_pipi * I2tx - I3tx + tau_pipi * I4tx - lambda_piPi * Pi * stx;
 	PRECISION Ity = I1ty + delta_pipi * I2ty - I3ty + tau_pipi * I4ty - lambda_piPi * Pi * sty;
@@ -231,9 +231,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION Iyn = I1yn + delta_pipi * I2yn - I3yn + tau_pipi * I4yn - lambda_piPi * Pi * syn;
 	PRECISION Inn = I1nn + delta_pipi * I2nn - I3nn + tau_pipi * I4nn - lambda_piPi * Pi * snn;
 
-	/*********************************************************\
-	 * shear stress tensor source terms, i.e. terms on RHS
-	/*********************************************************/
+	//*********************************************************\
+	//* shear stress tensor source terms, i.e. terms on RHS
+	//*********************************************************/
 	PRECISION dpitt = 2 * beta_pi * stt - pitt * taupiInv - Itt - 2 * un * t * pitn;
 	PRECISION dpitx = 2 * beta_pi * stx - pitx * taupiInv - Itx - un * t * pixn;
 	PRECISION dpity = 2 * beta_pi * sty - pity * taupiInv - Ity - un * t * piyn;
@@ -246,14 +246,14 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION dpinn = 2 * beta_pi * snn - pinn * taupiInv - Inn - 2 * (ut * pinn + un * pitn) / t;
 #endif
 #ifdef PI
-	/*********************************************************\
-	 * bulk viscous pressure source terms, i.e. terms on RHS
-	/*********************************************************/
+	//*********************************************************\
+	//* bulk viscous pressure source terms, i.e. terms on RHS
+	//*********************************************************/
 	PRECISION dPi = -beta_Pi*theta - Pi*tauPiInv - delta_PiPi*Pi*theta + lambda_Pipi*ps;
 #endif
-	/*********************************************************\
-	 * time derivative of the dissipative quantities
-	/*********************************************************/
+	//*********************************************************\
+	//* time derivative of the dissipative quantities
+	//*********************************************************/
 #ifdef PIMUNU
 	pimunuRHS[0] = dpitt / ut + pitt * dkvk;
 	pimunuRHS[1] = dpitx / ut + pitx * dkvk;
@@ -270,9 +270,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	pimunuRHS[10] = dPi / ut + Pi * dkvk;
 #endif
 
-    /*********************************************************\
-     * for the diffusion current of baryon, by Lipei
-    /*********************************************************/
+    //*********************************************************\
+    //* for the diffusion current of baryon, by Lipei
+    //*********************************************************/
     
 #ifdef VMU
     PRECISION kappaB = baryonDiffusionCoefficient(T, rhob, mub, e, p);
@@ -307,7 +307,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 }
 
 
-/***************************************************************************************************************************************************/
+//***************************************************************************************************************************************************/
 void loadSourceTermsX(const PRECISION * const __restrict__ I, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dx
 ) {
@@ -705,7 +705,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablan_alphaB = 0;
     
     PRECISION es = evec[s];
-    PRECISION T = effectiveTemperature(es);
+    PRECISION T = effectiveTemperature(es, rhobs);
 #endif
     
 	//=========================================================

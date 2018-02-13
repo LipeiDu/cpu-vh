@@ -22,9 +22,9 @@
 
 
 using namespace std;
-/*********************************************************************************************************\
- * Initialize the dynamical source terms
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Initialize the dynamical source terms
+//*********************************************************************************************************/
 
 void readInSource(void * latticeParams, void * initCondParams)
 {
@@ -37,7 +37,7 @@ void readInSource(void * latticeParams, void * initCondParams)
 
     FILE *sourcefile;
 
-    sourcefile = fopen ("testsource.dat","r");
+    sourcefile = fopen ("/input/testsource.dat","r");
     if(sourcefile==NULL){
         printf("The source file testsource.dat was not opened...\n");
         exit(-1);
@@ -82,10 +82,10 @@ void noSource(void * latticeParams, void * initCondParams)
     }//i
 }
 
-/*********************************************************************************************************\
- * Dynamical source terms for T^\mu\nu and J^\mu
- * 	0 - add these source terms
- *	1 - not add these source terms
+//*********************************************************************************************************\
+//* Dynamical source terms for T^\mu\nu and J^\mu
+//* 0 - add these source terms
+//*	1 - not add these source terms
 /*********************************************************************************************************/
 
 void setSource(void * latticeParams, void * initCondParams, void * hydroParams)
@@ -107,9 +107,9 @@ void setSource(void * latticeParams, void * initCondParams, void * hydroParams)
 	}
 }
 
-/*********************************************************************************************************\
- * Dynamical source terms from the jet traversing the medium
-/*********************************************************************************************************/
+//*********************************************************************************************************\
+//* Dynamical source terms from the jet traversing the medium
+//*********************************************************************************************************/
 
 void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp_dtau, double *pos) //dp_dtau is the jet energy loss, pos is the jet position
 {

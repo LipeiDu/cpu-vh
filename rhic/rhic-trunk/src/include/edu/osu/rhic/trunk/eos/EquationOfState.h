@@ -24,7 +24,6 @@ PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION equilibriumPressure(PRECISION e);
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);//rhob lipei
-PRECISION speedOfSoundSquared(PRECISION e);
 
 PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);//rhob lipei
 PRECISION effectiveTemperature(PRECISION e);

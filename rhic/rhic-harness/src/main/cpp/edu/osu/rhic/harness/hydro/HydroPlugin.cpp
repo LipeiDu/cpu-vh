@@ -37,23 +37,24 @@
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
+#define JET 0 // 0 to turn off jet evolution, 1 to turn it on
 
 void outputDynamicalQuantities(double t, const char *outputDir, void * latticeParams)
 {
   output(e, t, outputDir, "e", latticeParams);
-  //output(u->ux, t, outputDir, "ux", latticeParams);
-  //output(u->uy, t, outputDir, "uy", latticeParams);
-  //output(u->un, t, outputDir, "un", latticeParams);
+  output(u->ux, t, outputDir, "ux", latticeParams);
+  output(u->uy, t, outputDir, "uy", latticeParams);
+  output(u->un, t, outputDir, "un", latticeParams);
   output(u->ut, t, outputDir, "ut", latticeParams);
   output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   output(q->pixx, t, outputDir, "pixx", latticeParams);
-  //output(q->pixy, t, outputDir, "pixy", latticeParams);
-  //output(q->pixn, t, outputDir, "pixn", latticeParams);
-  //output(q->piyy, t, outputDir, "piyy", latticeParams);
-  //output(q->piyn, t, outputDir, "piyn", latticeParams);
-  //output(q->pinn, t, outputDir, "pinn", latticeParams);
+  output(q->pixy, t, outputDir, "pixy", latticeParams);
+  output(q->pixn, t, outputDir, "pixn", latticeParams);
+  output(q->piyy, t, outputDir, "piyy", latticeParams);
+  output(q->piyn, t, outputDir, "piyn", latticeParams);
+  output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
   #ifdef PI
   output(q->Pi, t, outputDir, "Pi", latticeParams);
@@ -78,9 +79,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
   struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 
-  /************************************************************************************\
-  * System configuration
-  /************************************************************************************/
+  //************************************************************************************\
+  //* System configuration
+  //************************************************************************************/
   int nt = lattice->numProperTimePoints;
   int nx = lattice->numLatticePointsX;
   int ny = lattice->numLatticePointsY;
@@ -110,27 +111,30 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // allocate memory
   allocateHostMemory(nElements);
 
-  /************************************************************************************\
-  * Jet stuff
-  /************************************************************************************/
-  //declare a jet parton instance
-  printf("declaring jet parton at center of grid with momentum in y direction \n");
+  //************************************************************************************\
+  //* Jet stuff
+  //************************************************************************************/
   jetParton parton;
-  //initialize four momenta and position to zero
-  for (int ip = 0; ip < 4; ip++)
+  if (JET)
   {
-    parton.momentum[ip] = 0.0;
-    parton.position[ip] = 0.0;
+    //declare a jet parton instance
+    printf("initializing jet parton at center of grid with momentum in y direction \n");
+    //initialize four momenta and position to zero
+    for (int ip = 0; ip < 4; ip++)
+    {
+      parton.momentum[ip] = 0.0;
+      parton.position[ip] = 0.0;
+    }
+    // initialize jet at center of coordinate grid with momenta along y direction
+    parton.mass = 1;
+    parton.position[0] = t0; //same as hydro start time
+    parton.momentum[0] = 12.0; //nonzero p^tau
+    parton.momentum[2] = 10.0; //nonzero p^y
   }
-  // initialize jet at center of coordinate grid with momenta along y direction
-  parton.mass = 1;
-  parton.position[0] = t0; //same as hydro start time
-  parton.momentum[0] = 12.0; //nonzero p^tau
-  parton.momentum[2] = 10.0; //nonzero p^y
 
-  /************************************************************************************\
-  * initialize cornelius for freezeout surface finding
-  /************************************************************************************/
+  //************************************************************************************\
+  //* initialize cornelius for freezeout surface finding
+  //************************************************************************************/
   //see example_4d() in example_cornelius
   //this works only for full 3+1 d simulation? need to find a way to generalize to n+1 d
   int dim;
@@ -181,25 +185,27 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   if (FOFORMAT == 0) freezeoutSurfaceFile.open("output/freezeoutSurface.dat");
   else freezeoutSurfaceFile.open("output/freezeoutSurface.dat", ios::binary);
 
-  /************************************************************************************\
-  * Fluid dynamic initialization
-  /************************************************************************************/
+  //************************************************************************************\
+  //* Fluid dynamic initialization
+  //************************************************************************************/
   double t = t0;
   // Generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
-  // Read in the table of Equation of State
-  getEquationOfStateTable();//Lipei
-  testEOS();
   // Read in source terms from particles
   setSource(latticeParams, initCondParams, hydroParams);//Lipei
+  // Read in the table of Equation of State
+#ifdef NBMU
+  getEquationOfStateTable();//Lipei
+  //testEOS();
+#endif
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob);//rhob by Lipei
 
-  /************************************************************************************\
-  * Evolve the system in time
-  /************************************************************************************/
+  //************************************************************************************\
+  //* Evolve the system in time
+  //************************************************************************************/
   int ictr = (nx % 2 == 0) ? ncx/2 : (ncx-1)/2;
   int jctr = (ny % 2 == 0) ? ncy/2 : (ncy-1)/2;
   int kctr = (nz % 2 == 0) ? ncz/2 : (ncz-1)/2;
@@ -218,8 +224,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
     {
-      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
-      n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr])*hbarc);
+      printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\t",
+      n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
@@ -228,9 +234,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       //}
     }
 
-    /************************************************************************************\
-    * Freeze-out finder
-    /************************************************************************************/
+    //************************************************************************************\
+    //* Freeze-out finder
+    //************************************************************************************/
     //append the energy density and all hydro variables to storage arrays
     int nFO = n % FOFREQ;
 
@@ -468,23 +474,26 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       break;
     }
 
-    /************************************************************************************\
-    * Evolution by RungeKutta
-    /************************************************************************************/
+    //************************************************************************************\
+    //* Evolution by RungeKutta
+    //************************************************************************************/
 
     t1 = std::clock();
 
-      
-    /****************JET STUFF************/
-    //get the local fluid velocity and energy density/temperature and evolve jet momentum
-    //parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e);
-    //evolve the jet parton position
-    //parton.updatePosition(dt);
 
-    //set hydro source terms
-    //setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
-    /****************JET STUFF************/
-     
+    //****************JET STUFF************/
+    if (JET)
+    {
+      //get the local fluid velocity and energy density/temperature and evolve jet momentum
+      parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e, rhob);
+      //evolve the jet parton position
+      parton.updatePosition(dt);
+
+      //set hydro source terms
+      setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
+    }
+    //****************JET STUFF************/
+
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
@@ -500,9 +509,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   printf("Average time/step: %.3f ms\n",totalTime/((double)nsteps));
 
   freezeoutSurfaceFile.close();
-  /************************************************************************************	\
-  * Deallocate host memory
-  /************************************************************************************/
+  //************************************************************************************	\
+  //* Deallocate host memory
+  //************************************************************************************/
   freeHostMemory();
 
   //Deallocate memory used for freezeout finding

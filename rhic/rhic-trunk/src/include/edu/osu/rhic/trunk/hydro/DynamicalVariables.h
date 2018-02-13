@@ -16,6 +16,10 @@
 //#define NBMU
 //#define VMU
 
+#ifdef NBMU
+#define RootSolver_with_Baryon
+#define EOS_with_baryon
+#endif
 /*********************************************************/
 //Conservation laws//
 
