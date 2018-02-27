@@ -12,7 +12,6 @@
 #include <fstream>// by Lipei
 #include <iomanip>//by Lipei
 
-
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h"
 #include "edu/osu/rhic/harness/lattice/LatticeParameters.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
@@ -42,10 +41,10 @@ int s, int ptr, int smm, int sm, int sp, int spp
 
 void eulerStepKernelSource(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ ep, const PRECISION * const __restrict__ p,
+const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
 const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
 int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
-const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ rhobp//ep, rhob, rhobp by Lipei
+const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ muB, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ T, const PRECISION * const __restrict__ Tp//ep, rhob, rhobp by Lipei
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
@@ -84,12 +83,13 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
                 Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, ep[s], p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, rhobp[s]);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp[s], T, Tp[s]);
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = *(Q+n) + dt * ( *(S+n) );
 				}
+    
 
 				updatedVars->ttt[s] = result[0];
 				updatedVars->ttx[s] = result[1];
@@ -175,11 +175,12 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 #endif
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s]);
+                
+				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
-				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s]);
+				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dx;
@@ -317,11 +318,12 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
                 
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s]);
+				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
-				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s]);
+                
+				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dy;
@@ -442,11 +444,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
 #endif
                 
 				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s]);
+				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) = -*(H+n);
 				}
-				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s]);
+				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
 				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dz;
@@ -638,6 +640,9 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION xi0 = (PRECISION)(1.0);
 				PRECISION rhomax = (PRECISION)(10.0);
 				PRECISION t2 = t*t;
+                PRECISION Norm = sqrtf(e[s]*e[s]+3*p[s]*p[s]);
+                
+                //Regulation for shear stress
 				PRECISION pipi = pitt*pitt-2*pitx*pitx-2*pity*pity+pixx*pixx+2*pixy*pixy+piyy*piyy-2*pitn*pitn*t2+2*pixn*pixn*t2+2*piyn*piyn*t2+pinn*pinn*t2*t2;
 				PRECISION spipi = sqrt(fabs(pipi));
                 
@@ -647,7 +652,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION piu2 = -(piyn*t2*un) + pity*ut - pixy*ux - piyy*uy;
 				PRECISION piu3 = -(pinn*t2*un) + pitn*ut - pixn*ux - piyn*uy;
 
-				PRECISION a1 = spipi/rhomax/sqrtf(e[s]*e[s]+3*p[s]*p[s]);
+				PRECISION a1 = spipi/rhomax/Norm;
 				PRECISION a2 = pimumu/xi0/rhomax/spipi;
 				PRECISION a3 = piu0/xi0/rhomax/spipi;
 				PRECISION a4 = piu1/xi0/rhomax/spipi;
@@ -668,6 +673,13 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 if(isnan(rho))   printf("found rho Nan\n");
 				if(isnan(fac))   printf("found fac Nan\n");
                 
+                //Regulation for bulk pressure
+                PRECISION rhoPi = fabs(Pi)/Norm;
+                PRECISION facPi = 1;
+                if(fabs(rhoPi)>1.e-7) facPi = tanh(rhoPi)/rhoPi;
+                if(isnan(facPi))  printf("found facPi Nan\n");
+                
+                //Regulation for baryon diffusion current
                 PRECISION xibmax = (PRECISION)(0.1);
                 PRECISION prefactor = 300;
                 PRECISION nb2 = nbt*nbt - nbx*nbx - nby*nby - nbn*nbn*t2;
@@ -678,6 +690,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 if(xib>xibmax) facb = xibmax/xib;
                 if(isnan(rhob[s]))  printf("found rhob Nan\n");
                 if(isnan(scale))    printf("found scale Nan\n");
+                if(isnan(xib))      printf("found xib Nan\n");
                 if(isnan(facb))     printf("found facb Nan\n");
 
 #ifdef PIMUNU
@@ -691,6 +704,9 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				currrentVars->piyy[s] *= fac;
 				currrentVars->piyn[s] *= fac;
 				currrentVars->pinn[s] *= fac;
+#endif
+#ifdef PI
+                currrentVars->Pi[s] *= facPi;
 #endif
 #ifdef VMU
                 currrentVars->nbt[s] *= facb;
@@ -728,42 +744,54 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	// STEP 1:
 	//===================================================
     
-	eulerStepKernelSource(t, q, qS, e, ep, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, rhobp);
+	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp);
+    //printf("after first eulerStepKernelSource\n");
     eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
+    //printf("after first eulerStepKernelX\n");
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
+    //printf("after first eulerStepKernelY\n");
     eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
+    //printf("after first eulerStepKernelZ\n");
     
 	t+=dt;
 
-	setInferredVariablesKernel(qS, eS, p, uS, t, latticeParams, rhobS);
+	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS);
+    //printf("after first setInferredVariablesKernel\n");
 
 #ifndef IDEAL
-	regulateDissipativeCurrents(t, qS, eS, p, rhobS, uS, ncx, ncy, ncz);
+	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
 #endif
+    //printf("after first regulateDissipativeCurrents\n");
 
-	setGhostCells(qS, eS, p, uS, latticeParams, rhobS);
+	setGhostCells(qS, e, p, uS, latticeParams, rhob, muBS, TS);
 
     
 	//===================================================
 	// STEP 2:
 	//===================================================
     
-	eulerStepKernelSource(t, qS, Q, eS, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhobS, rhob);
-	eulerStepKernelX(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dx, rhobS);
-	eulerStepKernelY(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dy, rhobS);
-	eulerStepKernelZ(t, qS, Q, uS, eS, ncx, ncy, ncz, dt, dz, rhobS);
+	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T);
+    //printf("after second eulerStepKernelSource\n");
+	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
+    //printf("after second eulerStepKernelX\n");
+	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
+    //printf("after second eulerStepKernelY\n");
+	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
+    //printf("after second eulerStepKernelZ\n");
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
 	swapFluidVelocity(&up, &u);
-    swapPrimaryVariables(&ep, &e);//Lipei
-    swapPrimaryVariables(&rhobp, &rhob);//Lipei
+    swapPrimaryVariables(&muBp, &muB);//Lipei
+    swapPrimaryVariables(&Tp, &T);//Lipei
     
-	setInferredVariablesKernel(Q, e, p, u, t, latticeParams, rhob);
+	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T);
+    //printf("after second setInferredVariablesKernel\n");
     
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
 #endif
-
-	setGhostCells(Q, e, p, u, latticeParams, rhob);
+    //printf("after second regulateDissipativeCurrents\n");
+    
+	setGhostCells(Q, e, p, u, latticeParams, rhob, muB, T);
 }

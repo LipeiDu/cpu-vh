@@ -244,49 +244,49 @@ PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * con
     
     if((0<=e0) && (e0<0.0036))
     {
-        if((0<=rhob0) && (rhob0<=0.00499))//zone 1
+        if((0<=rhob0) && (rhob0<=0.00498))//zone 1
             return InferredPrimaryVariableTilt1(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, EOS_Variable)/HBARC;
     }
     else if((0.0036<=e0) && (e0<0.015))
     {
-        if((0<=rhob0) && (rhob0<=0.01495))//zone 2
+        if((0<=rhob0) && (rhob0<=0.0149))//zone 2
             return InferredPrimaryVariableTilt(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, EOS_Variable)/HBARC;
     }
     else if((0.015<=e0) && (e0<0.045))
     {
-        if((0<=rhob0) && (rhob0<=0.04475))//zone 3
+        if((0<=rhob0) && (rhob0<=0.0445))//zone 3
             return InferredPrimaryVariableTilt(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, EOS_Variable)/HBARC;
     }
     else if((0.045<=e0) && (e0<0.455))
     {
-        if((0<=rhob0) && (rhob0<=0.498))//zone 4
+        if((0<=rhob0) && (rhob0<=0.496))//zone 4
             return InferredPrimaryVariableTilt(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, EOS_Variable)/HBARC;
     }
     else if((0.455<=e0) && (e0<20.355))
     {
-        if((0<=rhob0) && (rhob0<=3.49))//zone 5
+        if((0<=rhob0) && (rhob0<=3.48))//zone 5
             return InferredPrimaryVariableTilt(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, EOS_Variable)/HBARC;
     }
     else if((20.355<=e0)&(e0<219.355))
     {
-        if((0<=rhob0) && (rhob0<=12.45))//zone 6
+        if((0<=rhob0) && (rhob0<=12.4))//zone 6
             return InferredPrimaryVariableTilt(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, EOS_Variable)/HBARC;
     }
     else
     {
-        if((0<=rhob0) && (rhob0<=39.8))//zone 7
+        if((0<=rhob0) && (rhob0<=39.6))//zone 7
             return InferredPrimaryVariableTilt(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOS_Variable)/HBARC;
         else
             return InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, EOS_Variable)/HBARC;
@@ -296,20 +296,30 @@ PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * con
 // To test the interpolatin function to see it reproduce the EOS table
 void testEOS(){
 
-    char EOStable[] = "output/EOS_table_test.dat";
+    char EOStable[] = "output/EOS_mu_test.dat";
     ofstream eos_table(EOStable);
+    //char EOStable1[] = "output/EOS_cs2_test.dat";
+    //ofstream eos_table1(EOStable1);
+    //char EOStable2[] = "output/EOS_dpdrho_test.dat";
+    //ofstream eos_table2(EOStable2);
     
-    for(int i = 0; i < 140; ++i) {
-        for(int j = 0; j < 200; ++j){
-            PRECISION etest = (0.00015+i*0.00003)/HBARC;
-            PRECISION rhobtest = j*0.00001/HBARC;
+    for(int i = 0; i < 200; ++i) {
+        for(int j = 0; j < 5000; ++j){
+            PRECISION etest = (0.001+i*0.0003)/HBARC;
+            PRECISION rhobtest = (0.0001+j*0.00001)/HBARC;
         
-            eos_table << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
-                      << setprecision(6) << setw(18) << primaryVariablesEOS(etest, rhobtest, EOState->ChemicalPotential)*HBARC   << endl;
+            eos_table  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
+                       << setprecision(6) << setw(18) << primaryVariablesEOS(etest, rhobtest, EOState->ChemicalPotential)*HBARC << endl;
+            //eos_table1 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
+            //           << setprecision(6) << setw(18) << speedOfSoundSquared(etest, rhobtest) << endl;
+            //eos_table2 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
+            //           << setprecision(6) << setw(18) << dPdRhob(etest, rhobtest)  << endl;
         }
     }
     
     eos_table.close();
+    //eos_table1.close();
+    //eos_table2.close();
     printf("EOS table is reproduced.\n");
 }
 

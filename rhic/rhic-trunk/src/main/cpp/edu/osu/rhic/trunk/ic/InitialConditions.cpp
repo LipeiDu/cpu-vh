@@ -65,7 +65,7 @@ void setInitialTmunuFromFile(void * latticeParams, void * initCondParams, void *
                     fscanf(fileIn, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", &x, &y, &z, &e_in, &p_in, &ut_in, &ux_in, &uy_in, &un_in, &pitt_in, &pitx_in, &pity_in, &pitn_in, &pixx_in, &pixy_in, &pixn_in, &piyy_in, &piyn_in, &pinn_in, &Pi_in);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     e[s] =  (PRECISION) e_in;
-                    ep[s] = (PRECISION) e_in; //set previous step to same value
+                    //ep[s] = (PRECISION) e_in; //set previous step to same value
                     p[s] = p_in;
                     u->ut[s] = ut_in;
                     u->ux[s] = ux_in;
@@ -125,7 +125,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
                     fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     e[s] =  (PRECISION) value;
-                    ep[s] = (PRECISION) value;
+                    //ep[s] = (PRECISION) value;
                     //printf("e [ %d ] = %f\n", s, e[s]);
                 }
             }
@@ -688,10 +688,10 @@ void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, do
     
     for(int k = 0; k < nz; ++k) {
         double eta = (k - (nz-1)/2)*dz;
-        rhoLa[k] = exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)
-                 + exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta);
-        rhoLb[k] = exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)
-                 + exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta);
+        rhoLa[k] = 1/sqrt(2*3.1415926)*(1/etaVariance1*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)
+                                     + 1/etaVariance2*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta));
+        rhoLb[k] = 1/sqrt(2*3.1415926)*(1/etaVariance1*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)
+                                     + 1/etaVariance2*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta));
     }
 }
 
@@ -727,8 +727,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
                 rhob[s] = rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-4; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
-                ep[s] = e[s];
-                rhobp[s] = rhob[s];
+                //ep[s] = e[s];
+                //rhobp[s] = rhob[s];
                 
                 baryondens << setprecision(3) << setw(5) << i <<setprecision(3)  << setw(5)  << j
                 << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
@@ -777,13 +777,13 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
-				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
+                double ed = (energyDensityTransverse * energyDensityLongitudinal);// + 1.e-3;
 				e[s] = (PRECISION) ed;
-                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx] + 1.e-4; //Lipei
+                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx];// + 1.e-4; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
-                ep[s] = e[s];
-                rhobp[s] = rhob[s];
+                //ep[s] = e[s];
+                //rhobp[s] = rhob[s];
                 
                 baryondens << setprecision(3) << setw(5) << i <<setprecision(3)  << setw(5)  << j
                            << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
@@ -816,42 +816,29 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
 	e0 = (double) equilibriumEnergyDensity(T0);
     
     double t0 = hydro->initialProperTimePoint;//Lipei
-    double SIG0 = 0.46;//Lipei
-    double Prefactor = 1;//1/t0/(2*3.1415926)/(SIG0*SIG0);//Lipei
+    double Prefactor = 1/t0;//Lipei
 
     double eT[nx*ny], eL[nz];
     double rhoLa[nz], rhoLb[nz];//Lipei
     double Ta[nx*ny], Tb[nx*ny];//Lipei
     int n1, n2;//participants, Lipei
     
-    monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, n1, n2);
+    monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, &n1, &n2);
     longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
-
-    char rhobb[] = "output/baryon_density.dat";//Lipei
-    ofstream baryondens(rhobb);//Lipei
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
-			double energyDensityTransverse = Prefactor * e0 * eT[i-2 + nx*(j-2)];
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
-				double ed = (energyDensityTransverse * energyDensityLongitudinal) + 1.e-3;
-				e[s] = (PRECISION) ed;
-                rhob[s] = Prefactor * (rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]); //Lipei
+                double eta = (k-2 - (nz-1)/2)*dz;//Lipei
+                e[s] = 1.5*e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.004;
+                rhob[s] = 0.5*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.0001; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
-                
-                ep[s] = e[s];
-                rhobp[s] = rhob[s];
-                
-                baryondens << setprecision(3) << setw(5) << i << setprecision(3) << setw(5) << j
-                           << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}
 	}
-
-    baryondens.close();//Lipei
     printf("Baryon density is initialized.\n");
 }
 

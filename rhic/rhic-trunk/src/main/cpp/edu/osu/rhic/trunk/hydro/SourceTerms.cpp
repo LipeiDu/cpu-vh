@@ -57,8 +57,11 @@ const PRECISION lambda_piPi = 1.2;
 
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
     PRECISION alphaB = fabs(mub/T);
-    PRECISION HyCotangent = cosh(alphaB)/sinh(alphaB);
-    if(isnan(HyCotangent)) printf("kappaB is nan.\n");
+    PRECISION HyCotangent = tanh(alphaB);
+    
+    if(isnan(HyCotangent))
+        printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub=%4e,\t T=%4e,\t alphaB=%4e,\t HyCotangent =%4e\n",e,rhob, mub, T, mub/T, HyCotangent);
+
     return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
@@ -95,7 +98,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION ut2 = ut * ut;
 	PRECISION un2 = un * un;
 	PRECISION t2 = t * t;
-	PRECISION t3 = t*t2;
+	PRECISION t3 = t * t2;
 
 	// time derivatives of u
 	PRECISION dtut = (ut - utp) / d_dt;
@@ -299,10 +302,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION GBt   = -t * un/ut * nbn;
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
 
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;//-1/ut * (- 1/tau_n * kappaB * Nablat_alphaB);//
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;//-1/ut * (- 1/tau_n * kappaB * Nablax_alphaB);//
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;//-1/ut * (- 1/tau_n * kappaB * Nablay_alphaB);//
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;//-1/ut * (- 1/tau_n * kappaB * Nablan_alphaB);//
 #endif
 }
 
@@ -503,9 +506,9 @@ PRECISION d_dz
 
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
-PRECISION t, const PRECISION * const __restrict__ evec, PRECISION ep, const PRECISION * const __restrict__ pvec,
+PRECISION t, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
-const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, PRECISION rhobp//part & rhob, e -> *e, by Lipei
+const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, const PRECISION * const __restrict__ muBvec, PRECISION muBp, const PRECISION * const __restrict__ Tvec, PRECISION Tp//part & rhob, e -> *e, by Lipei
 ) {
 	//=========================================================
 	// conserved variables
@@ -633,49 +636,20 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 
     //Calculate the gradient of chemical potential to temperature ratio
 #ifdef VMU
-    PRECISION rhobs   = rhobvec[s];
-    PRECISION rhobsp1 = rhobvec[s+1];
-    PRECISION rhobsm1 = rhobvec[s-1];
-    PRECISION rhobspd = rhobvec[s+d_ncx];
-    PRECISION rhobsmd = rhobvec[s-d_ncx];
-    PRECISION rhobsps = rhobvec[s+stride];
-    PRECISION rhobsms = rhobvec[s-stride];
+    PRECISION rhobs = rhobvec[s];
+    PRECISION es = evec[s];
+    PRECISION T = Tvec[s];
+    PRECISION mubs = muB[s];
 
-    PRECISION es   = evec[s];
-    PRECISION esp1 = evec[s+1];
-    PRECISION esm1 = evec[s-1];
-    PRECISION espd = evec[s+d_ncx];
-    PRECISION esmd = evec[s-d_ncx];
-    PRECISION esps = evec[s+stride];
-    PRECISION esms = evec[s-stride];
-
-    PRECISION T    = effectiveTemperature(es,   rhobs  );
-    PRECISION Tsp1 = effectiveTemperature(esp1, rhobsp1);
-    PRECISION Tsm1 = effectiveTemperature(esm1, rhobsm1);
-    PRECISION Tspd = effectiveTemperature(espd, rhobspd);
-    PRECISION Tsmd = effectiveTemperature(esmd, rhobsmd);
-    PRECISION Tsps = effectiveTemperature(esps, rhobsps);
-    PRECISION Tsms = effectiveTemperature(esms, rhobsms);
-    PRECISION TPs  = effectiveTemperature(ep,   rhobp  );
-
-    PRECISION dtT = (T    - TPs)  / d_dt;
-    PRECISION dxT = (Tsp1 - Tsm1) * facX;
-    PRECISION dyT = (Tspd - Tsmd) * facY;
-    PRECISION dnT = (Tsps - Tsms) * facZ;
-
-    PRECISION mubs   = chemicalPotential(es,   rhobs  );
-    PRECISION mubsp1 = chemicalPotential(esp1, rhobsp1);
-    PRECISION mubsm1 = chemicalPotential(esm1, rhobsm1);
-    PRECISION mubspd = chemicalPotential(espd, rhobspd);
-    PRECISION mubsmd = chemicalPotential(esmd, rhobsmd);
-    PRECISION mubsps = chemicalPotential(esps, rhobsps);
-    PRECISION mubsms = chemicalPotential(esms, rhobsms);
-    PRECISION mubPs  = chemicalPotential(ep,   rhobp  );
+    PRECISION dtT = (T - Tp) / d_dt;
+    PRECISION dxT = (*(Tvec + s + 1) - *(Tvec + s - 1)) * facX;
+    PRECISION dyT = (*(Tvec + s + d_ncx) - *(Tvec + s - d_ncx)) * facY;
+    PRECISION dnT = (*(Tvec + s + stride) - *(Tvec + s - stride)) * facZ;
     
-    PRECISION dtmub = (mubs   - mubPs ) / d_dt;
-    PRECISION dxmub = (mubsp1 - mubsm1) * facX;
-    PRECISION dymub = (mubspd - mubsmd) * facY;
-    PRECISION dnmub = (mubsps - mubsms) * facZ;
+    PRECISION dtmub = (mubs - muBp ) / d_dt;
+    PRECISION dxmub = (*(muBvec + s + 1) - *(muBvec + s - 1)) * facX;
+    PRECISION dymub = (*(muBvec + s + d_ncx) - *(muBvec + s - d_ncx)) * facY;
+    PRECISION dnmub = (*(muBvec + s + stride) - *(muBvec + s - stride)) * facZ;
     
     PRECISION ukdk_mub = -ut * dtmub + ux * dxmub + uy * dymub + pow(t,2) * un * dnmub;
     PRECISION ukdk_T   = -ut * dtT   + ux * dxT   + uy * dyT   + pow(t,2) * un * dnT;
@@ -705,7 +679,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablan_alphaB = 0;
     
     PRECISION es = evec[s];
-    PRECISION T = effectiveTemperature(es, rhobs);
+    PRECISION T = Tvec[s];
 #endif
     
 	//=========================================================

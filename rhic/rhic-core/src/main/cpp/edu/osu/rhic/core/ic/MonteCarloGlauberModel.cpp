@@ -88,7 +88,7 @@ int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double
 
 void 
 monteCarloGlauberEnergyDensityTransverseProfile(double * const __restrict__ energyDensityTransverse, 
-int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB, int n1, int n2//Ta&Tb, n1&n2 by Lipei
+int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB, int * const __restrict__ n1, int * const __restrict__ n2//Ta&Tb, n1&n2 by Lipei
 ) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int    NA = initCond->numberOfNucleonsPerNuclei;
@@ -103,8 +103,8 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
     double x1p[NA], y1p[NA], x2p[NA], y2p[NA];//Lipei
 
     srand(1328398221);
-	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn,&n1,&n2,x1p,y1p,x2p,y2p);//n1&n2&x1p&y1p&x2p&y2p by Lipei
-	printf("Found %d wounded nucleons, %d from A and %d from B.\n", nNucleons, n1, n2);
+	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn,n1,n2,x1p,y1p,x2p,y2p);//n1&n2&x1p&y1p&x2p&y2p by Lipei
+	printf("Found %d wounded nucleons, %d from A and %d from B.\n", nNucleons, *n1, *n2);
     
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
@@ -114,25 +114,27 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
       }
 	}
     
+    double norm = 1/(2*3.1415926*SIG0*SIG0);//Lipei
+    
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
         for (int n = 0; n < nNucleons; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - xp[n];
             double y = (j - ((double)ny-1.)/2.)*dy - yp[n];
             // assumes gaussion bump in density
-            energyDensityTransverse[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+            energyDensityTransverse[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
         }
         
         //To initialize the baryon density in 3D, the thickness function of A&B are needed seperately; by Lipei
-        for (int n = 0; n < n1; ++n) {
+        for (int n = 0; n < *n1; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x1p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y1p[n];
-            TA[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
+            TA[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
         }
-        for (int n = 0; n < n2; ++n) {
+        for (int n = 0; n < *n2; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x2p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y2p[n];
-            TB[i + nx*j] += exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
+            TB[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
         }
 	  }
 	}
