@@ -117,7 +117,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   getEquationOfStateTable();//Lipei
   //testEOS();
 #endif
-    
+
   //************************************************************************************\
   //* Jet stuff
   //************************************************************************************/
@@ -204,7 +204,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   setConservedVariables(t, latticeParams);
   // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob,muB,T);//rhob by Lipei
-    
+
     //PRECISION setVelocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev);
     //ePrev=5.200055e-04,     M0=6.405995e-04,     M=1.163622e-03,     Pi=2.914440e-04,     rhobPrev=4.932446e-05,     delta_nbt=6.149489e-05.
   //setVelocityFromConservedVariables(5.200055e-04, 6.405995e-04, 1.163622e-03, 2.914440e-04, 4.932446e-05, 6.149489e-05, 1.752584e-02);
@@ -240,7 +240,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     }
 
     //************************************************************************************\
-    //* Freeze-out finder
+    // Freeze-out finder (Derek)
+    // the freezeout surface file is written in the format which can
+    // be read by iS3D : https://github.com/derekeverett/iS3D
     //************************************************************************************/
     //append the energy density and all hydro variables to storage arrays
     int nFO = n % FOFREQ;
@@ -276,7 +278,6 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
               //write the values of energy density to all corners of the hyperCube
               if (dim == 4) writeEnergyDensityToHypercube4D(hyperCube4D, energy_density_evoution, it, ix, iy, iz);
               else if (dim == 3) writeEnergyDensityToHypercube3D(hyperCube3D, energy_density_evoution, it, ix, iy);
-              //the freezeout surface file is written in the format which is read by iS3D
 
               //use cornelius to find the centroid and normal vector of each hyperCube
               if (dim == 4) cor.find_surface_4d(hyperCube4D);
