@@ -5,6 +5,7 @@
  *      Author: bazow
  */
 #include <stdlib.h>
+#include <math.h>
 
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
 #include "edu/osu/rhic/harness/lattice/LatticeParameters.h"
@@ -12,9 +13,9 @@
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h" // for ghost cells
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"//Lipei
 
-CONSERVED_VARIABLES *q,*Q,*qS;
+CONSERVED_VARIABLES *q, *Q, *qS;
 
-FLUID_VELOCITY *u,*up,*uS;
+FLUID_VELOCITY *u, *up, *uS;
 
 PRECISION *e, *p, *rhob;
 
@@ -22,11 +23,14 @@ PRECISION *muB, *muBp, *muBS;
 
 PRECISION *T, *Tp, *TS;
 
-PRECISION *muBT;//test
-
 EQUATION_OF_STATE *EOState;//Lipei
 
 DYNAMICAL_SOURCE *Source;//Lipei
+
+PRECISION *termX;
+PRECISION *termY;
+PRECISION *termZ;
+PRECISION *term2;//Lipei
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
@@ -53,12 +57,17 @@ void allocateHostMemory(int len) {
     Tp= (PRECISION *)calloc(len, bytes);//Lipei
     TS= (PRECISION *)calloc(len, bytes);//Lipei
     
-    muBT= (PRECISION *)calloc(len, bytes);
+    termX = (PRECISION *)calloc(len, bytes);//Lipei
+    termY = (PRECISION *)calloc(len, bytes);//Lipei
+    termZ = (PRECISION *)calloc(len, bytes);//Lipei
+    term2 = (PRECISION *)calloc(len, bytes);//Lipei
+
     // equation of state table
     EOState = (EQUATION_OF_STATE *)calloc(1, sizeof(EQUATION_OF_STATE));
-    EOState->ChemicalPotential = (PRECISION *)calloc(188580, bytes);//Lipei
-    EOState->Pressure          = (PRECISION *)calloc(188580, bytes);//Lipei
-    EOState->Temperature       = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->Pressure      = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->Temperature   = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->Mubovert      = (PRECISION *)calloc(188580, bytes);//Lipei
+    EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);//Lipei
     
 	//=======================================================
 	// Primary variables
@@ -107,7 +116,6 @@ void allocateHostMemory(int len) {
 #ifdef PI
 	q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
-    //baryon; Lipei
 #ifdef NBMU
     q->Nbt = (PRECISION *)calloc(len, bytes);
 #endif
@@ -140,7 +148,6 @@ void allocateHostMemory(int len) {
 #ifdef PI
 	Q->Pi = (PRECISION *)calloc(len, bytes);
 #endif
-    //baryon; Lipei
 #ifdef NBMU
     Q->Nbt = (PRECISION *)calloc(len, bytes);
 #endif
@@ -227,17 +234,22 @@ void setConservedVariables(double t, void * latticeParams) {
 				q->tty[s] = Tty(e_s, p_s+Pi_s, ut_s, uy_s, pity_s);
 				q->ttn[s] = Ttn(e_s, p_s+Pi_s, ut_s, un_s, pitn_s);
 
-                //baryon; Lipei
                 PRECISION rhob_s = rhob[s];
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
+                if (T[s] < 1.e-7)
+                    T[s] = 1.e-7;
+                
                 Tp[s] = T[s];
 #ifdef VMU
                 nbt_s = q->nbt[s];
 #endif
 #ifdef NBMU
                 q->Nbt[s] = Nbt(rhob_s, ut_s, nbt_s);
-                muB[s] = chemicalPotential(e_s, rhob_s);
+
+                muB[s] = chemicalPotentialOverT(e_s, rhob_s);
+                if (muB[s] < 1.e-7)
+                    muB[s] = 1.e-7;
                 muBp[s] = muB[s];
 #endif
 			}
@@ -289,7 +301,6 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
     q->Pi[s] = q->Pi[sBC];
 #endif
     
-    //baryon; Lipei
     rhob[s] = rhob[sBC];
     T[s] = T[sBC];
 #ifdef NBMU
@@ -428,10 +439,19 @@ void freeHostMemory() {
     free(Source->sourcey);//Lipei
     free(Source->sourcen);//Lipei
     free(Source->sourceb);//Lipei
+    
+    free(termX);//Lipei
+    free(termY);//Lipei
+    free(termZ);//Lipei
+    free(term2);//Lipei
+    
 
-    free(EOState->ChemicalPotential);//Lipei
+    //free(EOState->ChemicalPotential);//Lipei
     free(EOState->Pressure);//Lipei
     free(EOState->Temperature);//Lipei
+    free(EOState->Mubovert);//Lipei
+    free(EOState->dpdrhob);
+    
 
     free(rhob);//Lipei
     free(muB);
@@ -440,7 +460,6 @@ void freeHostMemory() {
     free(T);
     free(Tp);
     free(TS);
-    //baryon; Lipei
 #ifdef NBMU
     free(q->Nbt);
 #endif
@@ -462,7 +481,6 @@ void freeHostMemory() {
 	free(q->ttx);
 	free(q->tty);
 	free(q->ttn);
-	// free \pi^\mu\nu
 #ifdef PIMUNU
 	free(q->pitt);
 	free(q->pitx);
@@ -475,7 +493,6 @@ void freeHostMemory() {
 	free(q->piyn);
 	free(q->pinn);
 #endif
-	// free \Pi
 #ifdef PI
 	free(q->Pi);
 #endif

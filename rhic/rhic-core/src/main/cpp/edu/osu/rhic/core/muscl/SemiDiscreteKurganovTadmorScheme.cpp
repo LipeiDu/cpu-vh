@@ -17,7 +17,7 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 		PRECISION (* const leftHalfCellExtrapolation)(PRECISION qmm, PRECISION qm, PRECISION q, PRECISION qp, PRECISION qpp),
 		PRECISION (* const spectralRadius)(PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un),
 		PRECISION (* const fluxFunction)(PRECISION q, PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un),
-		PRECISION t, PRECISION ePrev, PRECISION rhobPrev, PRECISION utPrev//rhobPrev by Lipei
+		PRECISION t, PRECISION ePrev, PRECISION rhobPrev, PRECISION utPrev
 ) {
 	// left and right cells
 	PRECISION qR[ALL_NUMBER_CONSERVED_VARIABLES], qL[ALL_NUMBER_CONSERVED_VARIABLES];
@@ -40,7 +40,7 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 	PRECISION eR,pR,utR,uxR,uyR,unR, rhobR;
 	getInferredVariables(t,qR,ePrev,&eR,&pR,utPrev,&utR,&uxR,&uyR,&unR,rhobPrev,&rhobR);
 	PRECISION eL,pL,utL,uxL,uyL,unL, rhobL;
-	getInferredVariables(t,qL,ePrev,&eL,&pL,utPrev,&utL,&uxL,&uyL,&unL,rhobPrev,&rhobL);//rhob by Lipei
+	getInferredVariables(t,qL,ePrev,&eL,&pL,utPrev,&utL,&uxL,&uyL,&unL,rhobPrev,&rhobL);
 
 	PRECISION a,qR_n,qL_n,FqR,FqL,res;
 	a = localPropagationSpeed(utR,uxR,uyR,unR,utL,uxL,uyL,unL,spectralRadius);

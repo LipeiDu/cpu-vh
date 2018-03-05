@@ -42,14 +42,14 @@
 void outputDynamicalQuantities(double t, const char *outputDir, void * latticeParams)
 {
   output(e, t, outputDir, "e", latticeParams);
-  output(u->ux, t, outputDir, "ux", latticeParams);
+  //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
-  output(q->ttt, t, outputDir, "ttt", latticeParams);
+  //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
-  output(q->pixx, t, outputDir, "pixx", latticeParams);
+  //output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
@@ -57,17 +57,21 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
   #ifdef PI
-  output(q->Pi, t, outputDir, "Pi", latticeParams);
+  //output(q->Pi, t, outputDir, "Pi", latticeParams);
   #endif
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  output(muB, t, outputDir, "muB", latticeParams);
-  output(T, t, outputDir, "T", latticeParams);
+  //output(muB, t, outputDir, "muBT", latticeParams);
+  //output(T, t, outputDir, "T", latticeParams);
+  output(term2, t, outputDir, "term2", latticeParams);
+  output(termX, t, outputDir, "termX", latticeParams);
+  output(termY, t, outputDir, "termY", latticeParams);
+  output(termZ, t, outputDir, "facb", latticeParams);
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
   output(q->nbt, t, outputDir, "nbtau", latticeParams);
-  //output(q->nbx, t, outputDir, "nbx", latticeParams);
+  output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
   //output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif

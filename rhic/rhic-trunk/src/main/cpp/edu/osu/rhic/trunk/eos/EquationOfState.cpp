@@ -20,21 +20,6 @@ using namespace std;//Lipei
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 
-//****************************************************************************\
-//* Parameterization based on the Equation of state from the Wuppertal-Budapest collaboration
-//* Tref 1.01355
-//* h0 0.1396
-//* h1 (-0.1800)
-//* h2 0.0350
-//* alpha 0.01
-//* nf = 2+1+1
-//* f0 5.59
-//* f1 7.34
-//* f2 (-5.60)
-//* g1 1.42
-//* g2 0.5
-//****************************************************************************/
-
 #define HBARC 0.197326938
 
 //===========================================================================//
@@ -45,7 +30,7 @@ using namespace std;//Lipei
 // Read in the table of the Equation of State
 void getEquationOfStateTable(){
     
-    FILE *eosfilet, *eosfilep, *eosfilemb;
+    FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob;
     PRECISION energy;
     PRECISION baryon;
     
@@ -79,20 +64,35 @@ void getEquationOfStateTable(){
     }
     fclose(eosfilep);
     
-    // baryon chemical potential table
-    eosfilemb = fopen ("eos/eos_mb.dat","r");
-    if(eosfilemb==NULL){
-        printf("The EOS file eos_mb.dat was not opened...\n");
+    // baryon chemical potential over temperature table
+    eosfilembt = fopen ("eos/eos_mbovert.dat","r");
+    if(eosfilembt==NULL){
+        printf("The EOS file eos_mbovert.dat was not opened...\n");
         exit(-1);
     }
     else
     {
-        fseek(eosfilemb,0L,SEEK_SET);
+        fseek(eosfilembt,0L,SEEK_SET);
         for(int i = 0; i < 188580; ++i){
-            fscanf(eosfilemb,"%lf %lf %lf", & energy, & baryon, & EOState->ChemicalPotential[i]);
+            fscanf(eosfilembt,"%lf %lf %lf", & energy, & baryon, & EOState->Mubovert[i]);
         }
     }
-    fclose(eosfilemb);
+    fclose(eosfilembt);
+ 
+    // dPdRhob table
+    eosfileprhob = fopen ("eos/eos_dpdrhob.dat","r");
+    if(eosfileprhob==NULL){
+        printf("The EOS file eos_dpdrhob.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(eosfileprhob,0L,SEEK_SET);
+        for(int i = 0; i < 188580; ++i){
+            fscanf(eosfileprhob,"%lf %lf %lf", & energy, & baryon, & EOState->dpdrhob[i]);
+        }
+    }
+    fclose(eosfileprhob);
     
     printf("Equation of State table is read in.\n");
 
@@ -115,7 +115,7 @@ inline PRECISION biLinearInterpolation(PRECISION x, PRECISION y, PRECISION q11, 
 }
 
 // If (e, rhob) lies in the nontivial zone, this function can do 2D interpolation to give the inferred value for (e, rhob)
-PRECISION InferredPrimaryVariable(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable){
+PRECISION InferredPrimaryVariable(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, int shift, const PRECISION * const __restrict__ EOS_Variable){
     
     int m, n;
     int s11, s12, s21, s22;
@@ -144,182 +144,100 @@ PRECISION InferredPrimaryVariable(PRECISION e, PRECISION rhob, PRECISION e_start
     return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
 }
 
-PRECISION InferredPrimaryVariableTilt1(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable){
-    
-    int m, n, nb, nf;
-    int s11, s12, s21, s22;
-    PRECISION mx;
-    PRECISION e1, e2, rhob1, rhob2;
-    PRECISION Q11, Q12, Q21, Q22;
-    
-    m = floor((e-e_start)/d_e);
-    n = floor(rhob/d_rhob);
-    
-    e1 = e_start + d_e * m;
-    e2 = e_start + d_e * (m+1);
-    
-    rhob1 = d_rhob * n;
-    rhob2 = d_rhob * (n+1);
-    
-    //shift backwards and forwards
-    mx = (e-e1)/d_e;
-    nb = floor(30*mx);
-    nf = 30 - floor(30*mx);
-    
-    int nmin = nb;
-    int nmax = nrhob - nf;
-    if((nmax-1>n&&n>nmin)||(m==0&&n<nmin+10))
-    {
-        nb = n - nb;
-        nf = n + nf;
-    }else{
-        nb = n;
-        nf = n;
-    }
-    
-    s11 = index_start + columnIndex(m,nb,nrhob);
-    s12 = index_start + columnIndex(m,nb+1,nrhob);
-    s21 = index_start + columnIndex(m+1,nf,nrhob);
-    s22 = index_start + columnIndex(m+1,nf+1,nrhob);
-    
-    Q11 = EOS_Variable[s11];
-    Q12 = EOS_Variable[s12];
-    Q21 = EOS_Variable[s21];
-    Q22 = EOS_Variable[s22];
-    
-    return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
-}
-
-PRECISION InferredPrimaryVariableTilt(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, int shift, const PRECISION * const __restrict__ EOS_Variable){
-    
-    int m, n, nb, nf;
-    int s11, s12, s21, s22;
-    PRECISION mx;
-    PRECISION e1, e2, rhob1, rhob2;
-    PRECISION Q11, Q12, Q21, Q22;
-    
-    m = floor((e-e_start)/d_e);
-    n = floor(rhob/d_rhob);
-    
-    e1 = e_start + d_e * m;
-    e2 = e_start + d_e * (m+1);
-    
-    rhob1 = d_rhob * n;
-    rhob2 = d_rhob * (n+1);
-    
-    //shift backwards and forwards
-    mx = (e-e1)/d_e;
-    nb = floor(shift * mx);
-    nf = shift - floor(shift * mx);
-    
-    int nmin = nb;
-    int nmax = nrhob - nf;
-    if(nmax-1>n&&n>nmin)
-    {
-        nb = n - nb;
-        nf = n + nf;
-    }else{
-        nb = n;
-        nf = n;
-    }
-    
-    s11 = index_start + columnIndex(m,nb,nrhob);
-    s12 = index_start + columnIndex(m,nb+1,nrhob);
-    s21 = index_start + columnIndex(m+1,nf,nrhob);
-    s22 = index_start + columnIndex(m+1,nf+1,nrhob);
-    
-    Q11 = EOS_Variable[s11];
-    Q12 = EOS_Variable[s12];
-    Q21 = EOS_Variable[s21];
-    Q22 = EOS_Variable[s22];
-    
-    return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
-}
-
 // (e, rhob) can lie in the triavial zone, the value will be trivially equal to the value at the edge of the nontrivial zone.
 PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * const __restrict__ EOS_Variable){
     
     PRECISION e0 = e*HBARC;
-    PRECISION rhob0 = rhob*HBARC;
+    PRECISION rhob0 = rhob;
     
     if((0<=e0) && (e0<0.0036))
     {
         if((0<=rhob0) && (rhob0<=0.00498))//zone 1
-            return InferredPrimaryVariableTilt1(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, 0, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, 0, EOS_Variable)/HBARC;
     }
     else if((0.0036<=e0) && (e0<0.015))
     {
         if((0<=rhob0) && (rhob0<=0.0149))//zone 2
-            return InferredPrimaryVariableTilt(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, 0, EOS_Variable)/HBARC;
     }
     else if((0.015<=e0) && (e0<0.045))
     {
         if((0<=rhob0) && (rhob0<=0.0445))//zone 3
-            return InferredPrimaryVariableTilt(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, 0, EOS_Variable)/HBARC;
     }
     else if((0.045<=e0) && (e0<0.455))
     {
         if((0<=rhob0) && (rhob0<=0.496))//zone 4
-            return InferredPrimaryVariableTilt(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, 0, EOS_Variable)/HBARC;
     }
     else if((0.455<=e0) && (e0<20.355))
     {
         if((0<=rhob0) && (rhob0<=3.48))//zone 5
-            return InferredPrimaryVariableTilt(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, 0, EOS_Variable)/HBARC;
     }
     else if((20.355<=e0)&(e0<219.355))
     {
         if((0<=rhob0) && (rhob0<=12.4))//zone 6
-            return InferredPrimaryVariableTilt(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, 0, EOS_Variable)/HBARC;
     }
     else
     {
         if((0<=rhob0) && (rhob0<=39.6))//zone 7
-            return InferredPrimaryVariableTilt(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOS_Variable)/HBARC;
         else
-            return InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, EOS_Variable)/HBARC;
+            return InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, 0, EOS_Variable)/HBARC;
     }
 }
 
 // To test the interpolatin function to see it reproduce the EOS table
 void testEOS(){
 
-    char EOStable[] = "output/EOS_mu_test.dat";
+    char EOStable[] = "output/EOS_mubt_test5.dat";
     ofstream eos_table(EOStable);
-    //char EOStable1[] = "output/EOS_cs2_test.dat";
-    //ofstream eos_table1(EOStable1);
-    //char EOStable2[] = "output/EOS_dpdrho_test.dat";
-    //ofstream eos_table2(EOStable2);
+    char EOStable1[] = "output/EOS_t_test5.dat";
+    ofstream eos_table1(EOStable1);
+    char EOStable2[] = "output/eos_dpdrhob_test5.dat";
+    ofstream eos_table2(EOStable2);
+    char EOStable3[] = "output/eos_p_test5.dat";
+    ofstream eos_table3(EOStable3);
+    char EOStable4[] = "output/eos_cs2_test5.dat";
+    ofstream eos_table4(EOStable4);
     
-    for(int i = 0; i < 200; ++i) {
-        for(int j = 0; j < 5000; ++j){
-            PRECISION etest = (0.001+i*0.0003)/HBARC;
-            PRECISION rhobtest = (0.0001+j*0.00001)/HBARC;
+    for(int i = 0; i < 50; ++i) {
+        for(int j = 0; j < 300; ++j){
+            PRECISION etest=(i*0.00003)/HBARC;
+            PRECISION rhobtest=j*0.00001;
         
-            eos_table  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
-                       << setprecision(6) << setw(18) << primaryVariablesEOS(etest, rhobtest, EOState->ChemicalPotential)*HBARC << endl;
-            //eos_table1 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
-            //           << setprecision(6) << setw(18) << speedOfSoundSquared(etest, rhobtest) << endl;
-            //eos_table2 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest*HBARC
-            //           << setprecision(6) << setw(18) << dPdRhob(etest, rhobtest)  << endl;
+            eos_table3 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+                       << setprecision(6) << setw(18) << equilibriumPressure(etest, rhobtest)*HBARC << endl;
+            eos_table2 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+                       << setprecision(6) << setw(18) << dPdRhob(etest,rhobtest)*HBARC << endl;
+            eos_table1 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+                       << setprecision(6) << setw(18) << effectiveTemperature(etest, rhobtest)*HBARC << endl;
+            eos_table  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+                       << setprecision(6) << setw(18) << chemicalPotentialOverT(etest, rhobtest) << endl;
+            eos_table4  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+                       << setprecision(6) << setw(18) << speedOfSoundSquared(etest, rhobtest) << endl;
         }
     }
     
     eos_table.close();
-    //eos_table1.close();
-    //eos_table2.close();
+    eos_table1.close();
+    eos_table2.close();
+    eos_table3.close();
+    eos_table4.close();
     printf("EOS table is reproduced.\n");
 }
 
@@ -327,127 +245,27 @@ void testEOS(){
 // 2D Equation of State
 //===========================================================================//
 
+//****************************************************************************\
+//* Parameterization based on the Equation of state from the Wuppertal-Budapest collaboration
+//* Tref 1.01355
+//* h0 0.1396
+//* h1 (-0.1800)
+//* h2 0.0350
+//* alpha 0.01
+//* nf = 2+1+1
+//* f0 5.59
+//* f1 7.34
+//* f2 (-5.60)
+//* g1 1.42
+//* g2 0.5
+//****************************************************************************/
+
 PRECISION dPdRhob(PRECISION e, PRECISION rhob){
-    
-    PRECISION e0 = e*HBARC;
-    PRECISION rhob0 = rhob*HBARC;
-    PRECISION rhobp, rhobm;
-    PRECISION p0, pp, pm;
-    
-    // dPdRhob = 0 in the trivial zone; return 0 at the end;
-    if((0<=e0) && (e0<0.0036))
-    {
-        if((0<=rhob0) && (rhob0<=0.00499))//zone 1
-        {
-            rhobp = rhob0 + 0.00001;
-            rhobm = rhob0 - 0.00001;
-            pp = InferredPrimaryVariableTilt1(e0, rhobp, 0.0, 0.0003, 500, 0.00001, 0, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt1(e0, rhobm, 0.0, 0.0003, 500, 0.00001, 0, EOState->Pressure);
-                return (pp-pm)/0.00002;
-            }else{
-                p0 = InferredPrimaryVariableTilt1(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, EOState->Pressure);
-                return (pp-p0)/0.00001;
-            }
-        }
-    }
-    else if((0.0036<=e0) && (e0<0.015))
-    {
-        if((0<=rhob0) && (rhob0<=0.01495))//zone 2
-        {
-            rhobp = rhob0 + 0.00005;
-            rhobm = rhob0 - 0.00005;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->Pressure);
-                return (pp-pm)/0.0001;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->Pressure);
-                return (pp-p0)/0.00005;
-            }
-        }
-    }
-    else if((0.015<=e0) && (e0<0.045))
-    {
-        if((0<=rhob0) && (rhob0<=0.04475))//zone 3
-        {
-            rhobp = rhob0 + 0.00025;
-            rhobm = rhob0 - 0.00025;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->Pressure);
-                return (pp-pm)/0.0005;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->Pressure);
-                return (pp-p0)/0.00025;
-            }
-        }
-    }
-    else if((0.045<=e0) && (e0<0.455))
-    {
-        if((0<=rhob0) && (rhob0<=0.498))//zone 4
-        {
-            rhobp = rhob0 + 0.002;
-            rhobm = rhob0 - 0.002;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->Pressure);
-                return (pp-pm)/0.004;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->Pressure);
-                return (pp-p0)/0.002;
-            }
-        }
-    }
-    else if((0.455<=e0) && (e0<20.355))
-    {
-        if((0<=rhob0) && (rhob0<=3.49))//zone 5
-        {
-            rhobp = rhob0 + 0.01;
-            rhobm = rhob0 - 0.01;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->Pressure);
-                return (pp-pm)/0.02;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->Pressure);
-                return (pp-p0)/0.01;
-            }
-        }
-    }
-    else if((20.355<=e0)&(e0<219.355))
-    {
-        if((0<=rhob0) && (rhob0<=12.45))//zone 6
-        {
-            rhobp = rhob0 + 0.05;
-            rhobm = rhob0 - 0.05;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 20.355, 1, 250, 0.05, 98580, 1, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 20.355, 1, 250, 0.05, 98580, 1, EOState->Pressure);
-                return (pp-pm)/0.1;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOState->Pressure);
-                return (pp-p0)/0.05;
-            }
-        }
-    }
-    else
-    {
-        if((0<=rhob0) && (rhob0<=39.8))//zone 7
-        {
-            rhobp = rhob0 + 0.2;
-            rhobm = rhob0 - 0.2;
-            pp = InferredPrimaryVariableTilt(e0, rhobp, 219.355, 10, 200, 0.2, 148580, 1, EOState->Pressure);
-            if(rhobm>=0){
-                pm = InferredPrimaryVariableTilt(e0, rhobm, 219.355, 10, 200, 0.2, 148580, 1, EOState->Pressure);
-                return (pp-pm)/0.4;
-            }else{
-                p0 = InferredPrimaryVariableTilt(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOState->Pressure);
-                return (pp-p0)/0.2;
-            }
-        }
-    }
-    return 0;
+    return primaryVariablesEOS(e, rhob, EOState->dpdrhob);
+}
+
+PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob) {
+    return primaryVariablesEOS(e, rhob, EOState->Mubovert)*HBARC;
 }
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
@@ -514,16 +332,6 @@ PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
         p0 = primaryVariablesEOS(e0, rhob, EOState->Pressure);
         return (pp-p0)/delta_e/HBARC;
     }
-#endif
-}
-
-PRECISION chemicalPotential(PRECISION e, PRECISION rhob) {
-#ifndef EOS_with_baryon
-    double T = effectiveTemperature(e);
-    double nb = (double) fabs(rhob);
-    return (-15.192666241151988*powf(T,2))/powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333) + 1.9488885448603768*powf(27.*nb + 1.7320508075688772*sqrt(243.*powf(nb,2) + 157.91367041742973*powf(T,6)),0.3333333333333333);
-#else
-    return primaryVariablesEOS(e, rhob, EOState->ChemicalPotential);
 #endif
 }
 
@@ -759,4 +567,98 @@ PRECISION equilibriumEnergyDensity(PRECISION T) {
 	return EOS_FACTOR*powf(T, 4.0);
 #endif
 }
+
+
+/*PRECISION InferredPrimaryVariableTilt1(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable){
+ 
+ int m, n, nb, nf;
+ int s11, s12, s21, s22;
+ PRECISION mx;
+ PRECISION e1, e2, rhob1, rhob2;
+ PRECISION Q11, Q12, Q21, Q22;
+ 
+ m = floor((e-e_start)/d_e);
+ n = floor(rhob/d_rhob);
+ 
+ e1 = e_start + d_e * m;
+ e2 = e_start + d_e * (m+1);
+ 
+ rhob1 = d_rhob * n;
+ rhob2 = d_rhob * (n+1);
+ 
+ //shift backwards and forwards
+ mx = (e-e1)/d_e;
+ nb = floor(30*mx);
+ nf = 30 - floor(30*mx);
+ 
+ int nmin = nb;
+ int nmax = nrhob - nf;
+ if((nmax-1>n&&n>nmin)||(m==0&&n<nmin+10))
+ {
+ nb = n - nb;
+ nf = n + nf;
+ }else{
+ nb = n;
+ nf = n;
+ }
+ 
+ s11 = index_start + columnIndex(m,nb,nrhob);
+ s12 = index_start + columnIndex(m,nb+1,nrhob);
+ s21 = index_start + columnIndex(m+1,nf,nrhob);
+ s22 = index_start + columnIndex(m+1,nf+1,nrhob);
+ 
+ Q11 = EOS_Variable[s11];
+ Q12 = EOS_Variable[s12];
+ Q21 = EOS_Variable[s21];
+ Q22 = EOS_Variable[s22];
+ 
+ return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
+ }
+ 
+ PRECISION InferredPrimaryVariableTilt(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, int shift, const PRECISION * const __restrict__ EOS_Variable){
+ 
+ int m, n, nb, nf;
+ int s11, s12, s21, s22;
+ PRECISION mx;
+ PRECISION e1, e2, rhob1, rhob2;
+ PRECISION Q11, Q12, Q21, Q22;
+ 
+ m = floor((e-e_start)/d_e);
+ n = floor(rhob/d_rhob);
+ 
+ e1 = e_start + d_e * m;
+ e2 = e_start + d_e * (m+1);
+ 
+ rhob1 = d_rhob * n;
+ rhob2 = d_rhob * (n+1);
+ 
+ //shift backwards and forwards
+ mx = (e-e1)/d_e;
+ nb = floor(shift * mx);
+ nf = shift - floor(shift * mx);
+ 
+ int nmin = nb;
+ int nmax = nrhob - nf;
+ if(nmax-1>n&&n>nmin)
+ {
+ nb = n - nb;
+ nf = n + nf;
+ }else{
+ nb = n;
+ nf = n;
+ }
+ 
+ s11 = index_start + columnIndex(m,nb,nrhob);
+ s12 = index_start + columnIndex(m,nb+1,nrhob);
+ s21 = index_start + columnIndex(m+1,nf,nrhob);
+ s22 = index_start + columnIndex(m+1,nf+1,nrhob);
+ 
+ Q11 = EOS_Variable[s11];
+ Q12 = EOS_Variable[s12];
+ Q21 = EOS_Variable[s21];
+ Q22 = EOS_Variable[s22];
+ 
+ return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
+ }*/
+
 

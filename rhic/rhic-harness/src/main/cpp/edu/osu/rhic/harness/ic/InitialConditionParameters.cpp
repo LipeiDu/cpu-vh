@@ -9,12 +9,9 @@
 #include "edu/osu/rhic/harness/util/Properties.h"
 
 int initialConditionType;
-
 int numberOfNucleonsPerNuclei;
-
-int sourceType;//Lipei
-double initialBaryonDensity;//Lipei
-
+int sourceType;
+double initialBaryonDensity;
 double initialEnergyDensity;
 double scatteringCrossSectionNN;
 double impactParameter;
@@ -25,7 +22,7 @@ double rapidityVariance; // \sigma^{2}_{\eta}
 double rapidityMean; // flat region around \ets_s = 0
 
 void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, void * params) {
-	// Read the file
+
 	char fname[255];
 	sprintf(fname, "%s/%s", configDirectory, "ic.properties");
 	if (!config_read_file(cfg, fname)) {
@@ -36,8 +33,8 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	getIntegerProperty(cfg, "initialConditionType", &initialConditionType, 2);
 	getIntegerProperty(cfg, "numberOfNucleonsPerNuclei", &numberOfNucleonsPerNuclei, 208);
 
-    getIntegerProperty(cfg, "sourceType", &sourceType, 0);//Lipei
-    getDoubleProperty(cfg, "initialBaryonDensity", &initialBaryonDensity, 0.0);//Lipei
+    getIntegerProperty(cfg, "sourceType", &sourceType, 0);
+    getDoubleProperty(cfg, "initialBaryonDensity", &initialBaryonDensity, 0.0);
 
 	getDoubleProperty(cfg, "initialEnergyDensity", &initialEnergyDensity, 1.0);
 	getDoubleProperty(cfg, "scatteringCrossSectionNN", &scatteringCrossSectionNN, 62);
@@ -49,8 +46,8 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) params;
 	initCond->initialConditionType = initialConditionType;
 	initCond->numberOfNucleonsPerNuclei = numberOfNucleonsPerNuclei;
-    initCond->sourceType = sourceType;//Lipei
-    initCond->initialBaryonDensity = initialBaryonDensity;//Lipei
+    initCond->sourceType = sourceType;
+    initCond->initialBaryonDensity = initialBaryonDensity;
 	initCond->initialEnergyDensity = initialEnergyDensity;
 	initCond->scatteringCrossSectionNN = scatteringCrossSectionNN;
 	initCond->impactParameter = impactParameter;

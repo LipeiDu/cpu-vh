@@ -20,17 +20,17 @@
 void getEquationOfStateTable();//Lipei
 void testEOS();
 
-PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
 PRECISION equilibriumPressure(PRECISION e);
 
-PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);
 
-PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);
 PRECISION effectiveTemperature(PRECISION e);
 
-PRECISION chemicalPotential(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob);
 
-PRECISION dPdRhob(PRECISION e, PRECISION rhob);//rhob lipei
+PRECISION dPdRhob(PRECISION e, PRECISION rhob);
 
 PRECISION equilibriumEnergyDensity(PRECISION T);
 

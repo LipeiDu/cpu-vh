@@ -15,49 +15,6 @@
  
 #define MAX_ITERS 10000000
 
-PRECISION setVelocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev) {
-    PRECISION e0 = ePrev;
-    PRECISION rhob0 = rhobPrev;
-    PRECISION v0 = vPrev;
-    
-    if(isnan(v0))
-        printf("Input v0 is nan\n");
-    
-    for(int j = 0; j < 100000; ++j) {
-        printf("e0=%4e, rhob0=%4e, v0=%4e\n", e0,rhob0,v0);
-        PRECISION p    = equilibriumPressure(e0, rhob0);
-        PRECISION cs2  = speedOfSoundSquared(e0, rhob0);
-        PRECISION dp_drhob = dPdRhob(e0, rhob0);
-        printf("p=%5e, cs2=%5e, dp_drhob=%5e\n",p, cs2, dp_drhob);
-        
-        PRECISION cst2 = p/e0;
-        PRECISION dcst2_de = 1/e0 * cs2 - p/e0/e0;
-        PRECISION dcst2_drhob = 1/e0 * dp_drhob;
-        PRECISION dcst2_dv = -dcst2_de * M - dcst2_drhob * delta_nbt * v0/sqrt(1-v0*v0);
-        printf("cst2=%5e, dcst2_dv=%5e\n", cst2,dcst2_dv);
-        
-        PRECISION A = M0*(1+cst2)+Pi;
-        PRECISION B = A*A-4*cst2*M*M;
-        printf("A=%5e, B=%5e\n", A,B);
-        
-        PRECISION f = A*v0 + sqrt(B)*v0 - 2*M;
-        PRECISION fp = A + v0*M0*dcst2_dv + sqrt(B) + v0*(A*M0*dcst2_dv - 2*M*M*dcst2_dv)/sqrt(B);
-        printf("f=%4e, fp=%4e\n", f,fp);
-        PRECISION v = v0 - f/fp;
-        printf("v=%4e \n", v);
-        
-        if(fabs(v - v0) <=  0.00001 * fabs(v)) {printf("v=%4e \n", v); return v;}
-        
-        v0 = v;
-        e0 = M0 - v0*M;
-        rhob0 = delta_nbt*sqrt(1-v0*v0);
-    }
-    printf("Maximum number of iterations exceeded for solving v0.\n ePrev=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t delta_nbt=%5e. \n",ePrev,M0,M,Pi,rhobPrev,delta_nbt);
-    
-    return v0;
-}
-
-
 PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev) {
     PRECISION e0 = ePrev;
     PRECISION rhob0 = rhobPrev;
@@ -81,7 +38,7 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
         PRECISION fp = A + v0*M0*dcst2_dv + sqrt(B) + v0*(A*M0*dcst2_dv - 2*M*M*dcst2_dv)/sqrt(B);
         PRECISION v = v0 - alpha*f/fp;
 
-        if(fabs(v - v0) <=  0.00001 * fabs(v)) return v;
+        if(fabs(v - v0) <=  0.001 * fabs(v)) return v;
         
         v0 = v;
         e0 = M0 - v0*M;
@@ -89,7 +46,8 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
         
         if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillate back and forth forever
     }
-    printf("Maximum number of iterations exceeded for solving v0.\n ePrev=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t delta_nbt=%5e. \n",ePrev,M0,M,Pi,rhobPrev,delta_nbt);
+    
+    printf("Maximum number of iterations exceeded for solving v0.\n e0=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhob0=%5e,\t d_nbt=%5e,\t v=%5e.\n",ePrev,M0,M,Pi,rhobPrev,delta_nbt,vPrev);
     
     return v0;
 }
@@ -97,7 +55,8 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
 PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION utPrev) {
     PRECISION e0 = ePrev;
     PRECISION rhob0 = rhobPrev;
-    PRECISION u0 = utPrev;//Initial guess
+    PRECISION u0 = utPrev;
+    PRECISION alpha = 1;
     
     for(int j = 0; j < MAX_ITERS; ++j) {
         PRECISION p    = equilibriumPressure(e0, rhob0);
@@ -116,15 +75,18 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
         
         PRECISION f = A + sqrt(B) - 2*M*u0/groot;
         PRECISION fp = (M0 + (A*M0-2*M*M)/sqrt(B))*dcst2_du + 2*M/(groot*groot*groot);
-        PRECISION u = u0 - f/fp;
+        PRECISION u = u0 - alpha*f/fp;
         
-        if(fabs(u - u0) <=  0.00001 * fabs(u)) return u;
+        if(fabs(u - u0) <=  0.001 * fabs(u)) return u;
         
         u0 = u;
         e0 = M0 - M*sqrt(1-1/(u0*u0));
         rhob0 = delta_nbt/u0;
+        
+        if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillate back and forth forever
     }
-    printf("Maximum number of iterations exceeded for solving u0.\n ePrev=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t delta_nbt=%5e. \n",ePrev,M0,M,Pi,rhobPrev,delta_nbt);
+    
+    printf("Maximum number of iterations exceeded for solving u0.\n e0=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhob0=%5e,\t delta_nbt=%5e,\t u0=%5e.\n",ePrev,M0,M,Pi,rhobPrev,delta_nbt,utPrev);
     
     return u0;
 }
@@ -278,13 +240,15 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e    = M0 - v0 * Ms;
         *rhob = delta_nbt * sqrt(1 - v0*v0);
 
-        if (*e < 1.e-7)
+        if (*e < 3.e-4)
         {
-            *e = 1.e-7;
-            *p = 1.e-7;
+            *e = 3.e-4;
+            *p = 3.e-4;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }
+        
+        if (*rhob < 1.e-4) *rhob = 1.e-4;
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -297,7 +261,6 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *un = u0 * v3;
     }
     else{
-        
         if(ePrev <= 0.1)
             u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
         else
@@ -309,13 +272,17 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = delta_nbt/u0;
-        if (*e < 1.e-7)
+        
+        if (*e < 3.e-4)
         {
-            *e = 1.e-7;
-            *p = 1.e-7;
+            *e = 3.e-4;
+            *p = 3.e-4;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }
+        
+        if (*rhob < 1.e-4) *rhob = 1.e-4;
+        
         PRECISION P  = *p + Pi;
         *ut = u0;
         *ux = u0 * M1/(M0 + P);
@@ -327,6 +294,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
 
 
 void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ uPrev, FLUID_VELOCITY * const __restrict__ u, PRECISION t, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T) {
+    
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     
     int ncx,ncy,ncz;
@@ -384,8 +352,11 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 u->un[s] = un;
                 
                 T[s] = effectiveTemperature(_e, _rhob);
+                if (T[s] < 1.e-7) T[s] = 1.e-7;
+                
 #ifdef NBMU
-                muB[s] = chemicalPotential(_e, _rhob);
+                muB[s] = chemicalPotentialOverT(_e, _rhob);
+                if (muB[s] < 1.e-7) muB[s] = 1.e-7;
 #endif
             }
         }

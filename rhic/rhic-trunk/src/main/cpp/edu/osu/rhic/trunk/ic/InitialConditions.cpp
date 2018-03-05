@@ -565,7 +565,7 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				PRECISION T = effectiveTemperature(e[s], rhob[s]);
+				PRECISION T = effectiveTemperature(e[s]);
 				if (T == 0) T = 1.e-3;
 				PRECISION pinn = -4.0/(3*t*t*t)*etabar*(e[s]+p[s])/T;//was wrong by factor of 2
 #ifdef PIMUNU
@@ -724,7 +724,7 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				e[s] = (PRECISION) ed;
-                rhob[s] = rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-4; //Lipei
+                rhob[s] = rhobd;//rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-4; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 //ep[s] = e[s];
@@ -757,7 +757,7 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	double dz = lattice->latticeSpacingRapidity;
 
 	double e0 = initCond->initialEnergyDensity;
-	double T0 = 3.05;
+    double T0 = 2.03;
 	e0 = (double) equilibriumEnergyDensity(T0);
 
 	double eT[nx*ny], eL[nz];
@@ -767,9 +767,6 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
 	energyDensityTransverseProfileAA(eT, nx, ny, dx, dy, initCondParams, Ta, Tb);
 	longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
-
-    char rhobb[] = "output/baryon_density.dat";//Lipei
-    ofstream baryondens(rhobb);//Lipei
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
@@ -777,21 +774,14 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
-                double ed = (energyDensityTransverse * energyDensityLongitudinal);// + 1.e-3;
-				e[s] = (PRECISION) ed;
-                rhob[s] = rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx];// + 1.e-4; //Lipei
+                double ed = energyDensityTransverse;// * energyDensityLongitudinal;
+				e[s] = (PRECISION) 2*ed + 0.001*e0*2;
+                rhob[s] = (PRECISION) 0.05*energyDensityTransverse + 0.00005; //(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
-                
-                //ep[s] = e[s];
-                //rhobp[s] = rhob[s];
-                
-                baryondens << setprecision(3) << setw(5) << i <<setprecision(3)  << setw(5)  << j
-                           << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}
 	}
 
-    baryondens.close();//Lipei
     printf("Baryon density is initialized.\n");
 }
 
@@ -833,8 +823,8 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
                 double eta = (k-2 - (nz-1)/2)*dz;//Lipei
-                e[s] = 1.5*e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.004;
-                rhob[s] = 0.5*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.0001; //Lipei
+                e[s] = 2*e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.001*e0*2;
+                rhob[s] = 0.05*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
 		}

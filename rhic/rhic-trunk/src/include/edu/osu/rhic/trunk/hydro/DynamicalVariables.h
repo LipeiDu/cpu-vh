@@ -18,7 +18,7 @@
 #define VMU
 
 #ifdef NBMU
-#define RootSolver_with_Baryon
+#define RootSolver_with_Baryon//Lipei
 #define EOS_with_baryon
 #endif
 
@@ -126,20 +126,27 @@ typedef struct
 
 typedef struct
 {
-    PRECISION *ChemicalPotential;
     PRECISION *Pressure;
     PRECISION *Temperature;
+    PRECISION *Mubovert;
+    PRECISION *dpdrhob;
 } EQUATION_OF_STATE;
+
+extern PRECISION *termX;
+extern PRECISION *termY;
+extern PRECISION *termZ;
+extern PRECISION *term2;
+//test Lipei
+
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;
-extern PRECISION *e, *p, *rhob;
-extern PRECISION *muB, *muBp, *muBS;
-extern PRECISION *T, *Tp, *TS;
 extern DYNAMICAL_SOURCE *Source;
 extern EQUATION_OF_STATE *EOState;
 
-extern PRECISION *muBT;
+extern PRECISION *e, *p, *rhob;
+extern PRECISION *muB, *muBp, *muBS;
+extern PRECISION *T, *Tp, *TS;
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
 
