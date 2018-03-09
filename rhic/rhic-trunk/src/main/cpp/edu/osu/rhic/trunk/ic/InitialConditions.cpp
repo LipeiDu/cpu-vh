@@ -775,8 +775,8 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
                 double ed = energyDensityTransverse;// * energyDensityLongitudinal;
-				e[s] = (PRECISION) 2*ed + 0.001*e0*2;
-                rhob[s] = (PRECISION) 0.05*energyDensityTransverse + 0.00005; //(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
+				e[s] =  (PRECISION) 5*ed + 0.001*e0*2;
+                rhob[s] = (PRECISION) 0.01*energyDensityTransverse + 0.00001; //(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
 		}
@@ -823,8 +823,8 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
                 double eta = (k-2 - (nz-1)/2)*dz;//Lipei
-                e[s] = 2*e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.001*e0*2;
-                rhob[s] = 0.05*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
+                e[s] = 2 * e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.001*e0*2;
+                rhob[s] = 0.1*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.0001; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
 		}

@@ -348,7 +348,6 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
                 *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
 #endif
 #endif
-
                 
 #ifdef PIMUNU
 				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
@@ -689,42 +688,42 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 PRECISION nb2 = nbt*nbt - nbx*nbx - nby*nby - nbn*nbn*t2;
                 PRECISION edec = (PRECISION)(1.81);
                 PRECISION scale = tanh(e[s]/edec);
-                PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/prefactor/scale;
+                PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/scale;
                 
                 PRECISION facb = 1;
 
-                //PRECISION facbt = 1;
-                //PRECISION facbx = 1;
-                //PRECISION facby = 1;
-                //PRECISION facbn = 1;
+                /*PRECISION facbt = 1;
+                PRECISION facbx = 1;
+                PRECISION facby = 1;
+                PRECISION facbn = 1;
                 
-                //PRECISION xibt = fabs(nbt)/fabs(rhob[s]);///prefactor/scale;
-                //PRECISION xibx = fabs(nbx)/fabs(rhob[s]);///prefactor/scale;
-                //PRECISION xiby = fabs(nby)/fabs(rhob[s]);///prefactor/scale;
-                //PRECISION xibn = fabs(nbn)/fabs(rhob[s]);///prefactor/scale;
+                PRECISION xibt = fabs(nbt)/fabs(rhob[s])/prefactor/scale;
+                PRECISION xibx = fabs(nbx)/fabs(rhob[s])/prefactor/scale;
+                PRECISION xiby = fabs(nby)/fabs(rhob[s])/prefactor/scale;
+                PRECISION xibn = fabs(nbn)/fabs(rhob[s])/prefactor/scale;
                 
-                //if(xibt>xibmax)
-                //    facbt = tanh(xibt)/xibt;//xibmax/xibt;
-                //if(xibx>xibmax)
-                //    facbx = tanh(xibx)/xibx;//xibmax/xibx;
-                //if(xiby>xibmax)
-                //    facby = tanh(xiby)/xiby;//xibmax/xiby;
-                //if(xibn>xibmax)
-                //    facbn = tanh(xibn)/xibn;//xibmax/xibn;
+                if(xibt>xibmax)
+                    facbt = tanh(xibt)/xibt;//xibmax/xibt;
+                if(xibx>xibmax)
+                    facbx = tanh(xibx)/xibx;//xibmax/xibx;
+                if(xiby>xibmax)
+                    facby = tanh(xiby)/xiby;//xibmax/xiby;
+                if(xibn>xibmax)
+                    facbn = tanh(xibn)/xibn;//xibmax/xibn;*/
                 
                 //if(xib>xibmax)
                 //    facb = xibmax/xib;
                 
-                //term2[s] = facb;
-                //termX[s] = facbx;
-                //termY[s] = facby;
-                //termZ[s] = facbn;
+                termX[s] = facb;
+                //termX[s] = xib*scale;
+                //termY[s] = fabs(nbt)/fabs(rhob[s]);
+                //termZ[s] = fabs(nbx)/fabs(rhob[s]);
                 
 
                 if(isnan(rhob[s]))  printf("found rhob Nan\n");
                 if(isnan(scale))    printf("found scale Nan\n");
-                //if(isnan(xib))      printf("found xib Nan\n");
-                //if(isnan(facb))     printf("found facb Nan\n");
+                if(isnan(xib))      printf("found xib Nan\n");
+                if(isnan(facb))     printf("found facb Nan\n");
 #endif
 
 #ifdef PIMUNU

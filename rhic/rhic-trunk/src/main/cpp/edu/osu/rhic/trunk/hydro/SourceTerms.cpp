@@ -12,11 +12,8 @@
 #include "edu/osu/rhic/core/util/FiniteDifference.h"
 #include "edu/osu/rhic/trunk/hydro/EnergyMomentumTensor.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
-
 #include "edu/osu/rhic/trunk/hydro/FullyDiscreteKurganovTadmorScheme.h" // for const params
-
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h" // for bulk terms
-
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//Lipei
 
 //#define USE_CARTESIAN_COORDINATES
@@ -56,12 +53,10 @@ const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
-
     PRECISION HyCotangent = 1/tanh(mub);
-    
     if(isnan(HyCotangent))
         printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub_over_T=%4e,\t T=%4e. \n",e,rhob, mub, T);
-
+    
     return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
@@ -277,7 +272,8 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     //*********************************************************/
     
 #ifdef VMU
-    PRECISION kappaB = baryonDiffusionCoefficient(T, rhob, mub, e, p);
+ 
+    PRECISION kappaB = baryonDiffusionConstant(T, mub*T);//baryonDiffusionCoefficient(T, rhob, mub, e, p);
     PRECISION tau_n = Cb/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
@@ -679,7 +675,6 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #endif
 #ifdef VMU
     for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//Source terms for baryon diffusion current
-
 #endif
 #endif
 }

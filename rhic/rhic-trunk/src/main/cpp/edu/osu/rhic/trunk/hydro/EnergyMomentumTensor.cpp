@@ -357,6 +357,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
 #ifdef NBMU
                 muB[s] = chemicalPotentialOverT(_e, _rhob);
                 if (muB[s] < 1.e-7) muB[s] = 1.e-7;
+                term2[s] = muB[s]*T[s];
 #endif
             }
         }

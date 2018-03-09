@@ -20,6 +20,8 @@
 void getEquationOfStateTable();//Lipei
 void testEOS();
 
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub);
+
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
 PRECISION equilibriumPressure(PRECISION e);
 

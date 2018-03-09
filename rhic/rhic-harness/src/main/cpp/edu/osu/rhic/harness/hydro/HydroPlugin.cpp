@@ -61,12 +61,12 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #endif
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  //output(muB, t, outputDir, "muBT", latticeParams);
-  //output(T, t, outputDir, "T", latticeParams);
-  output(term2, t, outputDir, "term2", latticeParams);
-  output(termX, t, outputDir, "termX", latticeParams);
-  output(termY, t, outputDir, "termY", latticeParams);
-  output(termZ, t, outputDir, "facb", latticeParams);
+  output(muB, t, outputDir, "muBT", latticeParams);
+  output(T, t, outputDir, "T", latticeParams);
+  output(term2, t, outputDir, "muB", latticeParams);
+  output(termX, t, outputDir, "facb", latticeParams);
+  //output(termY, t, outputDir, "termy", latticeParams);
+  //output(termZ, t, outputDir, "termz", latticeParams);
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU

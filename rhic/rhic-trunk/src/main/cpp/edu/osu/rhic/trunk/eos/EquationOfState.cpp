@@ -30,9 +30,24 @@ using namespace std;//Lipei
 // Read in the table of the Equation of State
 void getEquationOfStateTable(){
     
-    FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob;
+    FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob, *filesigmab;
     PRECISION energy;
     PRECISION baryon;
+    
+    // baryon conductivity
+    filesigmab = fopen ("eos/kappaB.dat","r");
+    if(filesigmab==NULL){
+        printf("The EOS file kappaB.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(filesigmab,0L,SEEK_SET);
+        for(int i = 0; i < 5751; ++i){
+            fscanf(filesigmab,"%lf %lf %lf", & energy, & baryon, & EOState->sigmaB[i]);
+        }
+    }
+    fclose(filesigmab);
     
     // temperature table
     eosfilet = fopen ("eos/eos_t.dat","r");
@@ -204,40 +219,40 @@ PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * con
 // To test the interpolatin function to see it reproduce the EOS table
 void testEOS(){
 
-    char EOStable[] = "output/EOS_mubt_test5.dat";
+    char EOStable[] = "output/sigmaB_test.dat";
     ofstream eos_table(EOStable);
-    char EOStable1[] = "output/EOS_t_test5.dat";
-    ofstream eos_table1(EOStable1);
-    char EOStable2[] = "output/eos_dpdrhob_test5.dat";
-    ofstream eos_table2(EOStable2);
-    char EOStable3[] = "output/eos_p_test5.dat";
-    ofstream eos_table3(EOStable3);
-    char EOStable4[] = "output/eos_cs2_test5.dat";
-    ofstream eos_table4(EOStable4);
+    //char EOStable1[] = "output/EOS_t_test5.dat";
+    //ofstream eos_table1(EOStable1);
+    //char EOStable2[] = "output/eos_dpdrhob_test5.dat";
+    //ofstream eos_table2(EOStable2);
+    //char EOStable3[] = "output/eos_p_test5.dat";
+    //ofstream eos_table3(EOStable3);
+    //char EOStable4[] = "output/eos_cs2_test5.dat";
+    //ofstream eos_table4(EOStable4);
     
-    for(int i = 0; i < 50; ++i) {
-        for(int j = 0; j < 300; ++j){
-            PRECISION etest=(i*0.00003)/HBARC;
-            PRECISION rhobtest=j*0.00001;
-        
-            eos_table3 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
-                       << setprecision(6) << setw(18) << equilibriumPressure(etest, rhobtest)*HBARC << endl;
-            eos_table2 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
-                       << setprecision(6) << setw(18) << dPdRhob(etest,rhobtest)*HBARC << endl;
-            eos_table1 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
-                       << setprecision(6) << setw(18) << effectiveTemperature(etest, rhobtest)*HBARC << endl;
-            eos_table  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
-                       << setprecision(6) << setw(18) << chemicalPotentialOverT(etest, rhobtest) << endl;
-            eos_table4  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
-                       << setprecision(6) << setw(18) << speedOfSoundSquared(etest, rhobtest) << endl;
+    for(int i = 0; i < 100; ++i) {
+        for(int j = 0; j < 130; ++j){
+            PRECISION ttest=(0.5+j*5)/HBARC/1000.0;
+            PRECISION mubtest=i*5/HBARC/1000.0;
+            //printf("ttest=%lf, mubtest=%lf.\n",ttest,mubtest);
+            //eos_table4  << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+            //           << setprecision(6) << setw(18) << speedOfSoundSquared(etest, rhobtest) << endl;
+            //eos_table3 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+            //           << setprecision(6) << setw(18) << equilibriumPressure(etest, rhobtest)*HBARC << endl;
+            //eos_table2 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+            //           << setprecision(6) << setw(18) << dPdRhob(etest,rhobtest)*HBARC << endl;
+            //eos_table1 << setprecision(6) << setw(18) << etest*HBARC << setprecision(6) << setw(18) << rhobtest
+            //           << setprecision(6) << setw(18) << effectiveTemperature(etest, rhobtest)*HBARC << endl;
+            eos_table  << setprecision(6) << setw(18) << ttest << setprecision(6) << setw(18) << mubtest 
+                       << setprecision(6) << setw(18) << baryonDiffusionConstant(ttest, mubtest) << endl;
         }
     }
     
     eos_table.close();
-    eos_table1.close();
-    eos_table2.close();
-    eos_table3.close();
-    eos_table4.close();
+    //eos_table1.close();
+    //eos_table2.close();
+    //eos_table3.close();
+    //eos_table4.close();
     printf("EOS table is reproduced.\n");
 }
 
@@ -259,6 +274,29 @@ void testEOS(){
 //* g1 1.42
 //* g2 0.5
 //****************************************************************************/
+
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
+    PRECISION T0 = T*HBARC*1000;
+    PRECISION mub0 = mub*HBARC*1000;
+    if((100<=T0)&&(T0<=450)){
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * T;
+        else
+            return InferredPrimaryVariable(400, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * T;
+    }else if(T0<100)
+    {
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * T;
+        else
+            return 0.0543361/HBARC/1000 * T;
+    }else
+    {
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * 2.28;
+        else
+            return 22.5093/HBARC/1000 * 2.28;
+    }
+}
 
 PRECISION dPdRhob(PRECISION e, PRECISION rhob){
     return primaryVariablesEOS(e, rhob, EOState->dpdrhob);
@@ -567,98 +605,3 @@ PRECISION equilibriumEnergyDensity(PRECISION T) {
 	return EOS_FACTOR*powf(T, 4.0);
 #endif
 }
-
-
-/*PRECISION InferredPrimaryVariableTilt1(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable){
- 
- int m, n, nb, nf;
- int s11, s12, s21, s22;
- PRECISION mx;
- PRECISION e1, e2, rhob1, rhob2;
- PRECISION Q11, Q12, Q21, Q22;
- 
- m = floor((e-e_start)/d_e);
- n = floor(rhob/d_rhob);
- 
- e1 = e_start + d_e * m;
- e2 = e_start + d_e * (m+1);
- 
- rhob1 = d_rhob * n;
- rhob2 = d_rhob * (n+1);
- 
- //shift backwards and forwards
- mx = (e-e1)/d_e;
- nb = floor(30*mx);
- nf = 30 - floor(30*mx);
- 
- int nmin = nb;
- int nmax = nrhob - nf;
- if((nmax-1>n&&n>nmin)||(m==0&&n<nmin+10))
- {
- nb = n - nb;
- nf = n + nf;
- }else{
- nb = n;
- nf = n;
- }
- 
- s11 = index_start + columnIndex(m,nb,nrhob);
- s12 = index_start + columnIndex(m,nb+1,nrhob);
- s21 = index_start + columnIndex(m+1,nf,nrhob);
- s22 = index_start + columnIndex(m+1,nf+1,nrhob);
- 
- Q11 = EOS_Variable[s11];
- Q12 = EOS_Variable[s12];
- Q21 = EOS_Variable[s21];
- Q22 = EOS_Variable[s22];
- 
- return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
- }
- 
- PRECISION InferredPrimaryVariableTilt(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, int shift, const PRECISION * const __restrict__ EOS_Variable){
- 
- int m, n, nb, nf;
- int s11, s12, s21, s22;
- PRECISION mx;
- PRECISION e1, e2, rhob1, rhob2;
- PRECISION Q11, Q12, Q21, Q22;
- 
- m = floor((e-e_start)/d_e);
- n = floor(rhob/d_rhob);
- 
- e1 = e_start + d_e * m;
- e2 = e_start + d_e * (m+1);
- 
- rhob1 = d_rhob * n;
- rhob2 = d_rhob * (n+1);
- 
- //shift backwards and forwards
- mx = (e-e1)/d_e;
- nb = floor(shift * mx);
- nf = shift - floor(shift * mx);
- 
- int nmin = nb;
- int nmax = nrhob - nf;
- if(nmax-1>n&&n>nmin)
- {
- nb = n - nb;
- nf = n + nf;
- }else{
- nb = n;
- nf = n;
- }
- 
- s11 = index_start + columnIndex(m,nb,nrhob);
- s12 = index_start + columnIndex(m,nb+1,nrhob);
- s21 = index_start + columnIndex(m+1,nf,nrhob);
- s22 = index_start + columnIndex(m+1,nf+1,nrhob);
- 
- Q11 = EOS_Variable[s11];
- Q12 = EOS_Variable[s12];
- Q21 = EOS_Variable[s21];
- Q22 = EOS_Variable[s22];
- 
- return biLinearInterpolation(e, rhob, Q11, Q12, Q21, Q22, e1, e2, rhob1, rhob2);
- }*/
-
-

@@ -69,6 +69,7 @@ void allocateHostMemory(int len) {
     EOState->Mubovert      = (PRECISION *)calloc(188580, bytes);//Lipei
     EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);//Lipei
     
+    EOState->sigmaB = (PRECISION *)calloc(5751, bytes);//Lipei
 	//=======================================================
 	// Primary variables
 	//=======================================================
@@ -251,6 +252,7 @@ void setConservedVariables(double t, void * latticeParams) {
                 if (muB[s] < 1.e-7)
                     muB[s] = 1.e-7;
                 muBp[s] = muB[s];
+                term2[s] = muB[s]*T[s];
 #endif
 			}
 		}
@@ -452,6 +454,7 @@ void freeHostMemory() {
     free(EOState->Mubovert);//Lipei
     free(EOState->dpdrhob);
     
+    free(EOState->sigmaB);//Lipei
 
     free(rhob);//Lipei
     free(muB);

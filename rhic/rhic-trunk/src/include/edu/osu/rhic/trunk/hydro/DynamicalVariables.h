@@ -130,6 +130,7 @@ typedef struct
     PRECISION *Temperature;
     PRECISION *Mubovert;
     PRECISION *dpdrhob;
+    PRECISION *sigmaB;
 } EQUATION_OF_STATE;
 
 extern PRECISION *termX;
