@@ -1040,7 +1040,7 @@ void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams
 //				e[s] = (PRECISION) (0.124503);
 //				if (sqrt(x*x+y*y)<=0.15) e[s] = (PRECISION) (0.00778147);
 				e[s] = (PRECISION) (0.00778147);
-				if (sqrt(x*x+y*y)<=0.15) e[s] = (PRECISION) (0.124503);
+				if (sqrt(x*x+y*y)<=2.5) e[s] = (PRECISION) (5.24503);
 
 //				e[s] = (PRECISION) (1.0);
 /*
@@ -1157,6 +1157,44 @@ void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParam
 	}
 }
 
+//*********************************************************************************************************\
+// * Gaussian
+//*********************************************************************************************************/
+void GaussianProfile(void * latticeParams, void * initCondParams) {
+    
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    double e0 = initCond->initialEnergyDensity;
+    
+    double SIG0 = 2;
+    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                double x = (i - ((double)nx-1.)/2.)*dx;
+                double y = (j - ((double)ny-1.)/2.)*dy;
+                
+                e[s] += 50*exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+                
+                p[s] = e[s]/3;
+                u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1;
+            }
+        }
+    }
+}
 
 //*********************************************************************************************************\
 //* Initial conditions for the sound propagation test
@@ -1307,6 +1345,11 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
         case 11: {
             printf("Reading initial T ^mu nu from /input/Tmunu.dat \n");
             setInitialTmunuFromFile(latticeParams, initCondParams, hydroParams, rootDirectory);
+            return;
+        }
+        case 12:{
+            printf("Gaussian Profile \n");
+            GaussianProfile(latticeParams, initCondParams);
             return;
         }
 		default: {

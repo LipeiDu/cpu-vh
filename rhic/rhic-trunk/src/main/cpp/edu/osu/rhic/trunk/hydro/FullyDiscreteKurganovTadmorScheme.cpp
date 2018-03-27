@@ -714,7 +714,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 //if(xib>xibmax)
                 //    facb = xibmax/xib;
                 
-                termX[s] = facb;
+                //termX[s] = facb;
                 //termX[s] = xib*scale;
                 //termY[s] = fabs(nbt)/fabs(rhob[s]);
                 //termZ[s] = fabs(nbx)/fabs(rhob[s]);

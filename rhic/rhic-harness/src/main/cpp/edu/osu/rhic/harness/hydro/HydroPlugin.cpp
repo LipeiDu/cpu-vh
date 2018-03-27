@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 100 //write output to file every FREQ timesteps
+#define FREQ 10 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -42,12 +42,16 @@
 void outputDynamicalQuantities(double t, const char *outputDir, void * latticeParams)
 {
   output(e, t, outputDir, "e", latticeParams);
+  output(p, t, outputDir, "p", latticeParams);
   //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
+  //output(termX, t, outputDir, "termx", latticeParams);
+  //output(termY, t, outputDir, "termy", latticeParams);
+  //output(termZ, t, outputDir, "termz", latticeParams);
   #ifdef PIMUNU
   //output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
@@ -64,9 +68,6 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   output(muB, t, outputDir, "muBT", latticeParams);
   output(T, t, outputDir, "T", latticeParams);
   output(term2, t, outputDir, "muB", latticeParams);
-  output(termX, t, outputDir, "facb", latticeParams);
-  //output(termY, t, outputDir, "termy", latticeParams);
-  //output(termZ, t, outputDir, "termz", latticeParams);
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
@@ -202,16 +203,11 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   double t = t0;
   // Generate initial conditions
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
-  // Read in source terms from particles
-  setSource(latticeParams, initCondParams, hydroParams);//Lipei
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob,muB,T);//rhob by Lipei
 
-    //PRECISION setVelocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev);
-    //ePrev=5.200055e-04,     M0=6.405995e-04,     M=1.163622e-03,     Pi=2.914440e-04,     rhobPrev=4.932446e-05,     delta_nbt=6.149489e-05.
-  //setVelocityFromConservedVariables(5.200055e-04, 6.405995e-04, 1.163622e-03, 2.914440e-04, 4.932446e-05, 6.149489e-05, 1.752584e-02);
   //************************************************************************************\
   //* Evolve the system in time
   //************************************************************************************/
@@ -227,6 +223,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
   int accumulator1 = 0;
   int accumulator2 = 0;
+    
   // evolve in time
   for (int n = 1; n <= nt+1; ++n)
   {
@@ -497,6 +494,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     }
     //****************JET STUFF************/
 
+    // Read in source terms from particles
+    setSource(n, latticeParams, initCondParams, hydroParams);//Lipei
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();

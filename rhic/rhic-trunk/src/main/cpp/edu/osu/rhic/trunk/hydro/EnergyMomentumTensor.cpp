@@ -248,7 +248,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-4) *rhob = 1.e-4;
+        if (*rhob < 1.e-3) *rhob = 1.e-3;
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -281,7 +281,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-4) *rhob = 1.e-4;
+        if (*rhob < 1.e-3) *rhob = 1.e-3;
         
         PRECISION P  = *p + Pi;
         *ut = u0;

@@ -1,5 +1,5 @@
 /*
- * SourcePart.c
+ * DynamicalSources.cpp
  *
  *  Created on: Nov 25, 2017
  *  Author: Lipei
@@ -26,31 +26,50 @@ using namespace std;
 //* Initialize the dynamical source terms
 //*********************************************************************************************************/
 
-void readInSource(void * latticeParams, void * initCondParams)
+void readInSource(int n, void * latticeParams, void * initCondParams, void * hydroParams)
 {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 
 	int nx = lattice->numLatticePointsX;
 	int ny = lattice->numLatticePointsY;
 	int nz = lattice->numLatticePointsRapidity;
 
+    // For each time step, the total number of cells in 3D space
+    int nElements = nx * ny * nz;
+    
+    double t0 = hydro->initialProperTimePoint;
+    double dt = lattice->latticeSpacingProperTime;
+    
+    double t = t0 + n* dt;
+    double time;
+    printf("t=%lf\n",t);
+
     FILE *sourcefile;
 
-    sourcefile = fopen ("/input/testsource.dat","r");
+    sourcefile = fopen ("DynamicalSources.dat","r");
     if(sourcefile==NULL){
-        printf("The source file testsource.dat was not opened...\n");
+        printf("The source file could not be opened...\n");
         exit(-1);
     }
     else
     {
       fseek(sourcefile,0L,SEEK_SET);
+        
+      for(int i=0; i<(nElements+1)*(n-1); i++) fscanf(sourcefile,"%*[^\n]%*c");//Skip the title line and all the cells read in by previous steps, (nElements+1) lines
+
+      fscanf(sourcefile,"%*s%le%*c", &time);
+      printf("time=%lf\n",time);
+      if(time!=t) printf("The dynamical source at a wrong time step is being read in.\n");
+      if(time==t) printf("The dynamical source starts to be read in at %lf.\n", time);
+        
       for(int i = 2; i < nx+2; ++i){
          for(int j = 2; j < ny+2; ++j){
             for(int k = 2; k < nz+2; ++k){
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-               fscanf(sourcefile,"%lf %lf %lf %lf %lf", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
-               //printf("%lf %lf %lf %lf %lf\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
+               fscanf(sourcefile,"%le %le %le %le %le", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
+               //printf("%le\t %le\t %le\t %le\t %le\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
              }
           }
        }
@@ -88,22 +107,25 @@ void noSource(void * latticeParams, void * initCondParams)
 //*	1 - not add these source terms
 /*********************************************************************************************************/
 
-void setSource(void * latticeParams, void * initCondParams, void * hydroParams)
+void setSource(int n, void * latticeParams, void * initCondParams, void * hydroParams)
 {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int sourceType = initCond->sourceType;
+    //if ((n-1) % FREQ == 0) printf("(Elapsed time: %.3f ms)\n",delta_time);
 	printf("Dynamical source terms: ");
 	switch (sourceType) {
 		case 0:{
 			printf("read in dynamical sources\n");
-            readInSource(latticeParams, initCondParams);
+            readInSource(n, latticeParams, initCondParams, hydroParams);
             printf("dynamical sources have been read in.\n");
-			return;}
+			return;
+        }
 		case 1:{
 			printf("set dynamical sources as 0\n");
-            noSource(latticeParams, initCondParams);
+            //noSource(latticeParams, initCondParams);
             printf("dynamical sources initialized.\n");
-            return;}
+            return;
+        }
 	}
 }
 
@@ -131,7 +153,6 @@ void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp
     double xmin = (-1.0) * ((double)(nx - 1) / 2.0) * dx;
 	double ymin = (-1.0) * ((double)(ny - 1) / 2.0) * dy;
 	double zmin = (-1.0) * ((double)(nz - 1) / 2.0) * dz;
-
 
 	//construct an array of the gaussian smeared jet position
 	double smearedPosition[ncx * ncy * ncz];
