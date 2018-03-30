@@ -274,29 +274,32 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #ifdef VMU
  
     PRECISION kappaB = baryonDiffusionConstant(T, mub*T);//baryonDiffusionCoefficient(T, rhob, mub, e, p);
-    PRECISION tau_n = 8/T;
+    PRECISION tau_n = 0.2/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
 
-    PRECISION NBI1t = ut * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
-    PRECISION NBI1x = ux * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
-    PRECISION NBI1y = uy * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
-    PRECISION NBI1n = un * (nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun);
+    PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
+    PRECISION NBI1t = ut * facNBI1;
+    PRECISION NBI1x = ux * facNBI1;
+    PRECISION NBI1y = uy * facNBI1;
+    PRECISION NBI1n = un * facNBI1;
     
-    PRECISION NBI2t = 1/tau_n * delta_nn * nbt * theta;
-    PRECISION NBI2x = 1/tau_n * delta_nn * nbx * theta;
-    PRECISION NBI2y = 1/tau_n * delta_nn * nby * theta;
-    PRECISION NBI2n = 1/tau_n * delta_nn * nbn * theta;
+    PRECISION facNBI2 = 1/tau_n * delta_nn * theta;
+    PRECISION NBI2t = facNBI2 * nbt;
+    PRECISION NBI2x = facNBI2 * nbx;
+    PRECISION NBI2y = facNBI2 * nby;
+    PRECISION NBI2n = facNBI2 * nbn;
     
     PRECISION NBI3t = -nbx * wxt - nby * wyt - t2 * nbn * wnt;
     PRECISION NBI3x = -nbt * wtx + nby * wyx + t2 * nbn * wnx;
     PRECISION NBI3y = -nbt * wty + nbx * wxy + t2 * nbn * wny;
-    PRECISION NBI3n = -1/t2 * nbt * wtn + 1/t2 * nbx * wxn + 1/t2 * nby * wyn;
+    PRECISION NBI3n = 1/t2 * (-nbt * wtn + nbx * wxn + nby * wyn);
     
-    PRECISION NBI4t = lambda_nn/tau_n * (stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
-    PRECISION NBI4x = lambda_nn/tau_n * (stx * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
-    PRECISION NBI4y = lambda_nn/tau_n * (sty * nbt - sxy * nbx - syy * nby - t2 * syn * nbn);
-    PRECISION NBI4n = lambda_nn/tau_n * (stn * nbt - sxn * nbx - syn * nby - t2 * snn * nbn);
+    PRECISION facNBI4 = lambda_nn/tau_n;
+    PRECISION NBI4t = facNBI4 * (stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
+    PRECISION NBI4x = facNBI4 * (stx * nbt - sxx * nbx - sxy * nby - t2 * sxn * nbn);
+    PRECISION NBI4y = facNBI4 * (sty * nbt - sxy * nbx - syy * nby - t2 * syn * nbn);
+    PRECISION NBI4n = facNBI4 * (stn * nbt - sxn * nbx - syn * nby - t2 * snn * nbn);
     
     PRECISION GBt   = -t * un/ut * nbn;
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
@@ -727,12 +730,12 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
         dnmub = (mubnm2 - 8*mubnm2 + mubs + 8*mubnp1 - mubnp2) * facZ/6;
     }*/
 
-    PRECISION ukdk_mub = -ut * dtmub + ux * dxmub + uy * dymub + pow(t,2) * un * dnmub;
+    PRECISION ukdk_mub = ut * dtmub + ux * dxmub + uy * dymub + un * dnmub;
     
-    PRECISION Nablat_alphaB = dtmub + ut * ukdk_mub;
-    PRECISION Nablax_alphaB = dxmub + ux * ukdk_mub;
-    PRECISION Nablay_alphaB = dymub + uy * ukdk_mub;
-    PRECISION Nablan_alphaB = dnmub + un * ukdk_mub;
+    PRECISION Nablat_alphaB =  dtmub - ut * ukdk_mub;
+    PRECISION Nablax_alphaB = -dxmub - ux * ukdk_mub;
+    PRECISION Nablay_alphaB = -dymub - uy * ukdk_mub;
+    PRECISION Nablan_alphaB = -1/pow(t,2)*dnmub - un * ukdk_mub;
 
 #else
     PRECISION es = evec[s];

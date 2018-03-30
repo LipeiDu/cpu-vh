@@ -112,7 +112,7 @@ void setSource(int n, void * latticeParams, void * initCondParams, void * hydroP
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int sourceType = initCond->sourceType;
     //if ((n-1) % FREQ == 0) printf("(Elapsed time: %.3f ms)\n",delta_time);
-	printf("Dynamical source terms: ");
+	//printf("Dynamical source terms: ");
 	switch (sourceType) {
 		case 0:{
 			printf("read in dynamical sources\n");
@@ -121,9 +121,9 @@ void setSource(int n, void * latticeParams, void * initCondParams, void * hydroP
 			return;
         }
 		case 1:{
-			printf("set dynamical sources as 0\n");
+			//printf("set dynamical sources as 0\n");
             //noSource(latticeParams, initCondParams);
-            printf("dynamical sources initialized.\n");
+            //printf("dynamical sources initialized.\n");
             return;
         }
 	}

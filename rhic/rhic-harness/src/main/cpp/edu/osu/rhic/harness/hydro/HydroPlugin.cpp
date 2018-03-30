@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 10 //write output to file every FREQ timesteps
+#define FREQ 100 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file

@@ -688,37 +688,15 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 PRECISION nb2 = nbt*nbt - nbx*nbx - nby*nby - nbn*nbn*t2;
                 PRECISION edec = (PRECISION)(1.81);
                 PRECISION scale = tanh(e[s]/edec);
-                PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/scale;
                 
-                PRECISION facb = 1;
+                
+                PRECISION facb =1;
+                PRECISION xib = 10*sqrt(fabs(nb2))/fabs(rhob[s]);
+                if(fabs(xib)>1.e-3) facb = tanh(xib)/xib;
 
-                /*PRECISION facbt = 1;
-                PRECISION facbx = 1;
-                PRECISION facby = 1;
-                PRECISION facbn = 1;
-                
-                PRECISION xibt = fabs(nbt)/fabs(rhob[s])/prefactor/scale;
-                PRECISION xibx = fabs(nbx)/fabs(rhob[s])/prefactor/scale;
-                PRECISION xiby = fabs(nby)/fabs(rhob[s])/prefactor/scale;
-                PRECISION xibn = fabs(nbn)/fabs(rhob[s])/prefactor/scale;
-                
-                if(xibt>xibmax)
-                    facbt = tanh(xibt)/xibt;//xibmax/xibt;
-                if(xibx>xibmax)
-                    facbx = tanh(xibx)/xibx;//xibmax/xibx;
-                if(xiby>xibmax)
-                    facby = tanh(xiby)/xiby;//xibmax/xiby;
-                if(xibn>xibmax)
-                    facbn = tanh(xibn)/xibn;//xibmax/xibn;*/
-                
-                //if(xib>xibmax)
-                //    facb = xibmax/xib;
-                
-                //termX[s] = facb;
-                //termX[s] = xib*scale;
-                //termY[s] = fabs(nbt)/fabs(rhob[s]);
-                //termZ[s] = fabs(nbx)/fabs(rhob[s]);
-                
+                //PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/scale/prefactor;
+                //PRECISION facb = 1;
+                //6if(xib>xibmax) facb = xibmax/xib;
 
                 if(isnan(rhob[s]))  printf("found rhob Nan\n");
                 if(isnan(scale))    printf("found scale Nan\n");

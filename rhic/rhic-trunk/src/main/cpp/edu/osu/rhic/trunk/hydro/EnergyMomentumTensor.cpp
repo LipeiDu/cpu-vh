@@ -240,15 +240,15 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e    = M0 - v0 * Ms;
         *rhob = delta_nbt * sqrt(1 - v0*v0);
 
-        if (*e < 3.e-4)
+        if (*e < 3.e-2)
         {
-            *e = 3.e-4;
-            *p = 3.e-4;
+            *e = 3.e-2;
+            *p = 3.e-2;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-3) *rhob = 1.e-3;
+        if (*rhob < 1.e-4) *rhob = 1.e-4;
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -273,15 +273,15 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = delta_nbt/u0;
         
-        if (*e < 3.e-4)
+        if (*e < 3.e-2)
         {
-            *e = 3.e-4;
-            *p = 3.e-4;
+            *e = 3.e-2;
+            *p = 3.e-2;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-3) *rhob = 1.e-3;
+        if (*rhob < 1.e-4) *rhob = 1.e-4;
         
         PRECISION P  = *p + Pi;
         *ut = u0;
