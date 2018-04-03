@@ -709,7 +709,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 	int ny = lattice->numLatticePointsY;
 	int nz = lattice->numLatticePointsRapidity;
     
-    double T0 = 3.05;
+    //double T0 = 3.05;
+        double T0 = 0.05;
     double ed = equilibriumEnergyDensity(T0);
     
     double rhobd = initialBaryonDensity;//Lipei

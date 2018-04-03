@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 100 //write output to file every FREQ timesteps
+#define FREQ 1 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -47,13 +47,13 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
-  //output(q->ttt, t, outputDir, "ttt", latticeParams);
+  output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   //output(termX, t, outputDir, "termx", latticeParams);
   //output(termY, t, outputDir, "termy", latticeParams);
   //output(termZ, t, outputDir, "termz", latticeParams);
   #ifdef PIMUNU
-  //output(q->pixx, t, outputDir, "pixx", latticeParams);
+  output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
@@ -468,7 +468,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       }
     }
     if (accumulator1 == 0) accumulator2 += 1;
-    if (accumulator2 >= FOFREQ+1) //only break once freezeout finder has had a chance to search/write to file
+    if (accumulator2 >= FOFREQ+1 && (t > t0 + 1.5)) //only break once freezeout finder has had a chance to search/write to file
     {
       printf("\nAll cells have dropped below freezeout energy density\n");
       break;
@@ -495,7 +495,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     //****************JET STUFF************/
 
     // Read in source terms from particles
-    setSource(n, latticeParams, initCondParams, hydroParams);//Lipei
+    int sourceType = initCond->sourceType;
+    if(sourceType==0)
+      if(n * dt<=1.6)//at top RHIC energy, PbPb overlap time
+        setSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);//Lipei
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
