@@ -14,8 +14,8 @@
 #define PIMUNU
 #define PI
 
-//#define NBMU
-//#define VMU
+#define NBMU
+#define VMU
 
 #ifdef NBMU
 #define RootSolver_with_Baryon//Lipei

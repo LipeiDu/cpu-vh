@@ -47,18 +47,22 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
     double t = t0 + (n-1)* dt;
     double time;
     
-    printf("t=%lf\n",t);
+    //printf("t=%lf\n",t);
 
     FILE *sourcefile;
     char fname[255];
     sprintf(fname, "%s/%s%d.dat", rootDirectory, "../urqmd-source/part2s/output/Sources",n);
-    printf("fname=%s\n",fname);
     sourcefile = fopen(fname, "r");
     
     FILE *fp;
     char fpname[255];
-    sprintf(fpname, "%s/output/sourcex_%.3f.dat", rootDirectory, t);
+    sprintf(fpname, "%s/output/sourcet_%d.dat", rootDirectory, n);
     fp=fopen(fpname, "w");
+    
+    FILE *fpx;
+    char fpnamex[255];
+    sprintf(fpnamex, "%s/output/sourceb_%d.dat", rootDirectory, n);
+    fpx=fopen(fpnamex, "w");
 
     if(sourcefile==NULL){
         printf("The source file could not be opened...\n");
@@ -71,9 +75,9 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
       //for(int i=0; i<(nElements+1)*(n-1); i++) fscanf(sourcefile,"%*[^\n]%*c");//Skip the title line and all the cells read in by previous steps, (nElements+1) lines
 
       fscanf(sourcefile,"%*s%le%*c", &time);
-      printf("time=%lf\n",time);
-      if(time!=t) printf("The dynamical source at a wrong time step is being read in.\n");
-      if(time==t) printf("The dynamical source starts to be read in at %lf.\n", time);
+      //printf("time=%lf\n",time);
+      if(time-t>1.e-20) printf("The dynamical source at a wrong time step is being read in. tSource=%lf, tCode=%lf\n", time, t);
+      //if(time==t) printf("The dynamical source starts to be read in at %lf.\n", time);
         
       for(int i = 2; i < nx+2; ++i){
          for(int j = 2; j < ny+2; ++j){
@@ -81,13 +85,15 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                fscanf(sourcefile,"%le %le %le %le %le", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
                //printf("%le\t %le\t %le\t %le\t %le\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
-               fprintf(fp, "%.3d\t%.3d\t%.3d\t%.8f\n",i,j,k,Source->sourcex[s]);
+               fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (201-1)/2) * 0.1,(j-1 - (201-1)/2) * 0.1,(k-1 - (1-1)/2) * 0.1,Source->sourcet[s]);
+               fprintf(fpx, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (201-1)/2) * 0.1,(j-1 - (201-1)/2) * 0.1,(k-1 - (1-1)/2) * 0.1,Source->sourceb[s]);
              }
           }
        }
     }
     
     fclose(fp);//Lipei
+    fclose(fpx);
     fclose(sourcefile);
 }
 
@@ -104,11 +110,11 @@ void noSource(void * latticeParams, void * initCondParams)
         for(int j = 2; j < ny+2; ++j){
             for(int k = 2; k < nz+2; ++k){
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                Source->sourcet[s] = 0;
-                Source->sourcex[s] = 0;
-                Source->sourcey[s] = 0;
-                Source->sourcen[s] = 0;
-                Source->sourceb[s] = 0;
+                Source->sourcet[s] = 0.0;
+                Source->sourcex[s] = 0.0;
+                Source->sourcey[s] = 0.0;
+                Source->sourcen[s] = 0.0;
+                Source->sourceb[s] = 0.0;
             }//k
         }//j
     }//i
@@ -128,9 +134,9 @@ void setSource(int n, void * latticeParams, void * initCondParams, void * hydroP
 	//printf("Dynamical source terms: ");
 	switch (sourceType) {
 		case 0:{
-			printf("read in dynamical sources\n");
+			//printf("read in dynamical sources\n");
             readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
-            printf("dynamical sources have been read in.\n");
+            //printf("dynamical sources have been read in.\n");
 			return;
         }
 		case 1:{

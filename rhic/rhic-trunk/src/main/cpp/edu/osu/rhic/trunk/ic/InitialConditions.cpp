@@ -658,7 +658,6 @@ void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void 
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
     
     int nz = lattice->numLatticePointsRapidity;
-    
     double dz = lattice->latticeSpacingRapidity;
     
     double etaFlat = initCond->rapidityMean;
@@ -682,16 +681,14 @@ void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, do
     int nz = lattice->numLatticePointsRapidity;
     double dz = lattice->latticeSpacingRapidity;
     
-    double etaVariance1 = 0.1;
-    double etaVariance2 = 1.0;
-    double etaMean = 2.0;
-    
+    double etaVariance1 = initCond->bRapidityVariance1;
+    double etaVariance2 = initCond->bRapidityVariance2;
+    double etaMean = initCond->bRapidityMean;
+    //1/sqrt(2*3.1415926)*
     for(int k = 0; k < nz; ++k) {
         double eta = (k - (nz-1)/2)*dz;
-        rhoLa[k] = 1/sqrt(2*3.1415926)*(1/etaVariance1*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean)
-                                     + 1/etaVariance2*exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta));
-        rhoLb[k] = 1/sqrt(2*3.1415926)*(1/etaVariance1*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean)
-                                     + 1/etaVariance2*exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta));
+        rhoLa[k] = 1/sqrt(2*3.1415926)*(exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean+1.e-2) + exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta-1.e-2));
+        rhoLb[k] = 1/sqrt(2*3.1415926)*(exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(-eta-etaMean+1.e-2) + exp(-(-eta-etaMean)*(-eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean+eta-1.e-2));
     }
 }
 
@@ -708,11 +705,17 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 	int nx = lattice->numLatticePointsX;
 	int ny = lattice->numLatticePointsY;
 	int nz = lattice->numLatticePointsRapidity;
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
     
     //double T0 = 3.05;
-        double T0 = 0.05;
-    double ed = equilibriumEnergyDensity(T0);
+    //double T0 = 0.1;
+    //double ed = equilibriumEnergyDensity(T0);
+    double eL[nz];
+    longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     
+    double ed = initialEnergyDensity;//Lipei
     double rhobd = initialBaryonDensity;//Lipei
     double rhoLa[nz], rhoLb[nz];//Lipei
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
@@ -724,15 +727,12 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				e[s] = (PRECISION) ed;
-                rhob[s] = rhobd;//rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-4; //Lipei
+				e[s] = (PRECISION) ed*eL[k-2];
+                rhob[s] = rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-2; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
-                //ep[s] = e[s];
-                //rhobp[s] = rhob[s];
-                
-                baryondens << setprecision(3) << setw(5) << i <<setprecision(3)  << setw(5)  << j
-                << setprecision(3) << setw(5) << k << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
+                baryondens << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
+                << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << rhob[s] << endl;//Lipei
 			}
 		}
 	}

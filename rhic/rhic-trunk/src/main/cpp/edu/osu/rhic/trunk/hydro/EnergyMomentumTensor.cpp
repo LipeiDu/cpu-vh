@@ -191,6 +191,12 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         printf("pitt=%.3f,\t pitx=%.3f,\t pity=%.3f,\t pitn=%.3f\n", pitt, pitx, pity, pitn);
 	}
     
+    if (isinf(*e)) {
+        printf("e is inf. \n M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
+        printf("ttt=%.3f,\t ttx=%.3f,\t tty=%.3f,\t ttn=%.3f\n", ttt, ttx, tty, ttn);
+        printf("pitt=%.3f,\t pitx=%.3f,\t pity=%.3f,\t pitn=%.3f\n", pitt, pitx, pity, pitn);
+    }
+    
 	if (*e < 1.e-7) {
 		*e = 1.e-7;
 		*p = 1.e-7;

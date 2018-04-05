@@ -21,6 +21,11 @@ double fractionOfBinaryCollisions;
 double rapidityVariance; // \sigma^{2}_{\eta}
 double rapidityMean; // flat region around \ets_s = 0
 
+// longitudinal baryon density profile parameters
+double bRapidityVariance1;
+double bRapidityVariance2;
+double bRapidityMean;
+
 void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, void * params) {
 
 	char fname[255];
@@ -35,6 +40,9 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 
     getIntegerProperty(cfg, "sourceType", &sourceType, 0);
     getDoubleProperty(cfg, "initialBaryonDensity", &initialBaryonDensity, 0.0);
+    getDoubleProperty(cfg, "bRapidityVariance1", &bRapidityVariance1, 0.2);
+    getDoubleProperty(cfg, "bRapidityVariance2", &bRapidityVariance2, 2.0);
+    getDoubleProperty(cfg, "bRapidityMean", &bRapidityMean, 2.0);
 
 	getDoubleProperty(cfg, "initialEnergyDensity", &initialEnergyDensity, 1.0);
 	getDoubleProperty(cfg, "scatteringCrossSectionNN", &scatteringCrossSectionNN, 62);
@@ -54,4 +62,7 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	initCond->fractionOfBinaryCollisions = fractionOfBinaryCollisions;
 	initCond->rapidityVariance = rapidityVariance;
 	initCond->rapidityMean = rapidityMean;
+    initCond->bRapidityVariance1 = bRapidityVariance1;
+    initCond->bRapidityVariance2 = bRapidityVariance2;
+    initCond->bRapidityMean = bRapidityMean;
 }

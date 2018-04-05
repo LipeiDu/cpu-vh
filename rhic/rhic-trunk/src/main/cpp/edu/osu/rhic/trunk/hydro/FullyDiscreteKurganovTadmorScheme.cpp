@@ -635,6 +635,7 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 PRECISION nbn = 0;
 #endif
 
+                
 				PRECISION ut = u->ut[s];
 				PRECISION ux = u->ux[s];
 				PRECISION uy = u->uy[s];

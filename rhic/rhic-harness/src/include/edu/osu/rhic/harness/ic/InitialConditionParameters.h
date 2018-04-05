@@ -24,6 +24,10 @@ struct InitialConditionParameters
 	// longitudinal energy density profile parameters
 	double rapidityVariance; // \sigma^{2}_{\eta}
 	double rapidityMean; // flat region around \ets_s = 0
+    
+    double bRapidityVariance1;
+    double bRapidityVariance2;
+    double bRapidityMean;
 };
 
 void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, void * params);
