@@ -692,16 +692,16 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 
                 
                 PRECISION facb =1;
-                PRECISION xib = 10*sqrt(fabs(nb2))/fabs(rhob[s]);
+                PRECISION xib = 15*sqrt(fabs(nb2))/fabs(rhob[s]);
                 if(fabs(xib)>1.e-3) facb = tanh(xib)/xib;
 
                 //PRECISION xib = sqrt(fabs(nb2))/fabs(rhob[s])/scale/prefactor;
                 //PRECISION facb = 1;
                 //6if(xib>xibmax) facb = xibmax/xib;
 
-                if(isnan(rhob[s]))  printf("found rhob Nan\n");
-                if(isnan(scale))    printf("found scale Nan\n");
-                if(isnan(xib))      printf("found xib Nan\n");
+                //if(isnan(rhob[s]))  printf("found rhob Nan\n");
+                //if(isnan(scale))    printf("found scale Nan\n");
+                //if(isnan(xib))      printf("found xib Nan\n");
                 if(isnan(facb))     printf("found facb Nan\n");
 #endif
 

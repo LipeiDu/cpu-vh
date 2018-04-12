@@ -35,7 +35,7 @@
 #define SIGMA_4 0.022
 
 //Transport coefficents of the baryon evolution; Lipei
-#define Cb 4.0
+#define Cb 1.2
 
 inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 	PRECISION x = T/1.01355;
@@ -273,8 +273,8 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     
 #ifdef VMU
  
-    PRECISION kappaB = baryonDiffusionConstant(T, mub*T);//baryonDiffusionCoefficient(T, rhob, mub, e, p);
-    PRECISION tau_n = 0.2/T;
+    PRECISION kappaB = baryonDiffusionConstant(T, mub*T)*T;//baryonDiffusionCoefficient(T, rhob, mub, e, p);//
+    PRECISION tau_n = Cb/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
 
@@ -702,6 +702,8 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION dxmub = (*(muBvec + s + 1) - *(muBvec + s - 1)) * facX;
     PRECISION dymub = (*(muBvec + s + d_ncx) - *(muBvec + s - d_ncx)) * facY;
     PRECISION dnmub = (*(muBvec + s + stride) - *(muBvec + s - stride)) * facZ;
+    
+    //termX[s] = baryonDiffusionCoefficient(T, rhobs, mubs, es, pc);//baryonDiffusionConstant(T, mubs*T)*T;//
     
     /*PRECISION mubxp1 = muBvec[s+1];
     PRECISION mubxp2 = muBvec[s+2];

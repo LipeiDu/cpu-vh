@@ -47,7 +47,7 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
         if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillate back and forth forever
     }
     
-    printf("Maximum number of iterations exceeded for solving v0.\n e0=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhob0=%5e,\t d_nbt=%5e,\t v=%5e.\n",ePrev,M0,M,Pi,rhobPrev,delta_nbt,vPrev);
+    printf("v0 = Maxiter.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t M =%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,M,Pi,rhobPrev,delta_nbt);
     
     return v0;
 }
@@ -86,7 +86,7 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
         if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillate back and forth forever
     }
     
-    printf("Maximum number of iterations exceeded for solving u0.\n e0=%5e,\t M0=%5e,\t M=%5e,\t Pi=%5e,\t rhob0=%5e,\t delta_nbt=%5e,\t u0=%5e.\n",ePrev,M0,M,Pi,rhobPrev,delta_nbt,utPrev);
+    printf("u0 = Maxiter.\t uPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t M =%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,M,Pi,rhobPrev,delta_nbt);
     
     return u0;
 }
@@ -112,7 +112,7 @@ PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRE
 		if(fabs(e - e0) <=  0.001 * fabs(e)) return e;
 		e0 = e;
 	}
-	printf("Maximum number of iterations exceeded for solving e.\n ePrev=%.3f,\t M0=%.3f,\t M=%.3f,\t Pi=%.3f \n",ePrev,M0,M,Pi);
+	printf("ev0 = Maxi_inter.\t ePrev=%.3f,\t M0=%.3f,\t M=%.3f,\t Pi=%.3f \n",ePrev,M0,M,Pi);
 	return e0;
 #else
 	return fabs(sqrtf(fabs(4 * M0 * M0 - 3 * M)) - M0);
@@ -239,7 +239,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, vPrev);
     
     if (isnan(v0)) {
-        printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t delta_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
+        printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
     }
     
     if(v0<0.563624&&v0>=0){
@@ -254,7 +254,8 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-4) *rhob = 1.e-4;
+        if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
+        else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -273,7 +274,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
             u0 = utauFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, utPrev);
         
         if (isnan(u0)) {
-            printf("u0 = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t delta_nbt=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
+            printf("u0 = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
         }
         
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
@@ -287,7 +288,8 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
             *p = equilibriumPressure(*e, *rhob);
         }
         
-        if (*rhob < 1.e-4) *rhob = 1.e-4;
+        if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
+        else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
         
         PRECISION P  = *p + Pi;
         *ut = u0;
@@ -362,7 +364,9 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 
 #ifdef NBMU
                 muB[s] = chemicalPotentialOverT(_e, _rhob);
-                if (muB[s] < 1.e-7) muB[s] = 1.e-7;
+                if (muB[s]>=0 && muB[s] < 1.e-7) muB[s] = 1.e-7;
+                else if (muB[s]<=0 && muB[s] > -1.e-7)  muB[s] = -1.e-7;
+
                 term2[s] = muB[s]*T[s];
 #endif
             }

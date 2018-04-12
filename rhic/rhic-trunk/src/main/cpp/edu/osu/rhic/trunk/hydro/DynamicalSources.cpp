@@ -54,15 +54,15 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
     sprintf(fname, "%s/%s%d.dat", rootDirectory, "../urqmd-source/part2s/output/Sources",n);
     sourcefile = fopen(fname, "r");
     
-    FILE *fp;
-    char fpname[255];
-    sprintf(fpname, "%s/output/sourcet_%d.dat", rootDirectory, n);
-    fp=fopen(fpname, "w");
+    //FILE *fp;
+    //char fpname[255];
+    //sprintf(fpname, "%s/output/sourcet_%d.dat", rootDirectory, n);
+    //fp=fopen(fpname, "w");
     
-    FILE *fpx;
-    char fpnamex[255];
-    sprintf(fpnamex, "%s/output/sourceb_%d.dat", rootDirectory, n);
-    fpx=fopen(fpnamex, "w");
+    //FILE *fpx;
+    //char fpnamex[255];
+    //sprintf(fpnamex, "%s/output/sourceb_%d.dat", rootDirectory, n);
+    //fpx=fopen(fpnamex, "w");
 
     if(sourcefile==NULL){
         printf("The source file could not be opened...\n");
@@ -81,19 +81,20 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
         
       for(int i = 2; i < nx+2; ++i){
          for(int j = 2; j < ny+2; ++j){
-            for(int k = 2; k < nz+2; ++k){
+             for(int k = 2; k < nz+2; ++k){
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                fscanf(sourcefile,"%le %le %le %le %le", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
                //printf("%le\t %le\t %le\t %le\t %le\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
-               fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (201-1)/2) * 0.1,(j-1 - (201-1)/2) * 0.1,(k-1 - (1-1)/2) * 0.1,Source->sourcet[s]);
-               fprintf(fpx, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (201-1)/2) * 0.1,(j-1 - (201-1)/2) * 0.1,(k-1 - (1-1)/2) * 0.1,Source->sourceb[s]);
+               Source->sourceb[s]=0.6*Source->sourceb[s];
+               //fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (nx-1)/2) * 0.1,(j-1 - (ny-1)/2) * 0.1,(k-1 - (nz-1)/2) * 0.1,Source->sourcet[s]);
+               //fprintf(fpx, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (nx-1)/2) * 0.1,(j-1 - (ny-1)/2) * 0.1,(k-1 - (nz-1)/2) * 0.1,Source->sourceb[s]);
              }
           }
        }
     }
     
-    fclose(fp);//Lipei
-    fclose(fpx);
+    //fclose(fp);//Lipei
+    //fclose(fpx);
     fclose(sourcefile);
 }
 

@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 50 //write output to file every FREQ timesteps
+#define FREQ 20 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -43,17 +43,17 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   output(p, t, outputDir, "p", latticeParams);
-  output(u->ux, t, outputDir, "ux", latticeParams);
-  output(u->uy, t, outputDir, "uy", latticeParams);
+  //output(u->ux, t, outputDir, "ux", latticeParams);
+  //output(u->uy, t, outputDir, "uy", latticeParams);
   output(u->un, t, outputDir, "un", latticeParams);
-  output(u->ut, t, outputDir, "ut", latticeParams);
-  output(q->ttt, t, outputDir, "ttt", latticeParams);
+  //output(u->ut, t, outputDir, "ut", latticeParams);
+  //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   //output(termX, t, outputDir, "termx", latticeParams);
   //output(termY, t, outputDir, "termy", latticeParams);
   //output(termZ, t, outputDir, "termz", latticeParams);
   #ifdef PIMUNU
-  output(q->pixx, t, outputDir, "pixx", latticeParams);
+  //output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
@@ -67,14 +67,15 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   output(rhob, t, outputDir, "rhob", latticeParams);
   output(muB, t, outputDir, "muBT", latticeParams);
   output(T, t, outputDir, "T", latticeParams);
-  output(term2, t, outputDir, "muB", latticeParams);
+    output(termX, t, outputDir, "kappaB", latticeParams);
+  //output(term2, t, outputDir, "muB", latticeParams);
   output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
   output(q->nbt, t, outputDir, "nbtau", latticeParams);
-  output(q->nbx, t, outputDir, "nbx", latticeParams);
+  //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  //output(q->nbn, t, outputDir, "nbn", latticeParams);
+  output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
 }
 
@@ -497,9 +498,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     // Read in source terms from particles
     int sourceType = initCond->sourceType;
     if(sourceType==0)
-      if(n <=231)//at top RHIC energy, PbPb overlap time
+      if(n <=100)//at top RHIC energy, PbPb overlap time
         setSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
-    if(n>=232) noSource(latticeParams, initCondParams);
+    if(n>=101) noSource(latticeParams, initCondParams);
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();
@@ -515,7 +516,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   printf("Average time/step: %.3f ms\n",totalTime/((double)nsteps));
 
   freezeoutSurfaceFile.close();
-  //************************************************************************************	\
+  //************************************************************************************\
   //* Deallocate host memory
   //************************************************************************************/
   freeHostMemory();

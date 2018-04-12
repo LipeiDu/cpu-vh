@@ -275,7 +275,7 @@ void testEOS(){
 //* g2 0.5
 //****************************************************************************/
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
+/*PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
     PRECISION T0 = T*HBARC*1000;
     PRECISION mub0 = mub*HBARC*1000;
     if((100<=T0)&&(T0<=450)){
@@ -292,18 +292,43 @@ PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
     }else
     {
         if((0<=mub0)&&(mub0<=400))
-            return InferredPrimaryVariable(mub0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * 2.28;
+            return InferredPrimaryVariable(mub0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000 * 2.28; //2.28 [1/fm^4] = 450 MeV
         else
             return 22.5093/HBARC/1000 * 2.28;
+    }
+}*/
+
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
+    PRECISION T0 = T*HBARC*1000;
+    PRECISION mub0 = fabs(mub*HBARC*1000);
+    if((100<=T0)&&(T0<=450)){
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        else
+            return InferredPrimaryVariable(400, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+    }else if(T0<100)
+    {
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        else
+            return 0.0543361/HBARC/1000;
+    }else
+    {
+        if((0<=mub0)&&(mub0<=400))
+            return InferredPrimaryVariable(mub0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        else
+            return 22.5093/HBARC/1000;
     }
 }
 
 PRECISION dPdRhob(PRECISION e, PRECISION rhob){
-    return primaryVariablesEOS(e, rhob, EOState->dpdrhob);
+    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->dpdrhob);
+    else return -primaryVariablesEOS(e, fabs(rhob), EOState->dpdrhob);
 }
 
-PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob) {
-    return primaryVariablesEOS(e, rhob, EOState->Mubovert)*HBARC;
+PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){
+    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->Mubovert)*HBARC;
+    else return -primaryVariablesEOS(e, fabs(rhob), EOState->Mubovert)*HBARC;
 }
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
@@ -424,7 +449,7 @@ PRECISION equilibriumPressure(PRECISION e, PRECISION rhob) {
     return e/3;
 #endif
 #else
-    return primaryVariablesEOS(e, rhob, EOState->Pressure);
+    return primaryVariablesEOS(e, fabs(rhob), EOState->Pressure);
 #endif
 }
 
@@ -459,7 +484,7 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob) {
     return powf(e/EOS_FACTOR, 0.25);
 #endif
 #else
-    return primaryVariablesEOS(e, rhob, EOState->Temperature);
+    return primaryVariablesEOS(e, fabs(rhob), EOState->Temperature);
 #endif
 }
 
