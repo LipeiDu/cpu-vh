@@ -233,7 +233,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
     PRECISION delta_nbt = Nbt - nbt;
     PRECISION vPrev = sqrt(1-1/(utPrev*utPrev));
     
-    if(ePrev <= 0.1)
+    if(ePrev <= 0.06)
         v0 = Ms/M0;
     else
         v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, vPrev);
@@ -246,10 +246,10 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e    = M0 - v0 * Ms;
         *rhob = delta_nbt * sqrt(1 - v0*v0);
 
-        if (*e < 3.e-2)
+        if (*e < 3.e-4)
         {
-            *e = 3.e-2;
-            *p = 3.e-2;
+            *e = 3.e-4;
+            *p = 3.e-4;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }
@@ -268,7 +268,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *un = u0 * v3;
     }
     else{
-        if(ePrev <= 0.1)
+        if(ePrev <= 0.06)
             u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
         else
             u0 = utauFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, utPrev);
@@ -280,10 +280,10 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = delta_nbt/u0;
         
-        if (*e < 3.e-2)
+        if (*e < 3.e-4)
         {
-            *e = 3.e-2;
-            *p = 3.e-2;
+            *e = 3.e-4;
+            *p = 3.e-4;
         }else{
             *p = equilibriumPressure(*e, *rhob);
         }

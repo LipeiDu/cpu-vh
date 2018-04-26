@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 20 //write output to file every FREQ timesteps
+#define FREQ 5 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -79,6 +79,50 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #endif
 }
 
+void outputAnalysis(double t, const char *outputDir, void * latticeParams)
+{
+    FILE *fp;
+    char fname[255];
+    sprintf(fname, "%s/tensors.dat", outputDir);
+    fp=fopen(fname, "a+");
+    
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    double x,y,z;
+    
+    int i,j,k;
+    int s;
+
+    k=(nz+3)/2;
+    j=(ny+3)/2;
+    i=(nx+3)/2;
+        //z = (k-2 - (nz-1)/2.)*dz;
+        //for(j = 2; j < ny+2; ++j) {
+            //y = (j-2 - (ny-1)/2.)*dy;
+            //for(i = 2; i < nx+2; ++i) {
+                //x = (i-2 - (nx-1)/2.)*dx;
+                s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                double tt=Ttt(e[s],p[s],u->ut[s],q->pitt[s]);
+                double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
+                double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
+                double tn=Ttn(e[s],p[s],u->ut[s],u->un[s],q->pitn[s]);
+                double xx=Txx(e[s],p[s],u->ux[s],q->pixx[s]);
+                double xy=Txy(e[s],p[s],u->ux[s],u->uy[s],q->pixy[s]);
+                double xn=Txn(e[s],p[s],u->ux[s],u->un[s],q->pixn[s]);
+                double yy=Tyy(e[s],p[s],u->uy[s],q->piyy[s]);
+                double yn=Tyn(e[s],p[s],u->uy[s],u->un[s],q->piyn[s]);
+                double nn=Tnn(e[s],p[s],u->un[s],q->pinn[s],t);
+    double XX=fabs(tt-xx)/tt+xx;
+                fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,XX,tt,tx,ty,tn,xx,xy,xn,yy,yn,nn);
+    
+    fclose(fp);
+}
 
 
 void run(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory, const char *outputDir)
@@ -234,6 +278,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
+      outputAnalysis(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
       //printf("\nReached freezeout temperature at the center.\n");
@@ -469,7 +514,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       }
     }
     if (accumulator1 == 0) accumulator2 += 1;
-    if (accumulator2 >= FOFREQ+1 && (n > 100)) //only break once freezeout finder has had a chance to search/write to file
+    if (accumulator2 >= FOFREQ+1 && (n > 60)) //only break once freezeout finder has had a chance to search/write to file
     {
       printf("\nAll cells have dropped below freezeout energy density\n");
       break;
@@ -497,10 +542,11 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
     // Read in source terms from particles
     int sourceType = initCond->sourceType;
-    if(sourceType==0)
-      if(n <=100)//at top RHIC energy, PbPb overlap time
-        setSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
-    if(n>=101) noSource(latticeParams, initCondParams);
+      if(sourceType==0){
+          if(n<=60)//at top RHIC energy, PbPb overlap time
+              setSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
+          else noSource(latticeParams, initCondParams);
+      }
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();

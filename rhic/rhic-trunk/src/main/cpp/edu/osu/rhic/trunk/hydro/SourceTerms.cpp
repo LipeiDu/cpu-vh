@@ -35,7 +35,7 @@
 #define SIGMA_4 0.022
 
 //Transport coefficents of the baryon evolution; Lipei
-#define Cb 1.2
+#define Cb 0.4
 
 inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 	PRECISION x = T/1.01355;
@@ -74,7 +74,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************\
 	//* Temperature dependent shear transport coefficients
 	//*********************************************************/
-	PRECISION taupiInv = T / 5  / d_etabar;
+	PRECISION taupiInv = T / 5  / d_etabar; //d_etabar=shearViscosityToEntropyDensity
 	PRECISION beta_pi = (e + p) / 5;
 
 	//*********************************************************\
@@ -138,19 +138,19 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************\
 	//* vorticity tensor
 	//*********************************************************/
-	PRECISION wtx = (dtux + dxut) / 2 + (ux * dut - ut * dux) / 2 + t * un2 * ux / 2;
-	PRECISION wty = (dtuy + dyut) / 2 + (uy * dut - ut * duy) / 2 + t * un2 * uy / 2;
-	PRECISION wtn = (t2 * dtun + 2 * t * un + dnut) / 2 + (t2 * un * dut - ut * Dun) + t3 * un*un2 / 2;
-	PRECISION wxy = (dyux - dxuy) / 2 + (uy * dux - ux * duy) / 2;
-	PRECISION wxn = (dnux - t2 * dxun) / 2 + (t2 * un * dux - ux * Dun) / 2;
-	PRECISION wyn = (dnuy - t2 * dyun) / 2 + (t2 * un * duy - uy * Dun) / 2;
+    PRECISION wtx = 0;//(dtux + dxut) / 2 + (ux * dut - ut * dux) / 2 + t * un2 * ux / 2;
+	PRECISION wty = 0;//(dtuy + dyut) / 2 + (uy * dut - ut * duy) / 2 + t * un2 * uy / 2;
+	PRECISION wtn = 0;//(t2 * dtun + 2 * t * un + dnut) / 2 + (t2 * un * dut - ut * Dun) + t3 * un*un2 / 2;
+	PRECISION wxy = 0;//(dyux - dxuy) / 2 + (uy * dux - ux * duy) / 2;
+	PRECISION wxn = 0;//(dnux - t2 * dxun) / 2 + (t2 * un * dux - ux * Dun) / 2;
+	PRECISION wyn = 0;//(dnuy - t2 * dyun) / 2 + (t2 * un * duy - uy * Dun) / 2;
 	// anti-symmetric vorticity components
-	PRECISION wxt = wtx;
-	PRECISION wyt = wty;
-	PRECISION wnt = wtn / t2;
-	PRECISION wyx = -wxy;
-	PRECISION wnx = -wxn / t2;
-	PRECISION wny = -wyn / t2;
+	PRECISION wxt = 0;//wtx;
+	PRECISION wyt = 0;//wty;
+	PRECISION wnt = 0;//wtn / t2;
+	PRECISION wyx = 0;//-wxy;
+	PRECISION wnx = 0;//-wxn / t2;
+	PRECISION wny = 0;//-wyn / t2;
 
 #ifdef PIMUNU
 	//*********************************************************\

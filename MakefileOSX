@@ -30,7 +30,7 @@ ifeq ($(UNAME), Darwin)
 LIBS = -L /usr/local/lib -lm -lgsl -lgslcblas -lconfig -largp -lc++
 endif
 
-INCLUDES = -I /usr/local/include -I rhic/rhic-core/src/include -I rhic/rhic-harness/src/main/include -I rhic/rhic-trunk/src/include -I rhic/rhic-harness/src/include -I freezeout
+INCLUDES = -I /usr/local/include -I rhic/rhic-core/src/include -I rhic/rhic-harness/src/main/include -I rhic/rhic-trunk/src/include -I rhic/rhic-harness/src/include -I freezeout -I jet
 
 CPP := $(shell find $(DIR_SRC) -name '*.cpp' -and -not -name '*Test.cpp' )
 CPP_OBJ  = $(CPP:$(DIR_SRC)%.cpp=$(DIR_OBJ)%.o)
