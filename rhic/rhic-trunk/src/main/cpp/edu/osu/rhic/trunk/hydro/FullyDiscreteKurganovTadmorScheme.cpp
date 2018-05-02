@@ -643,6 +643,8 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 
 				PRECISION xi0 = (PRECISION)(1.0);
 				PRECISION rhomax = (PRECISION)(10.0);
+                //PRECISION xi0 = (PRECISION)(0.1);
+                //PRECISION rhomax = (PRECISION)(1.0);
 				PRECISION t2 = t*t;
                 PRECISION Norm = sqrtf(e[s]*e[s]+3*p[s]*p[s]);
                 

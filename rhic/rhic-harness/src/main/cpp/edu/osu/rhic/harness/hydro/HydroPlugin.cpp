@@ -43,10 +43,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   output(p, t, outputDir, "p", latticeParams);
-  //output(u->ux, t, outputDir, "ux", latticeParams);
-  //output(u->uy, t, outputDir, "uy", latticeParams);
+  output(u->ux, t, outputDir, "ux", latticeParams);
+  output(u->uy, t, outputDir, "uy", latticeParams);
   output(u->un, t, outputDir, "un", latticeParams);
-  //output(u->ut, t, outputDir, "ut", latticeParams);
+  output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   //output(termX, t, outputDir, "termx", latticeParams);
@@ -65,17 +65,17 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #endif
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  output(muB, t, outputDir, "muBT", latticeParams);
-  output(T, t, outputDir, "T", latticeParams);
-    output(termX, t, outputDir, "kappaB", latticeParams);
+  //output(muB, t, outputDir, "muBT", latticeParams);
+  //output(T, t, outputDir, "T", latticeParams);
+  //output(termX, t, outputDir, "kappaB", latticeParams);
   //output(term2, t, outputDir, "muB", latticeParams);
-  output(q->Nbt, t, outputDir, "Nbt", latticeParams);
+  //output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
-  output(q->nbt, t, outputDir, "nbtau", latticeParams);
+  //output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  output(q->nbn, t, outputDir, "nbn", latticeParams);
+  //output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
 }
 
@@ -83,7 +83,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
 {
     FILE *fp;
     char fname[255];
-    sprintf(fname, "%s/tensors.dat", outputDir);
+    sprintf(fname, "%s/AnalysisData.dat", outputDir);
     fp=fopen(fname, "a+");
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -98,28 +98,57 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     
     int i,j,k;
     int s;
-
-    k=(nz+3)/2;
-    j=(ny+3)/2;
-    i=(nx+3)/2;
-        //z = (k-2 - (nz-1)/2.)*dz;
-        //for(j = 2; j < ny+2; ++j) {
-            //y = (j-2 - (ny-1)/2.)*dy;
-            //for(i = 2; i < nx+2; ++i) {
-                //x = (i-2 - (nx-1)/2.)*dx;
+    
+    double v2t, becc,v2t1,v2t2;
+    v2t = 0;
+    v2t1 = 0;
+    v2t2 = 0;
+    becc = 0;
+    double bymx = 0;
+    double bxy = 0;
+    double bypx = 0;
+    
+    //k=(nz+3)/2;
+    //j=(ny+3)/2;
+    //i=(nx+3)/2;
+    for(k = 2; k < nz+2; ++k) {
+        z = (k-2 - (nz-1)/2.)*dz;
+        for(j = 2; j < ny+2; ++j) {
+            y = (j-2 - (ny-1)/2.)*dy;
+            for(i = 2; i < nx+2; ++i) {
+                x = (i-2 - (nx-1)/2.)*dx;
                 s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                double tt=Ttt(e[s],p[s],u->ut[s],q->pitt[s]);
-                double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
-                double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
-                double tn=Ttn(e[s],p[s],u->ut[s],u->un[s],q->pitn[s]);
-                double xx=Txx(e[s],p[s],u->ux[s],q->pixx[s]);
-                double xy=Txy(e[s],p[s],u->ux[s],u->uy[s],q->pixy[s]);
-                double xn=Txn(e[s],p[s],u->ux[s],u->un[s],q->pixn[s]);
-                double yy=Tyy(e[s],p[s],u->uy[s],q->piyy[s]);
-                double yn=Tyn(e[s],p[s],u->uy[s],u->un[s],q->piyn[s]);
-                double nn=Tnn(e[s],p[s],u->un[s],q->pinn[s],t);
-    double XX=fabs(tt-xx)/tt+xx;
-                fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,XX,tt,tx,ty,tn,xx,xy,xn,yy,yn,nn);
+                //double tt=Ttt(e[s],p[s],u->ut[s],q->pitt[s]);
+                //double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
+                //double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
+                //double tn=Ttn(e[s],p[s],u->ut[s],u->un[s],q->pitn[s]);
+#ifndef PIMUNU
+                double pixx=0;
+                double piyy=0;
+#else
+                double pixx=q->pixx[s];
+                double piyy=q->piyy[s];
+#endif
+                double xx=Txx(e[s],p[s],u->ux[s],pixx);
+                //double xy=Txy(e[s],p[s],u->ux[s],u->uy[s],q->pixy[s]);
+                //double xn=Txn(e[s],p[s],u->ux[s],u->un[s],q->pixn[s]);
+                double yy=Tyy(e[s],p[s],u->uy[s],piyy);
+                //double yn=Tyn(e[s],p[s],u->uy[s],u->un[s],q->piyn[s]);
+                //double nn=Tnn(e[s],p[s],u->un[s],q->pinn[s],t);
+                
+                bymx = bymx + (y*y - x*x)*rhob[s];
+                bxy = bxy + x*y*rhob[s];
+                bypx = bypx + (y*y + x*x)*rhob[s];
+                v2t1 = v2t1 + (xx-yy);
+                v2t2 = v2t2 + (xx+yy);
+            }
+        }
+    }
+    
+    becc = sqrt(bymx*bymx + 4*bxy*bxy)/bypx;
+    v2t = v2t1/v2t2;
+    
+    fprintf(fp, "%.3f\t%.8f\t%.8f\n",t,v2t,becc);
     
     fclose(fp);
 }
@@ -150,6 +179,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   double dy = lattice->latticeSpacingY;
   double dz = lattice->latticeSpacingRapidity;
   double e0 = initCond->initialEnergyDensity;
+    
+  int sourceType = initCond->sourceType;
 
   double freezeoutTemperatureGeV = hydro->freezeoutTemperatureGeV;
   const double hbarc = 0.197326938;
@@ -499,7 +530,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
         }
       }
     }
-
+    /*
     //if all cells are below freezeout temperature end hydro
     accumulator1 = 0;
     for (int ix = 2; ix < nx+2; ix++)
@@ -519,7 +550,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       printf("\nAll cells have dropped below freezeout energy density\n");
       break;
     }
-
+    */
     //************************************************************************************\
     //* Evolution by RungeKutta
     //************************************************************************************/
@@ -541,12 +572,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     //****************JET STUFF************/
 
     // Read in source terms from particles
-    int sourceType = initCond->sourceType;
-      if(sourceType==0){
-          if(n<=60)//at top RHIC energy, PbPb overlap time
-              setSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
+    if(sourceType==1){
+          if(n<=30) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
           else noSource(latticeParams, initCondParams);
-      }
+    }
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
     t2 = std::clock();

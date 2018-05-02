@@ -46,23 +46,11 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
     
     double t = t0 + (n-1)* dt;
     double time;
-    
-    //printf("t=%lf\n",t);
 
     FILE *sourcefile;
     char fname[255];
     sprintf(fname, "%s/%s%d.dat", rootDirectory, "../part2s/output/Sources",n);
     sourcefile = fopen(fname, "r");
-    
-    //FILE *fp;
-    //char fpname[255];
-    //sprintf(fpname, "%s/output/sourcet_%d.dat", rootDirectory, n);
-    //fp=fopen(fpname, "w");
-    
-    //FILE *fpx;
-    //char fpnamex[255];
-    //sprintf(fpnamex, "%s/output/sourceb_%d.dat", rootDirectory, n);
-    //fpx=fopen(fpnamex, "w");
 
     if(sourcefile==NULL){
         printf("The source file could not be opened...\n");
@@ -85,20 +73,16 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                fscanf(sourcefile,"%le %le %le %le %le %*s%*s%*s%*s%*s%*s%*s", & Source->sourcet[s], & Source->sourcex[s], & Source->sourcey[s], & Source->sourcen[s], & Source->sourceb[s]);
                //printf("%le\t %le\t %le\t %le\t %le\n", Source->sourcet[s], Source->sourcex[s], Source->sourcey[s], Source->sourcen[s], Source->sourceb[s]);
-                 //Source->sourcet[s]=10*Source->sourcet[s];
-                 //Source->sourcex[s]=10*Source->sourcex[s];
-                 //Source->sourcey[s]=10*Source->sourcey[s];
-                 //Source->sourcen[s]=10*Source->sourcen[s];
+               //Source->sourcet[s]=10*Source->sourcet[s];
+               //Source->sourcex[s]=10*Source->sourcex[s];
+               //Source->sourcey[s]=10*Source->sourcey[s];
+               //Source->sourcen[s]=0;
                //Source->sourceb[s]=0.1*Source->sourceb[s];
-               //fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (nx-1)/2) * 0.1,(j-1 - (ny-1)/2) * 0.1,(k-1 - (nz-1)/2) * 0.1,Source->sourcet[s]);
-               //fprintf(fpx, "%.3f\t%.3f\t%.3f\t%.8f\n",(i-1 - (nx-1)/2) * 0.1,(j-1 - (ny-1)/2) * 0.1,(k-1 - (nz-1)/2) * 0.1,Source->sourceb[s]);
              }
           }
        }
     }
-    
-    //fclose(fp);//Lipei
-    //fclose(fpx);
+
     fclose(sourcefile);
 }
 
@@ -106,11 +90,11 @@ void noSource(void * latticeParams, void * initCondParams)
 {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
-
+    
     int nx = lattice->numLatticePointsX;
     int ny = lattice->numLatticePointsY;
     int nz = lattice->numLatticePointsRapidity;
-
+    
     for(int i = 2; i < nx+2; ++i){
         for(int j = 2; j < ny+2; ++j){
             for(int k = 2; k < nz+2; ++k){
@@ -123,34 +107,6 @@ void noSource(void * latticeParams, void * initCondParams)
             }//k
         }//j
     }//i
-}
-
-//*********************************************************************************************************\
-//* Dynamical source terms for T^\mu\nu and J^\mu
-//* 0 - add these source terms
-//*	1 - not add these source terms
-/*********************************************************************************************************/
-
-void setSource(int n, void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory)
-{
-	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
-	int sourceType = initCond->sourceType;
-    //if ((n-1) % FREQ == 0) printf("(Elapsed time: %.3f ms)\n",delta_time);
-	//printf("Dynamical source terms: ");
-	switch (sourceType) {
-		case 0:{
-			//printf("read in dynamical sources\n");
-            readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
-            //printf("dynamical sources have been read in.\n");
-			return;
-        }
-		case 1:{
-			//printf("set dynamical sources as 0\n");
-            //noSource(latticeParams, initCondParams);
-            //printf("dynamical sources initialized.\n");
-            return;
-        }
-	}
 }
 
 //*********************************************************************************************************\

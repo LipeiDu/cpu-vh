@@ -12,9 +12,9 @@
 //Main switch//
 
 #define PIMUNU
-//#define PI
+#define PI
 
-#define NBMU
+//#define NBMU
 //#define VMU
 
 #ifdef NBMU

@@ -35,7 +35,7 @@
 #define SIGMA_4 0.022
 
 //Transport coefficents of the baryon evolution; Lipei
-#define Cb 0.4
+#define Cb 2.0
 
 inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 	PRECISION x = T/1.01355;
