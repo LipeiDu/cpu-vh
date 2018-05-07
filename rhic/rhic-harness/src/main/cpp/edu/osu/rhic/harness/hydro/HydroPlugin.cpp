@@ -188,13 +188,16 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   double dz = lattice->latticeSpacingRapidity;
   double e0 = initCond->initialEnergyDensity;
     
-  int initialConditionType = initCond->initialConditionType;
+  int initialConditionType = initCond->initialConditionType;//Lipei
+  int numberOfSourceFiles = initCond->numberOfSourceFiles;//Lipei
 
   double freezeoutTemperatureGeV = hydro->freezeoutTemperatureGeV;
   const double hbarc = 0.197326938;
   const double freezeoutTemperature = freezeoutTemperatureGeV/hbarc;
   //const double freezeoutEnergyDensity = e0*pow(freezeoutTemperature,4);
-  const double freezeoutEnergyDensity = equilibriumEnergyDensity(freezeoutTemperature);
+  //const double freezeoutEnergyDensity = equilibriumEnergyDensity(freezeoutTemperature);
+  const double freezeoutEnergyDensity = 1.8;//Lipei
+    
   printf("Grid size = %d x %d x %d\n", nx, ny, nz);
   printf("spatial resolution = (%.3f, %.3f, %.3f)\n", lattice->latticeSpacingX, lattice->latticeSpacingY, lattice->latticeSpacingRapidity);
   printf("freezeout temperature = %.3f [fm^-1] (eF = %.3f [fm^-4])\n", freezeoutTemperature, freezeoutEnergyDensity);
@@ -538,7 +541,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
         }
       }
     }
-    /*
+    
     //if all cells are below freezeout temperature end hydro
     accumulator1 = 0;
     for (int ix = 2; ix < nx+2; ix++)
@@ -553,12 +556,12 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       }
     }
     if (accumulator1 == 0) accumulator2 += 1;
-    if (accumulator2 >= FOFREQ+1 && (n > 60)) //only break once freezeout finder has had a chance to search/write to file
+    if (accumulator2 >= FOFREQ+1 && (n > numberOfSourceFiles)) //only break once freezeout finder has had a chance to search/write to file
     {
       printf("\nAll cells have dropped below freezeout energy density\n");
       break;
     }
-    */
+    
     //************************************************************************************\
     //* Evolution by RungeKutta
     //************************************************************************************/
@@ -581,7 +584,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
     // Read in source terms from particles
     if(initialConditionType==13){
-          if(n<=20) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
+          if(n<=numberOfSourceFiles) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
           else noSource(latticeParams, initCondParams);
     }
 

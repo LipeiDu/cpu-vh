@@ -11,6 +11,8 @@
 int initialConditionType;
 int numberOfNucleonsPerNuclei;
 int sourceType;
+int numberOfSourceFiles;
+
 double initialBaryonDensity;
 double initialEnergyDensity;
 double scatteringCrossSectionNN;
@@ -38,6 +40,7 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	getIntegerProperty(cfg, "initialConditionType", &initialConditionType, 2);
 	getIntegerProperty(cfg, "numberOfNucleonsPerNuclei", &numberOfNucleonsPerNuclei, 208);
 
+    getIntegerProperty(cfg, "numberOfSourceFiles", &numberOfSourceFiles, 30);
     getIntegerProperty(cfg, "sourceType", &sourceType, 0);
     getDoubleProperty(cfg, "initialBaryonDensity", &initialBaryonDensity, 0.0);
     getDoubleProperty(cfg, "bRapidityVariance1", &bRapidityVariance1, 0.2);
@@ -54,6 +57,7 @@ void loadInitialConditionParameters(config_t *cfg, const char* configDirectory, 
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) params;
 	initCond->initialConditionType = initialConditionType;
 	initCond->numberOfNucleonsPerNuclei = numberOfNucleonsPerNuclei;
+    initCond->numberOfSourceFiles = numberOfSourceFiles;
     initCond->sourceType = sourceType;
     initCond->initialBaryonDensity = initialBaryonDensity;
 	initCond->initialEnergyDensity = initialEnergyDensity;
