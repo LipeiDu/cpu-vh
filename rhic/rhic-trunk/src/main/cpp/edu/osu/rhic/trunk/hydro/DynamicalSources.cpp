@@ -49,7 +49,7 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
 
     FILE *sourcefile;
     char fname[255];
-    sprintf(fname, "%s/%s%d.dat", rootDirectory, "../part2s/output/Sources",n);
+    sprintf(fname, "%s/%s%d.dat", rootDirectory, "source/Sources",n);
     sourcefile = fopen(fname, "r");
 
     if(sourcefile==NULL){
@@ -76,8 +76,8 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
                //Source->sourcet[s]=10*Source->sourcet[s];
                //Source->sourcex[s]=10*Source->sourcex[s];
                //Source->sourcey[s]=10*Source->sourcey[s];
-               //Source->sourcen[s]=0;
-               //Source->sourceb[s]=0.1*Source->sourceb[s];
+               //Source->sourcey[s]=0;
+               //Source->sourceb[s]=10*Source->sourceb[s];
              }
           }
        }

@@ -233,7 +233,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
     PRECISION delta_nbt = Nbt - nbt;
     PRECISION vPrev = sqrt(1-1/(utPrev*utPrev));
     
-    if(ePrev <= 0.06)
+    if(ePrev <= 0.1)
         v0 = Ms/M0;
     else
         v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, vPrev);
@@ -268,7 +268,7 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
         *un = u0 * v3;
     }
     else{
-        if(ePrev <= 0.06)
+        if(ePrev <= 0.1)
             u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
         else
             u0 = utauFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, utPrev);

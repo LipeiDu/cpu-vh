@@ -249,8 +249,10 @@ void setConservedVariables(double t, void * latticeParams) {
                 q->Nbt[s] = Nbt(rhob_s, ut_s, nbt_s);
 
                 muB[s] = chemicalPotentialOverT(e_s, rhob_s);
-                if (muB[s] < 1.e-7)
-                    muB[s] = 1.e-7;
+                
+                if (muB[s]>=0 && muB[s] < 1.e-7) muB[s] = 1.e-7;
+                else if (muB[s]<=0 && muB[s] > -1.e-7)  muB[s] = -1.e-7;
+
                 muBp[s] = muB[s];
                 term2[s] = muB[s]*T[s];
 #endif

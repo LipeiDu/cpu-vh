@@ -33,7 +33,7 @@
 #include "edu/osu/rhic/trunk/eos/EquationOfState.h"
 #include "edu/osu/rhic/trunk/hydro/DynamicalSources.h"//lipei
 
-#define FREQ 5 //write output to file every FREQ timesteps
+#define FREQ 50 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -43,10 +43,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   output(p, t, outputDir, "p", latticeParams);
-  output(u->ux, t, outputDir, "ux", latticeParams);
-  output(u->uy, t, outputDir, "uy", latticeParams);
+  //output(u->ux, t, outputDir, "ux", latticeParams);
+  //output(u->uy, t, outputDir, "uy", latticeParams);
   output(u->un, t, outputDir, "un", latticeParams);
-  output(u->ut, t, outputDir, "ut", latticeParams);
+  //output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   //output(termX, t, outputDir, "termx", latticeParams);
@@ -99,14 +99,18 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     int i,j,k;
     int s;
     
-    double v2t, becc,v2t1,v2t2;
+    double v2t,becc,eecc,v2t1,v2t2;
     v2t = 0;
     v2t1 = 0;
     v2t2 = 0;
     becc = 0;
+    eecc = 0;
     double bymx = 0;
     double bxy = 0;
     double bypx = 0;
+    double eymx = 0;
+    double exy = 0;
+    double eypx = 0;
     
     //k=(nz+3)/2;
     //j=(ny+3)/2;
@@ -139,6 +143,9 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 bymx = bymx + (y*y - x*x)*rhob[s];
                 bxy = bxy + x*y*rhob[s];
                 bypx = bypx + (y*y + x*x)*rhob[s];
+                eymx = eymx + (y*y - x*x)*e[s];
+                exy = exy + x*y*e[s];
+                eypx = eypx + (y*y + x*x)*e[s];
                 v2t1 = v2t1 + (xx-yy);
                 v2t2 = v2t2 + (xx+yy);
             }
@@ -146,9 +153,10 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     }
     
     becc = sqrt(bymx*bymx + 4*bxy*bxy)/bypx;
+    eecc = sqrt(eymx*eymx + 4*exy*exy)/eypx;
     v2t = v2t1/v2t2;
     
-    fprintf(fp, "%.3f\t%.8f\t%.8f\n",t,v2t,becc);
+    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,v2t,becc,eecc);
     
     fclose(fp);
 }
@@ -180,7 +188,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   double dz = lattice->latticeSpacingRapidity;
   double e0 = initCond->initialEnergyDensity;
     
-  int sourceType = initCond->sourceType;
+  int initialConditionType = initCond->initialConditionType;
 
   double freezeoutTemperatureGeV = hydro->freezeoutTemperatureGeV;
   const double hbarc = 0.197326938;
@@ -572,8 +580,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     //****************JET STUFF************/
 
     // Read in source terms from particles
-    if(sourceType==1){
-          if(n<=30) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
+    if(initialConditionType==13){
+          if(n<=20) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
           else noSource(latticeParams, initCondParams);
     }
 
