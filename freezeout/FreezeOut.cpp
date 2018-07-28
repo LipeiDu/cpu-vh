@@ -1,4 +1,4 @@
-#include "edu/osu/rhic/trunk/hydro/DynamicalVariables.h"
+#include "../include/DynamicalVariables.h"
 
 //return a 4 dimensional linear interpolation inside the hypercube, given the values
 //on the corners (a0000 through a1111) and edge lengths x0 through x3

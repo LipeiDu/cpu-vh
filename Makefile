@@ -2,8 +2,8 @@ UNAME := $(shell uname)
 NVCC := $(shell command -v nvcc 2> /dev/null)
 
 DIR_MAIN       = ./
-DIR_SRC        = $(DIR_MAIN)rhic
-DIR_H          = $(DIR_MAIN)include/
+DIR_SRC        = $(DIR_MAIN)rhic/src
+DIR_H          = $(DIR_MAIN)rhic/include
 DIR_BUILD      = $(DIR_MAIN)build/
 DIR_OBJ        = $(DIR_BUILD)rhic
 
@@ -30,7 +30,7 @@ ifeq ($(UNAME), Darwin)
 LIBS = -L /usr/local/lib -lm -lgsl -lgslcblas -lconfig -largp -lc++
 endif
 
-INCLUDES = -I /usr/local/include -I rhic/rhic-core/src/include -I rhic/rhic-harness/src/main/include -I rhic/rhic-trunk/src/include -I rhic/rhic-harness/src/include -I freezeout -I jet
+INCLUDES = -I rhic/include -I freezeout
 
 CPP := $(shell find $(DIR_SRC) -name '*.cpp' -and -not -name '*Test.cpp' )
 CPP_OBJ  = $(CPP:$(DIR_SRC)%.cpp=$(DIR_OBJ)%.o)
@@ -43,7 +43,7 @@ $(EXE): $(OBJ)
 	$(COMPILER) $(LINK_OPTIONS) -o $@ $^ $(LIBS) $(INCLUDES)
 
 $(DIR_OBJ)%.o: $(DIR_SRC)%.cpp
-	@[ -d $(DIR_OBJ) ] || find rhic/rhic-core rhic/rhic-harness rhic/rhic-trunk -type d -exec mkdir -p ./build/{} \;
+	@[ -d $(DIR_OBJ) ] || find rhic -type d -exec mkdir -p ./build/{} \;
 	@echo "Compiling: $< ($(COMPILER))"
 	$(COMPILER) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
