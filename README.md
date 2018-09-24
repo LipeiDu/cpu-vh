@@ -4,4 +4,4 @@ freezeout file 'freezeoutSurface.dat' is written to the directory '/output', so 
 file is written in the same format as MUSIC (see freeze.cpp)
 
 ## Notes
-This code is still under testing. Not to the public yet.
+This code is still under testing. Has yet to be publicized.
