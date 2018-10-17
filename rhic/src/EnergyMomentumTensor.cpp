@@ -13,7 +13,7 @@
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "../include/EquationOfState.h"
  
-#define MAX_ITERS 10000000
+#define MAX_ITERS 100
 
 PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev) {
     PRECISION e0 = ePrev;
@@ -37,6 +37,7 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
         PRECISION f = A*v0 + sqrt(B)*v0 - 2*M;
         PRECISION fp = A + v0*M0*dcst2_dv + sqrt(B) + v0*(A*M0*dcst2_dv - 2*M*M*dcst2_dv)/sqrt(B);
         PRECISION v = v0 - alpha*f/fp;
+        printf("j=%d,\t p=%5e,\t cs2=%5e,\t dpdrho=%5e,\t A =%5e,\t B=%5e,\t f=%5e,\t fp=%5e.\n",j,p,cs2,dp_drhob,A,B,f,fp);
 
         if(fabs(v - v0) <=  0.001 * fabs(v)) return v;
         
@@ -238,9 +239,13 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
     else
         v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, delta_nbt, vPrev);
     
-    if (isnan(v0)) {
+    if (isnan(v0))
+    {
         printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
-    }
+    }//else{
+     //   printf("v0 = OK.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,delta_nbt);
+    //}
+    
     
     if(v0<0.563624&&v0>=0){
         *e    = M0 - v0 * Ms;

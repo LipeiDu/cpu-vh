@@ -33,7 +33,7 @@
 #include "../include/EquationOfState.h"
 #include "../include/DynamicalSources.h"//lipei
 
-#define FREQ 100 //write output to file every FREQ timesteps
+#define FREQ 1 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -43,9 +43,9 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   output(p, t, outputDir, "p", latticeParams);
-  //output(u->ux, t, outputDir, "ux", latticeParams);
+  output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
-  output(u->un, t, outputDir, "un", latticeParams);
+  //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
@@ -65,7 +65,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #endif
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  output(muB, t, outputDir, "muBT", latticeParams);
+  //output(muB, t, outputDir, "muBT", latticeParams);
   //output(T, t, outputDir, "T", latticeParams);
   //output(termX, t, outputDir, "kappaB", latticeParams);
   //output(term2, t, outputDir, "muB", latticeParams);
@@ -75,7 +75,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  output(q->nbn, t, outputDir, "nbn", latticeParams);
+  //output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
 }
 
@@ -320,7 +320,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
-      outputAnalysis(t, outputDir, latticeParams);
+      //outputAnalysis(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
       //printf("\nReached freezeout temperature at the center.\n");
