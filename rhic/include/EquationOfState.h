@@ -11,6 +11,7 @@
 #include "../include/DynamicalVariables.h"
 
 #define CONFORMAL_EOS
+#define POLYTROPIC_EOS
 
 // ideal gas of massless quarks and gluons
 //#define EOS_FACTOR 15.6269 // Nc=3, Nf=3

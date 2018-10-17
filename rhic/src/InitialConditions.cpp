@@ -488,7 +488,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
 //*********************************************************************************************************\
 //* Set initial flow profile
 //*	- u^\mu = (1, 0, 0, 0)
-//* 	- No transverse flow (ux = uy = 0)
+//* - No transverse flow (ux = uy = 0)
 //*	- Longitudinal scaling flow (u_z = z/t, i.e. un = 0)
 //*********************************************************************************************************/
 void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) {
@@ -1337,13 +1337,20 @@ void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams
 
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				if(x > 0) 	e[s] = (PRECISION) (0.00778147);
-				else 			e[s] = (PRECISION) (0.124503);
-//				if(y > 0) 	e[s] = (PRECISION) (0.00778147);
-//				else 			e[s] = (PRECISION) (0.124503);
-//				if(x > 0) 	e[s] = (PRECISION) (1.0);
-//				else 			e[s] = (PRECISION) (100.0);
-				p[s] = e[s]/3;
+                
+                if(x > 0){
+                    p[s] = (PRECISION) (5.0);
+                    rhob[s] = (PRECISION) (3.5);
+                }
+                else{
+                    p[s] = (PRECISION) (13.33);
+                    rhob[s] = (PRECISION) (10.0);
+                }
+
+				e[s] = p[s]/(0.3333333*rhob[s]);
+                
+                //p[s] = 0.3333333*e[s];
+                
 				u->ux[s] = 0;
 				u->uy[s] = 0;
 				u->un[s] = 0;
@@ -1696,6 +1703,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 		case 5: {
 			printf("Relativistic Sod shock-tube test.\n");
 			setSodShockTubeInitialCondition(latticeParams, initCondParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
 		case 6: {
