@@ -16,6 +16,9 @@
 #define Cp 1.0
 #define lambdaT 1.0
 
+SLOW_MODES_Q *Qvec;
+SLOW_MODES *phiQ;
+
 //correlation length
 
 PRECISION xi(PRECISION e, PRECISION rhob){
@@ -52,30 +55,54 @@ PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q){
 
 //source terms of extra modes, Eq. (76)
 
-void setSlowModesTerms(PRECISION * const __restrict__ PhiQRHS, PRECISION * const __restrict__ equilibriumPhiQ, const Slow_Modes * const __restrict__ phiQ, PRECISION T, PRECISION t, PRECISION e, PRECISION rhob, PRECISION Q, PRECISION ut, PRECISION dkvk){
-    PRECISION gammaQ = relaxationCoefficientPhiQ(e, rhob, Q);
+void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const SLOW_MODES_Q * const __restrict__ Qvec, PRECISION e, PRECISION rhob, PRECISION ut, PRECISION dkvk){
+    
+    PRECISION gammaQ[NUMBER_SLOW_MODES];
+    PRECISION Q[NUMBER_SLOW_MODES];
+    PRECISION utInv = 1.0/ut;
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        *Q[n] = Qvec->qvec[n];
+        gammaQ[n] = relaxationCoefficientPhiQ(e, rhob, Q[n]);
+        PhiQRHS[n] = utInv * (-2) * gammaQ[n] * (PhiQ[n] - equilibriumPhiQ[n]) + PhiQ[n] * dkvk;
+    }
     
 }
 
-void loadSlowModesSourceTerms(const PRECISION * const __restrict__ M, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp, PRECISION t, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ pvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz, const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, const PRECISION * const __restrict__ muBvec, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ Tvec, PRECISION Tp){ // Q, slow modes; S, source terms;
-    
+void loadSlowModesSourceTerms(const SLOW_MODES * const __restrict__ equilibriumSlowModes, const SLOW_MODES * const __restrict__ SlowModes, PRECISION * const __restrict__ S, const SLOW_MODES_Q * const __restrict__ Qvec, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ rhobvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz){ // Modes, slow modes; S, source terms;
     
     //=========================================================
     // primary variables
     //=========================================================
+    
+    PRECISION e = evec[s];
+    PRECISION rhob = rhobvec[s];
     
     PRECISION *utvec = u->ut;
     PRECISION *uxvec = u->ux;
     PRECISION *uyvec = u->uy;
     PRECISION *unvec = u->un;
     
-    PRECISION p  = pvec[s];
     PRECISION ut = utvec[s];
     PRECISION ux = uxvec[s];
     PRECISION uy = uyvec[s];
     PRECISION un = unvec[s];
     
+    PRECISION *PhiQvec[NUMBER_SLOW_MODES];
+    PRECISION PhiQ[NUMBER_SLOW_MODES];
+    PRECISION *equilibriumPhiQvec[NUMBER_SLOW_MODES];
+    PRECISION equilibriumPhiQ[NUMBER_SLOW_MODES];
     
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        
+        *equilibriumPhiQvec[n] = equilibriumSlowModes->phiQ[n];
+        equilibriumPhiQ[n] = equilibriumPhiQvec[n][s];
+        
+        *PhiQvec[n] = SlowModes->phiQ[n];
+        PhiQ[n] = PhiQvec[n][s];
+        
+    }
+        
     //=========================================================
     // spatial derivatives of primary variables
     //=========================================================
@@ -94,11 +121,6 @@ void loadSlowModesSourceTerms(const PRECISION * const __restrict__ M, PRECISION 
     PRECISION dnut = (*(utvec + s + stride) - *(utvec + s - stride)) * facZ;
     PRECISION dnun = (*(unvec + s + stride) - *(unvec + s - stride)) * facZ;
     
-    
-    //=========================================================
-    // extra modes source terms
-    //=========================================================
-    
     PRECISION vx = ux/ut;
     PRECISION vy = uy/ut;
     PRECISION vn = un/ut;
@@ -107,9 +129,13 @@ void loadSlowModesSourceTerms(const PRECISION * const __restrict__ M, PRECISION 
     PRECISION dnvn = (dnun - vn * dnut)/ ut;
     PRECISION dkvk = dxvx + dyvy + dnvn;
     
+    //=========================================================
+    // extra modes source terms
+    //=========================================================
+    
     PRECISION PhiQRHS[NUMBER_SLOW_MODES];
     
-    setSlowModesTerms(PRECISION * const __restrict__ PhiQRHS, PRECISION * const __restrict__ equilibriumPhiQ, const Slow_Modes * const __restrict__ phiQ, PRECISION T, PRECISION t, PRECISION e, PRECISION rhob, PRECISION Q, PRECISION ut, PRECISION dkvk);
+    setSlowModesSourceTerms(PhiQRHS, equilibriumPhiQ, PhiQ, Qvec, e, rhob, ut, dkvk);
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[n] = PhiQRHS[n];
     

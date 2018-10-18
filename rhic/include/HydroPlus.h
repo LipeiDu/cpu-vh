@@ -12,6 +12,21 @@
 
 #include "../include/DynamicalVariables.h"
 
+#define NUMBER_SLOW_MODES 3
+
+typedef struct
+{
+    PRECISION *qvec[NUMBER_SLOW_MODES];
+} SLOW_MODES_Q;
+
+typedef struct
+{
+    PRECISION *phiQ[NUMBER_SLOW_MODES];
+} SLOW_MODES;
+
+extern SLOW_MODES_Q *Qvec;
+extern SLOW_MODES *phiQ;
+
 //correlation length
 PRECISION xi(PRECISION e, PRECISION rhob);
 
@@ -24,8 +39,9 @@ PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION Q); // cf. Eq.(
 PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q);
 
 //source terms of extra modes
-void setPhiQsourceTerms(PRECISION * const __restrict__ PhiQRHS, PRECISION * const __restrict__ equilibriumPhiQRHS, const Slow_Modes * const __restrict__ phiQ,
-                        PRECISION T, PRECISION t, PRECISION e, PRECISION p, PRECISION ut, PRECISION dkvk);
+void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const SLOW_MODES_Q * const __restrict__ Qvec, PRECISION e, PRECISION rhob, PRECISION ut, PRECISION dkvk);
+
+void loadSlowModesSourceTerms(const SLOW_MODES * const __restrict__ equilibriumSlowModes, const SLOW_MODES * const __restrict__ SlowModes, PRECISION * const __restrict__ S, const SLOW_MODES_Q * const __restrict__ Qvec, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ rhobvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz);
 
 
 #endif /* HydroPlus_h */
