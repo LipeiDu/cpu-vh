@@ -30,6 +30,8 @@
 #include "../include/HydroParameters.h"
 #include "../include/EquationOfState.h"
 
+#include "../include/HydroPlus.h"
+
 #define THETA_FUNCTION(X) ((double)X < (double)0 ? (double)0 : (double)1)
 
 using namespace std;//Lipei
@@ -1738,6 +1740,15 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
         case 13:{
             printf("Hydro with dynamical sources...\n");
             setICfromSource(latticeParams, initCondParams, hydroParams, rootDirectory);
+            return;
+        }
+        case 14:{
+            printf("Hydro+ with Optical Glauber...\n");
+            setGlauberInitialCondition(latticeParams, initCondParams);
+            setFluidVelocityInitialCondition(latticeParams, hydroParams);
+            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
+            setInitialConditionSlowModes(latticeParams, hydroParams);
             return;
         }
 		default: {

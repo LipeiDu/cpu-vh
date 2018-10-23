@@ -9,13 +9,15 @@
 #include <math.h> // for math functions
 
 #include "../include/SourceTerms.h"
-#include "../include/FiniteDifference.h"
+//#include "../include/FiniteDifference.h"
 #include "../include/EnergyMomentumTensor.h"
 #include "../include/DynamicalVariables.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "../include/EquationOfState.h" // for bulk terms
 #include "../include/DynamicalSources.h"//Lipei
 #include "../include/FluxLimiter.h"//Lipei
+
+#include "../include/HydroPlus.h"
 
 //#define USE_CARTESIAN_COORDINATES
 
@@ -60,7 +62,7 @@ inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISI
     return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
 
-void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS,
+void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS, PRECISION * const __restrict__ phiQRHS,
         PRECISION nbt, PRECISION nbx, PRECISION nby, PRECISION nbn, PRECISION rhob, PRECISION mub,
         PRECISION Nablat_alphaB, PRECISION Nablax_alphaB, PRECISION Nablay_alphaB, PRECISION Nablan_alphaB,
         PRECISION T, PRECISION t, PRECISION e, PRECISION p,
@@ -69,7 +71,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
         PRECISION pixn, PRECISION piyy, PRECISION piyn, PRECISION pinn, PRECISION Pi,
 		PRECISION dxut, PRECISION dyut, PRECISION dnut, PRECISION dxux, PRECISION dyux, PRECISION dnux,
 		PRECISION dxuy, PRECISION dyuy, PRECISION dnuy, PRECISION dxun, PRECISION dyun, PRECISION dnun,
-        PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt
+        PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ equiPhiQ
 ) {
 	//*********************************************************\
 	//* Temperature dependent shear transport coefficients
@@ -309,6 +311,21 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
     nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
 #endif
+
+    //*********************************************************\
+    //* for the slow modes from Hydro+, by Lipei
+    //*********************************************************/
+    
+#ifdef HydroPlus
+    PRECISION gammaQ[NUMBER_SLOW_MODES];
+    PRECISION utInv = 1.0/ut;
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        gammaQ[n] = relaxationCoefficientPhiQ(e, rhob, Qvec[n]);
+        phiQRHS[n] = utInv * (-2) * gammaQ[n] * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
+    }
+#endif
 }
 
 
@@ -506,7 +523,7 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 PRECISION t, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
-const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, const PRECISION * const __restrict__ muBvec, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ Tvec, PRECISION Tp
+const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __restrict__ rhobvec, const PRECISION * const __restrict__ muBvec, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ Tvec, PRECISION Tp, const SLOW_MODES *  const __restrict__ eqPhiQ, const SLOW_MODES *  const __restrict__ eqPhiQp
 ) {
 	//=========================================================
 	// conserved variables
@@ -558,6 +575,15 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION nbx = 0;
     PRECISION nby = 0;
     PRECISION nbn = 0;
+#endif
+#ifdef HydroPlus
+    PRECISION PhiQ[NUMBER_SLOW_MODES];
+    PRECISION equiPhiQ[NUMBER_SLOW_MODES];
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        PhiQ[n] = Q[ALL_NUMBER_CONSERVED_VARIABLES+n];
+        equiPhiQ[n] = eqPhiQ->phiQ[n][s];
+    }
 #endif
 
 	//=========================================================
@@ -757,14 +783,21 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
     PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];//Lipei
-	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
+    PRECISION phiQRHS[NUMBER_SLOW_MODES];
+    
+	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, phiQRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
             T, t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp, pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
-			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt);
+			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ);
+    
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
 #endif
 #ifdef VMU
     for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//Source terms for baryon diffusion current
 #endif
+#endif
+    
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[ALL_NUMBER_CONSERVED_VARIABLES+n] = phiQRHS[n];
 #endif
 }

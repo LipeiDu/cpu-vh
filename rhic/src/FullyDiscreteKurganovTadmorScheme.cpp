@@ -23,9 +23,11 @@
 #include "../include/EnergyMomentumTensor.h"
 #include "../include/HydroParameters.h"
 
-#include "../include/FiniteDifference.h" //temp
+#include "../include/HydroPlus.h"
 
-using namespace std;//Lipei
+//#include "../include/FiniteDifference.h" //temp
+
+//using namespace std;//Lipei
 
 /**************************************************************************************************************************************************/
 void setNeighborCellsJK2(const PRECISION * const __restrict__ in, PRECISION * const __restrict__ out,
@@ -44,15 +46,15 @@ const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES
 const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
 const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
 int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
-const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ muB, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ T, const PRECISION * const __restrict__ Tp
+const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ muB, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ T, const PRECISION * const __restrict__ Tp, SLOW_MODES *  const __restrict__ eqPhiQ, SLOW_MODES *  const __restrict__ eqPhiQp
 ) {
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 
-				PRECISION Q[ALL_NUMBER_CONSERVED_VARIABLES];
-				PRECISION S[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION Q[NUMBER_ALL_EVOLVING_VARIABLES];
+				PRECISION S[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				Q[0] = currrentVars->ttt[s];
 				Q[1] = currrentVars->ttx[s];
@@ -82,11 +84,16 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
                 Q[NUMBER_CONSERVED_VARIABLES+3] = currrentVars->nby[s];
                 Q[NUMBER_CONSERVED_VARIABLES+4] = currrentVars->nbn[s];
 #endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    Q[ALL_NUMBER_CONSERVED_VARIABLES+n] = currrentVars->phiQ[n][s];
+                }
+#endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp, T, Tp[s]);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp, T, Tp[s], eqPhiQ, eqPhiQp);
                 
-				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) = *(Q+n) + dt * ( *(S+n) );
 				}
                 
@@ -118,7 +125,11 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
                 updatedVars->nby[s] = result[NUMBER_CONSERVED_VARIABLES+3];
                 updatedVars->nbn[s] = result[NUMBER_CONSERVED_VARIABLES+4];
 #endif
-
+#ifdef HydroPlus
+                for (unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) {
+                    updatedVars->phiQ[n][s] = result[ALL_NUMBER_CONSERVED_VARIABLES+n];
+                }
+#endif
 			}
 		}
 	}
@@ -134,8 +145,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION I[5 * ALL_NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION I[5 * NUMBER_ALL_EVOLVING_VARIABLES];
+				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int sim  = s-1;
@@ -170,18 +181,23 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
                 setNeighborCellsJK2(currrentVars->nbt,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nbx,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nby,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->nbn,I,s,ptr,simm,sim,sip,sipp);
+                setNeighborCellsJK2(currrentVars->nbn,I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    setNeighborCellsJK2(currrentVars->phiQ[n],I,s,ptr,simm,sim,sip,sipp); ptr+=5;
+                }
 #endif
                 
-				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
                 
 				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
                 
 				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dx;
 				}
@@ -224,6 +240,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
                 // Dissipative currents
                 //===================================================
                 
+                // the components of array H for dissipative currents are not initialized (so it's possible to have random values), but they are not added to update these components, so it's safe. This part should be cleaned. lipei Oct 22/2018
+                
 #ifdef PIMUNU
 				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
 					*(result+n) *= dt;
@@ -231,6 +249,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 #endif
 #ifdef VMU
                 for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) *= dt;
+                }
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
                     *(result+n) *= dt;
                 }
 #endif
@@ -264,6 +287,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
                 updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
                 updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
 #endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    updatedVars->phiQ[n][s] += result[ALL_NUMBER_CONSERVED_VARIABLES+n];
+                }
+#endif
 			}
 		}
 	}
@@ -278,8 +306,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION J[5* ALL_NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION J[5* NUMBER_ALL_EVOLVING_VARIABLES];
+				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int sjm = s-ncx;
@@ -314,18 +342,23 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
                 setNeighborCellsJK2(currrentVars->nbt,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nbx,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nby,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->nbn,J,s,ptr,sjmm,sjm,sjp,sjpp);
+                setNeighborCellsJK2(currrentVars->nbn,J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    setNeighborCellsJK2(currrentVars->phiQ[n],J,s,ptr,sjmm,sjm,sjp,sjpp); ptr+=5;
+                }
 #endif
                 
                 
-				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
 				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) = - *(H+n);
 				}
                 
 				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dy;
 				}
@@ -356,6 +389,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 #endif
 #ifdef VMU
                 for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) *= dt;
+                }
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
                     *(result+n) *= dt;
                 }
 #endif
@@ -390,6 +428,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
                 updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
                 updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
 #endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    updatedVars->phiQ[n][s] += result[ALL_NUMBER_CONSERVED_VARIABLES+n];
+                }
+#endif
 			}
 		}
 	}
@@ -404,8 +447,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
-				PRECISION K[5 * ALL_NUMBER_CONSERVED_VARIABLES];
-				PRECISION H[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION K[5 * NUMBER_ALL_EVOLVING_VARIABLES];
+				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int stride = ncx * ncy;
@@ -441,17 +484,22 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
                 setNeighborCellsJK2(currrentVars->nbt,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nbx,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
                 setNeighborCellsJK2(currrentVars->nby,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
-                setNeighborCellsJK2(currrentVars->nbn,K,s,ptr,skmm,skm,skp,skpp);
+                setNeighborCellsJK2(currrentVars->nbn,K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    setNeighborCellsJK2(currrentVars->phiQ[n],K,s,ptr,skmm,skm,skp,skpp); ptr+=5;
+                }
 #endif
                 
-				PRECISION result[ALL_NUMBER_CONSERVED_VARIABLES];
+				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
 				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) = -*(H+n);
 				}
                 
 				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) += *(H+n);
 					*(result+n) /= dz;
 				}
@@ -489,7 +537,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
                     *(result+n) *= dt;
                 }
 #endif
-
+#ifdef HydroPlus
+                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
+                    *(result+n) *= dt;
+                }
+#endif
                 
                 
 				updatedVars->ttt[s] += result[0];
@@ -519,6 +571,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
                 updatedVars->nbx[s] += result[NUMBER_CONSERVED_VARIABLES+2];
                 updatedVars->nby[s] += result[NUMBER_CONSERVED_VARIABLES+3];
                 updatedVars->nbn[s] += result[NUMBER_CONSERVED_VARIABLES+4];
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    updatedVars->phiQ[n][s] += result[ALL_NUMBER_CONSERVED_VARIABLES+n];
+                }
 #endif
 			}
 		}
@@ -581,6 +638,12 @@ int ncx, int ncy, int ncz
                 Q->nby[s]  /= 2;
                 Q->nbn[s]  += q->nbn[s];
                 Q->nbn[s]  /= 2;
+#endif
+#ifdef HydroPlus
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    Q->phiQ[n][s] += q->phiQ[n][s];
+                    Q->phiQ[n][s] /= 2;
+                }
 #endif
             }
 		}
@@ -758,27 +821,27 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	// STEP 1:
 	//===================================================
     
-	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp);
+	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp, eqPhiQ, eqPhiQp);
     eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
     eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
     
 	t+=dt;
 
-	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS);
+	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS, eqPhiQS);
 
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
 #endif
 
-	setGhostCells(qS, e, p, uS, latticeParams, rhob, muBS, TS);
+	setGhostCells(qS, e, p, uS, latticeParams, rhob, muBS, TS, eqPhiQS);
 
     
 	//===================================================
 	// STEP 2:
 	//===================================================
     
-	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T);
+	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T, eqPhiQS, eqPhiQ);
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
@@ -788,12 +851,13 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	swapFluidVelocity(&up, &u);
     swapPrimaryVariables(&muBp, &muB);
     swapPrimaryVariables(&Tp, &T);
+    swapSlowModes(&eqPhiQp, &eqPhiQ);
     
-	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T);
+	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T, eqPhiQ);
     
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
 #endif
     
-	setGhostCells(Q, e, p, u, latticeParams, rhob, muB, T);
+	setGhostCells(Q, e, p, u, latticeParams, rhob, muB, T, eqPhiQ);
 }

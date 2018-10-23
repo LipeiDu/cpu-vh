@@ -32,6 +32,7 @@
 #include "../include/EnergyMomentumTensor.h"
 #include "../include/EquationOfState.h"
 #include "../include/DynamicalSources.h"//lipei
+#include "../include/HydroPlus.h"
 
 #define FREQ 100 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
@@ -293,7 +294,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
   // Impose boundary conditions with ghost cells
-  setGhostCells(q,e,p,u,latticeParams,rhob,muB,T);//rhob by Lipei
+  setGhostCells(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);//rhob by Lipei
 
   //************************************************************************************\
   //* Evolve the system in time

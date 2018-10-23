@@ -19,25 +19,25 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-#define HydroPlus
+
 
 #define lambdaT 1.0
 
 
-PRECISION *Qvec; // Q vectors of slow modes
-SLOW_MODES *PhiQ, *PhiQp, *PhiQS; // Slow modes: updated, previous, intermediate values
-SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
+//PRECISION *Qvec; // Q vectors of slow modes
+//SLOW_MODES *PhiQ, *PhiQp, *PhiQS; // Slow modes: updated, previous, intermediate values
+//SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
 
 // allocate memory
-void allocateHostMemorySlowModes(int len) {
-    
+void allocateHostMemorySlowModes(int len)
+{
     size_t bytes = sizeof(PRECISION);
 
     Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
     
-    PhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    /*PhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
     PhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    PhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    PhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));*/
     
     eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
     eqPhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
@@ -45,15 +45,34 @@ void allocateHostMemorySlowModes(int len) {
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         
-        PhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+        /*PhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
         PhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
-        PhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
+        PhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);*/
         
         eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
         eqPhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
         eqPhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
     }
 }
+
+void freeHostMemorySlowModes()
+{
+
+    free(Qvec);
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        //free(PhiQ->phiQ[n]);
+        free(eqPhiQ->phiQ[n]);
+        free(eqPhiQp->phiQ[n]);
+        free(eqPhiQS->phiQ[n]);
+    }
+    
+    //free(PhiQ);
+    free(eqPhiQ);
+    free(eqPhiQp);
+    free(eqPhiQS);
+}
+
 
 
 PRECISION Cp(PRECISION e, PRECISION rhob){
@@ -76,14 +95,16 @@ PRECISION equilibriumPhi0(PRECISION e, PRECISION rhob){
 }
 
 // slow modes with Q
-PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION Q){
+PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
+{
     PRECISION corrL = xi(e, rhob);
     PRECISION qL = Q * corrL;
     return equilibriumPhi0(e, rhob) * f2(qL); // Magnitude of mode Q at Equilibrium, Eq. (89)
 }
 
 //relaxation of fluctuations
-PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q){
+PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
+{
     PRECISION corrL = xi(e, rhob);
     PRECISION qL = Q * corrL;
     PRECISION qL2 = qL * qL;
@@ -105,24 +126,21 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     Qvec[1] = 1.0;
     Qvec[2] = 2.0;
     
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        
-        PRECISION Qn = Qvec[n];
-        
-        for(int i = 2; i < nx+2; ++i) {
-            for(int j = 2; j < ny+2; ++j) {
-                for(int k = 2; k < nz+2; ++k) {
-                    
-                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
                     PRECISION es = e[s];
                     PRECISION rhobs = rhob[s];
-                
-                    eqPhiQ->phiQ[n][s] = equilibriumPhiQ(es, rhobs, Qn);
+                    
+                    eqPhiQ->phiQ[n][s] = equilibriumPhiQ(es, rhobs, Qvec[n]);
                     eqPhiQp->phiQ[n][s] = eqPhiQ->phiQ[n][s];
-                
-                    PhiQ->phiQ[n][s] = eqPhiQ->phiQ[n][s];
-                    PhiQp->phiQ[n][s] = eqPhiQ->phiQ[n][s];
+                    
+                    q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s] = eqPhiQ->phiQ[n][s];
+                    Q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s] = eqPhiQ->phiQ[n][s];
                 }
             }
         }
@@ -131,7 +149,8 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 
 
 //contributions from slow modes to primary variables
-PRECISION entropySlowModes(const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Q){
+PRECISION entropySlowModes(const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Q)
+{
     // entropy of slow modes on a single cell
     
     PRECISION entropy = 0.0;
@@ -148,8 +167,8 @@ PRECISION entropySlowModes(const PRECISION * const __restrict__ equilibriumPhiQ,
 
 
 //source terms of extra modes, Eq. (76)
-void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Qvec, PRECISION e, PRECISION rhob, PRECISION ut, PRECISION dkvk){
-    
+void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Qvec, PRECISION e, PRECISION rhob, PRECISION ut, PRECISION dkvk)
+{
     PRECISION gammaQ[NUMBER_SLOW_MODES];
     PRECISION utInv = 1.0/ut;
     
@@ -161,7 +180,9 @@ void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECI
     
 }
 
-void loadSlowModesSourceTerms(const SLOW_MODES * const __restrict__ equilibriumSlowModes, const SLOW_MODES * const __restrict__ SlowModes, PRECISION * const __restrict__ S, const PRECISION * const __restrict__ Qvec, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ rhobvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz){
+
+void loadSlowModesSourceTerms(const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION * const __restrict__ S, const PRECISION * const __restrict__ Qvec, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ rhobvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz)
+{
     // Modes, slow modes; S, source terms;
     
     //=========================================================
@@ -180,21 +201,6 @@ void loadSlowModesSourceTerms(const SLOW_MODES * const __restrict__ equilibriumS
     PRECISION ux = uxvec[s];
     PRECISION uy = uyvec[s];
     PRECISION un = unvec[s];
-    
-    PRECISION *PhiQvec[NUMBER_SLOW_MODES];
-    PRECISION PhiQ[NUMBER_SLOW_MODES];
-    PRECISION *equilibriumPhiQvec[NUMBER_SLOW_MODES];
-    PRECISION equilibriumPhiQ[NUMBER_SLOW_MODES];
-    
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        
-        equilibriumPhiQvec[n] = equilibriumSlowModes->phiQ[n];
-        equilibriumPhiQ[n] = equilibriumPhiQvec[n][s];
-        
-        PhiQvec[n] = SlowModes->phiQ[n];
-        PhiQ[n] = PhiQvec[n][s];
-        
-    }
         
     //=========================================================
     // spatial derivatives of primary variables
@@ -228,7 +234,7 @@ void loadSlowModesSourceTerms(const SLOW_MODES * const __restrict__ equilibriumS
     
     PRECISION PhiQRHS[NUMBER_SLOW_MODES];
     
-    setSlowModesSourceTerms(PhiQRHS, equilibriumPhiQ, PhiQ, Qvec, e, rhob, ut, dkvk);
+    setSlowModesSourceTerms(PhiQRHS, equiPhiQ, PhiQ, Qvec, e, rhob, ut, dkvk);
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[n] = PhiQRHS[n];
     

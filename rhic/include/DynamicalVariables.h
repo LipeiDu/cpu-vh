@@ -67,10 +67,25 @@
 #define IDEAL
 #endif
 
+/*********************************************************/
+//HydroPlus extra modes//
+
+#define HydroPlus
+
+#ifndef HydroPlus
+#define NUMBER_SLOW_MODES 0
+#else
+#define NUMBER_SLOW_MODES 3
+#endif
+
+/*********************************************************/
+//Conservation variables//
+
 #define NUMBER_CONSERVED_VARIABLES (NUMBER_CONSERVATION_LAWS+NUMBER_DISSIPATIVE_CURRENTS)//excluding baryon part
 
 #define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)//baryon part is defined seperately
 
+#define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)//with slow modes
 /*********************************************************/
 
 #define PRECISION double
@@ -105,6 +120,9 @@ typedef struct
     PRECISION *nby;
     PRECISION *nbn;
 #endif
+#ifdef HydroPlus
+    PRECISION *phiQ[NUMBER_SLOW_MODES];
+#endif
 } CONSERVED_VARIABLES;
 
 typedef struct
@@ -133,6 +151,15 @@ typedef struct
     PRECISION *sigmaB;
 } EQUATION_OF_STATE;
 
+typedef struct
+{
+    PRECISION *phiQ[NUMBER_SLOW_MODES];
+} SLOW_MODES;
+
+
+extern SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS;  // Slow modes at equilibrium: updated, previous, intermediate values
+extern PRECISION *Qvec; // Q vectors of slow modes
+
 extern PRECISION *termX;
 extern PRECISION *termY;
 extern PRECISION *termZ;
@@ -156,30 +183,35 @@ void allocateHostMemory(int len);
 void setConservedVariables(double t, void * latticeParams);
 void setCurrentConservedVariables();
 void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) ;
+void swapSlowModes(SLOW_MODES **arr1, SLOW_MODES **arr2) ;
 void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2);
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
+PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
 );
 
 void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
+PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
 );
 
 void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
+PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
 );
 
 void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
+PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
 );
 
 void freeHostMemory();

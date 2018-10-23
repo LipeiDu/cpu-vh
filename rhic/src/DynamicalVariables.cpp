@@ -13,6 +13,8 @@
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for ghost cells
 #include "../include/EquationOfState.h"//Lipei
 
+#include "../include/HydroPlus.h"
+
 CONSERVED_VARIABLES *q, *Q, *qS;
 
 FLUID_VELOCITY *u, *up, *uS;
@@ -26,6 +28,9 @@ PRECISION *T, *Tp, *TS;
 EQUATION_OF_STATE *EOState;//Lipei
 
 DYNAMICAL_SOURCE *Source;//Lipei
+
+PRECISION *Qvec; // Q vectors of slow modes
+SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
 
 PRECISION *termX;
 PRECISION *termY;
@@ -93,6 +98,20 @@ void allocateHostMemory(int len) {
 	uS->ux = (PRECISION *)calloc(len,bytes);
 	uS->uy = (PRECISION *)calloc(len,bytes);
 	uS->un = (PRECISION *)calloc(len,bytes);
+    
+#ifdef HydroPlus
+    Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
+    
+    eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    eqPhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    eqPhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+        eqPhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
+        eqPhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
+    }
+#endif
 
 	//=======================================================
 	// Conserved variables
@@ -126,6 +145,11 @@ void allocateHostMemory(int len) {
     q->nby = (PRECISION *)calloc(len, bytes);
     q->nbn = (PRECISION *)calloc(len, bytes);
 #endif
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        q->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+    }
+#endif
 
 
 	// upated variables at the n+1 time step
@@ -158,7 +182,11 @@ void allocateHostMemory(int len) {
     Q->nby = (PRECISION *)calloc(len, bytes);
     Q->nbn = (PRECISION *)calloc(len, bytes);
 #endif
-
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        Q->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+    }
+#endif
 
 	// updated variables at the intermediate time step
 	qS = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
@@ -189,6 +217,11 @@ void allocateHostMemory(int len) {
     qS->nbx = (PRECISION *)calloc(len, bytes);
     qS->nby = (PRECISION *)calloc(len, bytes);
     qS->nbn = (PRECISION *)calloc(len, bytes);
+#endif
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        qS->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+    }
 #endif
 }
 
@@ -264,18 +297,20 @@ void setConservedVariables(double t, void * latticeParams) {
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
-	setGhostCellsKernelI(q,e,p,u,latticeParams,rhob,muB,T);
-	setGhostCellsKernelJ(q,e,p,u,latticeParams,rhob,muB,T);
-	setGhostCellsKernelK(q,e,p,u,latticeParams,rhob,muB,T);
+	setGhostCellsKernelI(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);
+	setGhostCellsKernelJ(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);
+	setGhostCellsKernelK(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);
 }
 
 void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
                       PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
                       FLUID_VELOCITY * const __restrict__ u,
                       int s, int sBC,
-                      PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T//by Lipei
+                      PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+                      SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
     e[s] = e[sBC];
     p[s] = p[sBC];
@@ -317,12 +352,20 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
     q->nby[s] = q->nby[sBC];
     q->nbn[s] = q->nbn[sBC];
 #endif
+    
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        eqPhiQp->phiQ[n][s] = eqPhiQ->phiQ[n][sBC];
+        q->phiQ[n][s] = q->phiQ[n][sBC];
+    }
+#endif
 }
 
 void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -339,13 +382,13 @@ PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISI
 			for (int i = 0; i <= 1; ++i) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(iBC, j, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 			iBC = nx + 1;
 			for (int i = nx + 2; i <= nx + 3; ++i) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(iBC, j, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 		}
 	}
@@ -354,7 +397,8 @@ PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISI
 void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -371,13 +415,13 @@ PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISI
 			for (int j = 0; j <= 1; ++j) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, jBC, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 			jBC = ny + 1;
 			for (int j = ny + 2; j <= ny + 3; ++j) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, jBC, k, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 		}
 	}
@@ -386,7 +430,8 @@ PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISI
 void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -402,13 +447,13 @@ PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISI
 			for (int k = 0; k <= 1; ++k) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, j, kBC, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 			kBC = nz + 1;
 			for (int k = nz + 2; k <= nz + 3; ++k) {
 				s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 				sBC = columnMajorLinearIndex(i, j, kBC, ncx, ncy);
-				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T);
+				setGhostCellVars(q,e,p,u,s,sBC,rhob,muB,T,eqPhiQ);
 			}
 		}
 	}
@@ -428,6 +473,12 @@ void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) {
 	FLUID_VELOCITY *tmp = *arr1;
 	*arr1 = *arr2;
 	*arr2 = tmp;
+}
+
+void swapSlowModes(SLOW_MODES **arr1, SLOW_MODES **arr2) {
+    SLOW_MODES *tmp = *arr1;
+    *arr1 = *arr2;
+    *arr2 = tmp;
 }
 
 //swap energy density or baryon density; Lipei
@@ -481,6 +532,18 @@ void freeHostMemory() {
 	free(u->ux);
 	free(u->uy);
 	free(u->un);
+    
+    free(Qvec);
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        free(eqPhiQ->phiQ[n]);
+        free(eqPhiQp->phiQ[n]);
+        free(eqPhiQS->phiQ[n]);
+    }
+    
+    free(eqPhiQ);
+    free(eqPhiQp);
+    free(eqPhiQS);
 
 	free(q->ttt);
 	free(q->ttx);
