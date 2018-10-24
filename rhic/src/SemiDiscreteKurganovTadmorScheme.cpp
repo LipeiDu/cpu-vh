@@ -9,7 +9,7 @@
 
 #include "../include/SemiDiscreteKurganovTadmorScheme.h"
 #include "../include/DynamicalVariables.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/LocalPropagationSpeed.h"
  
 void flux(const PRECISION * const __restrict__ data, PRECISION * const __restrict__ result,

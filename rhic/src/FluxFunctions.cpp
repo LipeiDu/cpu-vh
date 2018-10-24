@@ -9,7 +9,7 @@
 #include <stdio.h> // for printf
 
 #include "../include/FluxFunctions.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/DynamicalVariables.h"
 
 PRECISION Fx(PRECISION q, PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un) {

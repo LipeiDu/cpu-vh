@@ -10,7 +10,7 @@
 
 #include "../include/SourceTerms.h"
 //#include "../include/FiniteDifference.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/DynamicalVariables.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "../include/EquationOfState.h" // for bulk terms
@@ -39,6 +39,11 @@
 //Transport coefficents of the baryon evolution; Lipei
 #define Cb 0.4
 
+
+/**************************************************************************************************************************************************/
+/* bulk viscosity as a function of temperature
+/**************************************************************************************************************************************************/
+
 inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 	PRECISION x = T/1.01355;
 	if(x > 1.05)
@@ -54,6 +59,11 @@ const PRECISION tau_pipi = 1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
+
+/**************************************************************************************************************************************************/
+/* baryon diffusion coefficient of the medium from kinetic theory
+/**************************************************************************************************************************************************/
+
 inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION mub, PRECISION e, PRECISION p){
     PRECISION HyCotangent = 1/tanh(mub);
     if(isnan(HyCotangent))
@@ -61,6 +71,11 @@ inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISI
     
     return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
 }
+
+
+/**************************************************************************************************************************************************/
+/* calculate source terms for dissipative compnents, e.g. shear, bulk and baryon diffusion etc.
+/**************************************************************************************************************************************************/
 
 void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISION * const __restrict__ nbmuRHS, PRECISION * const __restrict__ phiQRHS,
         PRECISION nbt, PRECISION nbx, PRECISION nby, PRECISION nbn, PRECISION rhob, PRECISION mub,
@@ -71,7 +86,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
         PRECISION pixn, PRECISION piyy, PRECISION piyn, PRECISION pinn, PRECISION Pi,
 		PRECISION dxut, PRECISION dyut, PRECISION dnut, PRECISION dxux, PRECISION dyux, PRECISION dnux,
 		PRECISION dxuy, PRECISION dyuy, PRECISION dnuy, PRECISION dxun, PRECISION dyun, PRECISION dnun,
-        PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ equiPhiQ
+        PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt, const PRECISION * const __restrict__ PhiQ,
+        const PRECISION * const __restrict__ equiPhiQ, const PRECISION *  const __restrict__ equiPhiQp,
+        PRECISION NablatPhiSum, PRECISION NablaxPhiSum, PRECISION NablayPhiSum, PRECISION NablanPhiSum
+                               
 ) {
 	//*********************************************************\
 	//* Temperature dependent shear transport coefficients
@@ -279,6 +297,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION tau_n = Cb/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
+    PRECISION lambda_alphaphi = 1.0; // extra terms contributing to baryon diffusion from slow modes
 
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
     PRECISION NBI1t = ut * facNBI1;
@@ -306,10 +325,11 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION GBt   = -t * un/ut * nbn;
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
 
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    // contribution from Hydro+ will be zero when slow modes are turned off by defination of NablaPhiSum
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt + lambda_alphaphi * NablatPhiSum;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk + lambda_alphaphi * NablaxPhiSum;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk + lambda_alphaphi * NablayPhiSum;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn + lambda_alphaphi * NablanPhiSum;
 #endif
 
     //*********************************************************\
@@ -317,19 +337,22 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     //*********************************************************/
     
 #ifdef HydroPlus
-    PRECISION gammaQ[NUMBER_SLOW_MODES];
+    PRECISION gammaQ = 0;
     PRECISION utInv = 1.0/ut;
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
-        gammaQ[n] = relaxationCoefficientPhiQ(e, rhob, Qvec[n]);
-        phiQRHS[n] = utInv * (-2) * gammaQ[n] * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
+        gammaQ = relaxationCoefficientPhiQ(e, rhob, Qvec[n]);
+        phiQRHS[n] = utInv * (-2) * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
     }
 #endif
 }
 
 
-//***************************************************************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* calculate source terms for T^tau^mu and N^tau, only include source terms directly dependent on x gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
+
 void loadSourceTermsX(const PRECISION * const __restrict__ I, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dx
 ) {
@@ -392,6 +415,11 @@ PRECISION d_dx
 #endif
 #endif
 }
+
+
+/**************************************************************************************************************************************************/
+/* calculate source terms for T^tau^mu and N^tau, only include source terms directly dependent on y gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
 
 void loadSourceTermsY(const PRECISION * const __restrict__ J, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dy
@@ -456,6 +484,11 @@ PRECISION d_dy
 #endif
 }
 
+
+/**************************************************************************************************************************************************/
+/* calculate source terms for T^tau^mu and N^tau, only include source terms directly dependent on eta_s gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
+
 void loadSourceTermsZ(const PRECISION * const __restrict__ K, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s, PRECISION t,
 PRECISION d_dz
 ) {
@@ -519,6 +552,11 @@ PRECISION d_dz
 #endif
 }
 
+
+/**************************************************************************************************************************************************/
+/* load source terms for all components, but exclude source terms directly dependent of gradients of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
+
 void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 PRECISION t, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ pvec,
@@ -579,10 +617,12 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #ifdef HydroPlus
     PRECISION PhiQ[NUMBER_SLOW_MODES];
     PRECISION equiPhiQ[NUMBER_SLOW_MODES];
+    PRECISION equiPhiQp[NUMBER_SLOW_MODES];
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
         PhiQ[n] = Q[ALL_NUMBER_CONSERVED_VARIABLES+n];
         equiPhiQ[n] = eqPhiQ->phiQ[n][s];
+        equiPhiQp[n] = eqPhiQp->phiQ[n][s];
     }
 #endif
 
@@ -777,6 +817,21 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablan_alphaB = 0;
 #endif
     
+    //=========================================================
+    // Extra terms contributing to baryon diffusion from slow modes; by Lipei
+    //=========================================================
+    
+    PRECISION NablatPhiSum = 0;
+    PRECISION NablaxPhiSum = 0;
+    PRECISION NablayPhiSum = 0;
+    PRECISION NablanPhiSum = 0;
+    
+#ifdef HydroPlus
+    PRECISION NablatPhi[NUMBER_SLOW_MODES], NablaxPhi[NUMBER_SLOW_MODES], NablayPhi[NUMBER_SLOW_MODES], NablanPhi[NUMBER_SLOW_MODES];
+    
+    
+#endif
+    
 	//=========================================================
 	// \pi^{\mu\nu} source terms and nb^\mu source terms
 	//=========================================================
@@ -787,7 +842,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     
 	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, phiQRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
             T, t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp, pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
-			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ);
+			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp, NablatPhiSum, NablaxPhiSum, NablayPhiSum, NablanPhiSum);
     
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];

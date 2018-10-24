@@ -1,19 +1,25 @@
 /*
- * EnergyMomentumTensor.cpp
+ * PrimaryVariables.cpp
  *
  *  Created on: Oct 22, 2015
  *      Author: bazow
  */
 #include <math.h> // for math functions
 
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
 
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "../include/EquationOfState.h"
- 
+#include "../include/HydroPlus.h"
+
 #define MAX_ITERS 10000000
+
+
+/**************************************************************************************************************************************************/
+/* calculate v, u^tau or energy density
+/**************************************************************************************************************************************************/
 
 PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION delta_nbt, PRECISION vPrev) {
     PRECISION e0 = ePrev;
@@ -118,6 +124,11 @@ PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRE
 	return fabs(sqrtf(fabs(4 * M0 * M0 - 3 * M)) - M0);
 #endif
 }
+
+
+/**************************************************************************************************************************************************/
+/* calculate primary variables u^\mu, e, rhob and pressure, from T^\tau^mu N^\tau and dissipative components
+/**************************************************************************************************************************************************/
 
 void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, PRECISION utPrev,
@@ -301,6 +312,10 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob) {
 }
 
 
+/**************************************************************************************************************************************************/
+/* kernel for setting primary variables
+/**************************************************************************************************************************************************/
+
 void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ uPrev, FLUID_VELOCITY * const __restrict__ u, PRECISION t, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ) {
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -366,8 +381,23 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 muB[s] = chemicalPotentialOverT(_e, _rhob);
                 if (muB[s]>=0 && muB[s] < 1.e-7) muB[s] = 1.e-7;
                 else if (muB[s]<=0 && muB[s] > -1.e-7)  muB[s] = -1.e-7;
-
-                term2[s] = muB[s]*T[s];
+#endif
+#ifdef HydroPlus
+                PRECISION equiPhiQ[NUMBER_SLOW_MODES], PhiQ[NUMBER_SLOW_MODES];
+                
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+                {
+                    eqPhiQ->phiQ[n][s] = equilibriumPhiQ(_e, _rhob, Qvec[n]);
+                    equiPhiQ[n] = eqPhiQ->phiQ[n][s];
+                    PhiQ[n] = q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s];
+                }
+                
+                PRECISION deltaS, deltaAlpha, deltaBeta;
+                
+                getPrimaryVariablesFromSlowModes(&deltaS, &deltaAlpha, &deltaBeta, equiPhiQ, PhiQ, e[s], rhob[s]);
+                
+                T[s] = 1 / (1/T[s] + deltaBeta);
+                muB[s] = muB[s] + deltaAlpha;
 #endif
             }
         }
@@ -375,9 +405,10 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
 }
 
 
-//===================================================================
-// Components of T^{\mu\nu} and Nb^{\mu} in (\tau,x,y,\eta_s)-coordinates
-//===================================================================
+/**************************************************************************************************************************************************/
+/* Components of T^{\mu\nu} and Nb^{\mu} in (\tau,x,y,\eta_s)-coordinates
+/**************************************************************************************************************************************************/
+
 PRECISION Ttt(PRECISION e, PRECISION p, PRECISION ut, PRECISION pitt) {
 	return (e+p)*ut*ut-p+pitt;
 }

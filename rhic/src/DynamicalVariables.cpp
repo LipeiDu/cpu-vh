@@ -9,7 +9,7 @@
 
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for ghost cells
 #include "../include/EquationOfState.h"//Lipei
 
@@ -32,14 +32,19 @@ DYNAMICAL_SOURCE *Source;//Lipei
 PRECISION *Qvec; // Q vectors of slow modes
 SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
 
-PRECISION *termX;
-PRECISION *termY;
-PRECISION *termZ;
-PRECISION *term2;//Lipei
+
+/**************************************************************************************************************************************************/
+/* column compact index
+/**************************************************************************************************************************************************/
 
 int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 	return i + nx * (j + ny * k);
 }
+
+
+/**************************************************************************************************************************************************/
+/* allocate memory for all external variables
+/**************************************************************************************************************************************************/
 
 void allocateHostMemory(int len) {
 	size_t bytes = sizeof(PRECISION);
@@ -61,11 +66,6 @@ void allocateHostMemory(int len) {
     T = (PRECISION *)calloc(len, bytes);//Lipei
     Tp= (PRECISION *)calloc(len, bytes);//Lipei
     TS= (PRECISION *)calloc(len, bytes);//Lipei
-    
-    termX = (PRECISION *)calloc(len, bytes);//Lipei
-    termY = (PRECISION *)calloc(len, bytes);//Lipei
-    termZ = (PRECISION *)calloc(len, bytes);//Lipei
-    term2 = (PRECISION *)calloc(len, bytes);//Lipei
 
     // equation of state table
     EOState = (EQUATION_OF_STATE *)calloc(1, sizeof(EQUATION_OF_STATE));
@@ -225,6 +225,11 @@ void allocateHostMemory(int len) {
 #endif
 }
 
+
+/**************************************************************************************************************************************************/
+/* set values for variables, e.g. T^tau^mu and N^tau calculated from flow velocity and energy density etc. at the beginning of the event
+/**************************************************************************************************************************************************/
+
 void setConservedVariables(double t, void * latticeParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -287,12 +292,16 @@ void setConservedVariables(double t, void * latticeParams) {
                 else if (muB[s]<=0 && muB[s] > -1.e-7)  muB[s] = -1.e-7;
 
                 muBp[s] = muB[s];
-                term2[s] = muB[s]*T[s];
 #endif
 			}
 		}
 	}
 }
+
+
+/**************************************************************************************************************************************************/
+/* set values at ghost cells
+/**************************************************************************************************************************************************/
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
@@ -459,6 +468,11 @@ SLOW_MODES *  const __restrict__ eqPhiQ
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* give the current value of variables to be the ones of previous step
+/**************************************************************************************************************************************************/
+
 void swap(CONSERVED_VARIABLES **arr1, CONSERVED_VARIABLES **arr2) {
     CONSERVED_VARIABLES *tmp = *arr1;
     *arr1 = *arr2;
@@ -488,18 +502,17 @@ void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2) {
     *arr2 = tmp;
 }
 
+
+/**************************************************************************************************************************************************/
+/* free host memory
+/**************************************************************************************************************************************************/
+
 void freeHostMemory() {
     free(Source->sourcet);//Lipei
     free(Source->sourcex);//Lipei
     free(Source->sourcey);//Lipei
     free(Source->sourcen);//Lipei
     free(Source->sourceb);//Lipei
-    
-    free(termX);//Lipei
-    free(termY);//Lipei
-    free(termZ);//Lipei
-    free(term2);//Lipei
-    
 
     //free(EOState->ChemicalPotential);//Lipei
     free(EOState->Pressure);//Lipei

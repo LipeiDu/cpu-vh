@@ -1,12 +1,12 @@
 /*
- * EnergyMomentumTensor.h
+ * PRIMARYVARIABLES.h
  *
  *  Created on: Oct 22, 2015
  *      Author: bazow
  */
 
-#ifndef ENERGYMOMENTUMTENSOR_H_
-#define ENERGYMOMENTUMTENSOR_H_
+#ifndef PRIMARYVARIABLES_H_
+#define PRIMARYVARIABLES_H_
 
 #include "../include/DynamicalVariables.h"
 
@@ -30,4 +30,4 @@ PRECISION Tnn(PRECISION e, PRECISION p, PRECISION un, PRECISION pinn, PRECISION 
 
 PRECISION Nbt(PRECISION rhob, PRECISION ut, PRECISION nbt);//Lipei
 
-#endif /* ENERGYMOMENTUMTENSOR_H_ */
+#endif /* PRIMARYVARIABLES_H_ */

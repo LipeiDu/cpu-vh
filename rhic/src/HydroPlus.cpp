@@ -19,62 +19,13 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-
+/**************************************************************************************************************************************************/
+/* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
+/**************************************************************************************************************************************************/
 
 #define lambdaT 1.0
 
-
-//PRECISION *Qvec; // Q vectors of slow modes
-//SLOW_MODES *PhiQ, *PhiQp, *PhiQS; // Slow modes: updated, previous, intermediate values
-//SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
-
-// allocate memory
-void allocateHostMemorySlowModes(int len)
-{
-    size_t bytes = sizeof(PRECISION);
-
-    Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
-    
-    /*PhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    PhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    PhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));*/
-    
-    eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    eqPhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    eqPhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        
-        /*PhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
-        PhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
-        PhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);*/
-        
-        eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
-        eqPhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
-        eqPhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
-    }
-}
-
-void freeHostMemorySlowModes()
-{
-
-    free(Qvec);
-    
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        //free(PhiQ->phiQ[n]);
-        free(eqPhiQ->phiQ[n]);
-        free(eqPhiQp->phiQ[n]);
-        free(eqPhiQS->phiQ[n]);
-    }
-    
-    //free(PhiQ);
-    free(eqPhiQ);
-    free(eqPhiQp);
-    free(eqPhiQS);
-}
-
-
-
+// heat capacity density
 PRECISION Cp(PRECISION e, PRECISION rhob){
     return 1.0; // to be fixed
 }
@@ -84,10 +35,47 @@ PRECISION xi(PRECISION e, PRECISION rhob){
     return 1.0; // correlation length, to be fixed
 }
 
+// derivative of heat capacity density with respect to energy
+PRECISION dCpde(PRECISION e, PRECISION rhob){
+    return 1.0; // to be fixed
+}
+
+// derivative of correlation length with respect to energy
+PRECISION dxide(PRECISION e, PRECISION rhob){
+    return 1.0; // correlation length, to be fixed
+}
+
+// derivative of heat capacity density with respect to baryon density
+PRECISION dCpdrhob(PRECISION e, PRECISION rhob){
+    return 1.0; // to be fixed
+}
+
+// derivative of correlation length with respect to baryon density
+PRECISION dxidrhob(PRECISION e, PRECISION rhob){
+    return 1.0; // correlation length, to be fixed
+}
+
 // universal function
 PRECISION f2(PRECISION x){
     return 1.0 / (1.0 + x*x); // Eq. (93)
 }
+
+//relaxation coefficents of fluctuations
+PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
+{
+    PRECISION corrL = xi(e, rhob);
+    PRECISION qL = Q * corrL;
+    PRECISION qL2 = qL * qL;
+    PRECISION qL3 = qL2 * qL;
+    PRECISION qL4 = qL3 * qL;
+    
+    return lambdaT/(Cp(e, rhob) * corrL * corrL) * (qL2 + qL4);
+}
+
+
+/**************************************************************************************************************************************************/
+/* slow modes out and at equilibrium with different Q
+/**************************************************************************************************************************************************/
 
 // slow modes with Q=0
 PRECISION equilibriumPhi0(PRECISION e, PRECISION rhob){
@@ -102,18 +90,7 @@ PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
     return equilibriumPhi0(e, rhob) * f2(qL); // Magnitude of mode Q at Equilibrium, Eq. (89)
 }
 
-//relaxation of fluctuations
-PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
-{
-    PRECISION corrL = xi(e, rhob);
-    PRECISION qL = Q * corrL;
-    PRECISION qL2 = qL * qL;
-    PRECISION qL3 = qL2 * qL;
-    PRECISION qL4 = qL3 * qL;
-    
-    return lambdaT/(Cp(e, rhob) * corrL * corrL) * (qL2 + qL4);
-}
-
+// initialization of slow modes
 void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -147,95 +124,57 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     }
 }
 
+/**************************************************************************************************************************************************/
+/* contributions from slow modes to inferred variables for a specific cell
+/**************************************************************************************************************************************************/
 
-//contributions from slow modes to primary variables
-PRECISION entropySlowModes(const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Q)
+// note: the integrands of alpha and beta only work for f2 defined above.
+void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ deltaS, PRECISION * const __restrict__ deltaAlpha, PRECISION * const __restrict__ deltaBeta, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob)
 {
-    // entropy of slow modes on a single cell
-    
+
     PRECISION entropy = 0.0;
+    PRECISION alpha = 0.0;
+    PRECISION beta = 0.0;
+    
+    PRECISION corrL = xi(e, rhob); // correlation length
+    PRECISION heatC = Cp(e, rhob); // heat capacity
+    PRECISION dCp_de = dCpde(e, rhob);
+    PRECISION dCp_drhob = dCpdrhob(e, rhob);
+    PRECISION dxi_de = dxide(e, rhob);
+    PRECISION dxi_drhob = dxidrhob(e, rhob);
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        PRECISION deltaQ = Q[n+1] - Q[n]; // to be fixed
-        PRECISION phiRatio = PhiQ[n] / equilibriumPhiQ[n];
-        PRECISION integrand = Q[n]*Q[n] * (log(phiRatio) - phiRatio + 1);
-        entropy += deltaQ * integrand;
-    }
-    
-    return entropy;
-}
-
-
-//source terms of extra modes, Eq. (76)
-void setSlowModesSourceTerms(PRECISION * const __restrict__ PhiQRHS, const PRECISION * const __restrict__ equilibriumPhiQ, const PRECISION * const __restrict__ PhiQ, const PRECISION * const __restrict__ Qvec, PRECISION e, PRECISION rhob, PRECISION ut, PRECISION dkvk)
-{
-    PRECISION gammaQ[NUMBER_SLOW_MODES];
-    PRECISION utInv = 1.0/ut;
-    
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        PRECISION Qn = Qvec[n];
-        gammaQ[n] = relaxationCoefficientPhiQ(e, rhob, Qn);
-        PhiQRHS[n] = utInv * (-2) * gammaQ[n] * (PhiQ[n] - equilibriumPhiQ[n]) + PhiQ[n] * dkvk;
-    }
-    
-}
-
-
-void loadSlowModesSourceTerms(const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION * const __restrict__ S, const PRECISION * const __restrict__ Qvec, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ rhobvec, int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz)
-{
-    // Modes, slow modes; S, source terms;
-    
-    //=========================================================
-    // primary variables
-    //=========================================================
-    
-    PRECISION e = evec[s];
-    PRECISION rhob = rhobvec[s];
-    
-    PRECISION *utvec = u->ut;
-    PRECISION *uxvec = u->ux;
-    PRECISION *uyvec = u->uy;
-    PRECISION *unvec = u->un;
-    
-    PRECISION ut = utvec[s];
-    PRECISION ux = uxvec[s];
-    PRECISION uy = uyvec[s];
-    PRECISION un = unvec[s];
         
-    //=========================================================
-    // spatial derivatives of primary variables
-    //=========================================================
+        PRECISION deltaQ = Qvec[n+1] - Qvec[n]; // to be fixed
+        PRECISION Q2 = Qvec[n]*Qvec[n];
+
+        PRECISION qL = Qvec[n] * corrL;
+        PRECISION qL2= qL * qL;
+        
+        PRECISION eqPhiQ = equiPhiQ[n];
+        PRECISION phiRatio = PhiQ[n] / equiPhiQ[n];
+        PRECISION deltaPhiQ = PhiQ[n] - equiPhiQ[n];
+        PRECISION eqPhiQ2 = equiPhiQ[n] * equiPhiQ[n];
+        PRECISION fac = deltaPhiQ / eqPhiQ2;
+        PRECISION facC = eqPhiQ / heatC;
+        PRECISION facX = 2 * Q2 * corrL * eqPhiQ2 * rhob * rhob / heatC;
+        
+        // delta beta, Eq.(106)
+        PRECISION deqPhiQde =  facC * dCp_de - facX * dxi_de;
+        PRECISION intBeta = Q2 * fac * deqPhiQde;
+        beta += deltaQ * intBeta;
+        
+        // delta alpha, Eq.(106)
+        PRECISION deqPhiQdrhob =  facC * dCp_drhob - facX * dxi_drhob - 2 / rhob * eqPhiQ;
+        PRECISION intAlpha = Q2 * fac * deqPhiQdrhob;
+        alpha += deltaQ * intAlpha;
+        
+        // delta entropy, Eq.(85)
+        PRECISION intEntropy = Q2 * (log(phiRatio) - phiRatio + 1);
+        entropy += deltaQ * intEntropy;
+    }
     
-    PRECISION facX = 1/d_dx/2;
-    PRECISION facY = 1/d_dy/2;
-    PRECISION facZ = 1/d_dz/2;
-    
-    PRECISION dxut = (*(utvec + s + 1) - *(utvec + s - 1)) * facX;
-    PRECISION dxux = (*(uxvec + s + 1) - *(uxvec + s - 1)) * facX;
-    
-    PRECISION dyut = (*(utvec + s + d_ncx) - *(utvec + s - d_ncx)) * facY;
-    PRECISION dyuy = (*(uyvec + s + d_ncx) - *(uyvec + s - d_ncx)) * facY;
-    
-    int stride = d_ncx * d_ncy;
-    PRECISION dnut = (*(utvec + s + stride) - *(utvec + s - stride)) * facZ;
-    PRECISION dnun = (*(unvec + s + stride) - *(unvec + s - stride)) * facZ;
-    
-    PRECISION vx = ux/ut;
-    PRECISION vy = uy/ut;
-    PRECISION vn = un/ut;
-    PRECISION dxvx = (dxux - vx * dxut)/ ut;
-    PRECISION dyvy = (dyuy - vy * dyut)/ ut;
-    PRECISION dnvn = (dnun - vn * dnut)/ ut;
-    PRECISION dkvk = dxvx + dyvy + dnvn;
-    
-    //=========================================================
-    // extra modes source terms
-    //=========================================================
-    
-    PRECISION PhiQRHS[NUMBER_SLOW_MODES];
-    
-    setSlowModesSourceTerms(PhiQRHS, equiPhiQ, PhiQ, Qvec, e, rhob, ut, dkvk);
-    
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[n] = PhiQRHS[n];
-    
+    *deltaS = entropy;
+    *deltaAlpha = alpha;
+    *deltaBeta = beta;
 }

@@ -20,7 +20,7 @@
 #include "../include/FluxFunctions.h"
 #include "../include/SpectralRadius.h"
 #include "../include/SourceTerms.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/HydroParameters.h"
 
 #include "../include/HydroPlus.h"
@@ -29,7 +29,11 @@
 
 //using namespace std;//Lipei
 
+
 /**************************************************************************************************************************************************/
+/* store nearest and next-to-nearest neighbors of all conserved variables at each grid to a 5 times longer array
+/**************************************************************************************************************************************************/
+
 void setNeighborCellsJK2(const PRECISION * const __restrict__ in, PRECISION * const __restrict__ out,
 int s, int ptr, int smm, int sm, int sp, int spp
 ) {
@@ -41,8 +45,12 @@ int s, int ptr, int smm, int sm, int sp, int spp
 	*(out + ptr + 4) = in[spp];
 }
 
+/**************************************************************************************************************************************************/
+/* source terms J times delta \tau for all components, excluding terms involving gradients of shear, bulk and baryon diffusion in J
+/**************************************************************************************************************************************************/
+
 void eulerStepKernelSource(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
+const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, CONSERVED_VARIABLES * const __restrict__ previousVars,
 const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
 const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
 int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
@@ -135,6 +143,10 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* (flux deltaHX/deltaX + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving x gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
 
 void eulerStepKernelX(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
@@ -297,6 +309,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* (flux deltaHY/deltaY + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving y gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
+
 void eulerStepKernelY(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
 const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
@@ -437,6 +454,11 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 		}
 	}
 }
+
+
+/**************************************************************************************************************************************************/
+/* (flux deltaHZ/deltaZ + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving eta_s gradient of shear, bulk and baryon diffusion
+/**************************************************************************************************************************************************/
 
 void eulerStepKernelZ(PRECISION t,
 const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
@@ -582,6 +604,9 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* two-step explicit Runge-Kutta for time integration
 /**************************************************************************************************************************************************/
 
 void convexCombinationEulerStepKernel(const CONSERVED_VARIABLES * const __restrict__ q, CONSERVED_VARIABLES * const __restrict__ Q,
@@ -650,6 +675,9 @@ int ncx, int ncy, int ncz
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* regulation of dissipative currents
 /**************************************************************************************************************************************************/
 
 void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p, const PRECISION * const __restrict__ rhob, const FLUID_VELOCITY * const __restrict__ u, int ncx, int ncy, int ncz) {
@@ -796,6 +824,9 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 	}
 }
 
+
+/**************************************************************************************************************************************************/
+/* Kurganov-Tadmor algorithm for integration of hyperbolic equations
 /**************************************************************************************************************************************************/
 
 void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q, CONSERVED_VARIABLES * __restrict__ Q, void * latticeParams, void * hydroParams) {
@@ -818,16 +849,18 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	PRECISION etabar = (PRECISION)(hydro->shearViscosityToEntropyDensity);
 
 	//===================================================
-	// STEP 1:
+	// Euler STEP 1: predicted step
 	//===================================================
     
-	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp, eqPhiQ, eqPhiQp);
+    // Q: previous value, q: current value, qS: to be updated value. Q is added for time gradient of slow modes.
+	eulerStepKernelSource(t, q, qS, Q, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp, eqPhiQ, eqPhiQp);
     eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
     eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
     
 	t+=dt;
 
+    // calculate e, p and T etc. from the updated T^tau^mu and shear etc.
 	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS, eqPhiQS);
 
 #ifndef IDEAL
@@ -838,21 +871,25 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 
     
 	//===================================================
-	// STEP 2:
+	// Euler STEP 2: corrected step
 	//===================================================
     
-	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T, eqPhiQS, eqPhiQ);
+    // q: previous value, qS: current value, Q: to be updated value. q is added for time gradient slow modes
+	eulerStepKernelSource(t, qS, Q, q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T, eqPhiQS, eqPhiQ);
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
+    // u, muB etc will store the final updated value after setInferredVariablesKernel() and, in the next step, become the "current value". Before doing this,
+    // give their values to up, muBp etc, so that the "current value" will become the "previous value" stored in up, muBp etc. in the next step.
 	swapFluidVelocity(&up, &u);
     swapPrimaryVariables(&muBp, &muB);
     swapPrimaryVariables(&Tp, &T);
     swapSlowModes(&eqPhiQp, &eqPhiQ);
     
+    // calculate e, p and T etc. from the updated T^tau^mu and shear etc. Q, e, p, u, rhob etc will store the final updated values
 	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T, eqPhiQ);
     
 #ifndef IDEAL
@@ -860,4 +897,6 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 #endif
     
 	setGhostCells(Q, e, p, u, latticeParams, rhob, muB, T, eqPhiQ);
+    
+    // setCurrentConservedVariables() in HydroPlugin.cpp swap q and Q
 }

@@ -8,7 +8,7 @@
 #include <math.h>
 
 #include "../include/SpectralRadius.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/DynamicalVariables.h"
 
 PRECISION spectralRadiusX(PRECISION ut, PRECISION ux, PRECISION uy, PRECISION un) {

@@ -29,7 +29,7 @@
 #include "../include/FileIO.h"
 #include "../include/InitialConditions.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h"
-#include "../include/EnergyMomentumTensor.h"
+#include "../include/PrimaryVariables.h"
 #include "../include/EquationOfState.h"
 #include "../include/DynamicalSources.h"//lipei
 #include "../include/HydroPlus.h"

@@ -160,13 +160,6 @@ typedef struct
 extern SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS;  // Slow modes at equilibrium: updated, previous, intermediate values
 extern PRECISION *Qvec; // Q vectors of slow modes
 
-extern PRECISION *termX;
-extern PRECISION *termY;
-extern PRECISION *termZ;
-extern PRECISION *term2;
-//test Lipei
-
-
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;
 extern DYNAMICAL_SOURCE *Source;
