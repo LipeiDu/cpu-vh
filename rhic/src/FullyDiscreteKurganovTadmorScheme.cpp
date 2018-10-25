@@ -22,12 +22,7 @@
 #include "../include/SourceTerms.h"
 #include "../include/PrimaryVariables.h"
 #include "../include/HydroParameters.h"
-
 #include "../include/HydroPlus.h"
-
-//#include "../include/FiniteDifference.h" //temp
-
-//using namespace std;//Lipei
 
 
 /**************************************************************************************************************************************************/
@@ -47,6 +42,7 @@ int s, int ptr, int smm, int sm, int sp, int spp
 
 /**************************************************************************************************************************************************/
 /* source terms J times delta \tau for all components, excluding terms involving gradients of shear, bulk and baryon diffusion in J
+/* contribution from t gradient of slow modes to tau component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
 void eulerStepKernelSource(PRECISION t,
@@ -62,6 +58,7 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 
 				PRECISION Q[NUMBER_ALL_EVOLVING_VARIABLES];
+                PRECISION Qp[NUMBER_ALL_EVOLVING_VARIABLES];
 				PRECISION S[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				Q[0] = currrentVars->ttt[s];
@@ -95,10 +92,11 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 #ifdef HydroPlus
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
                     Q[ALL_NUMBER_CONSERVED_VARIABLES+n] = currrentVars->phiQ[n][s];
+                    Qp[ALL_NUMBER_CONSERVED_VARIABLES+n] = previousVars->phiQ[n][s]; // only time gradient of slow modes is needed, other components not initialized
                 }
 #endif
 
-				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp, T, Tp[s], eqPhiQ, eqPhiQp);
+				loadSourceTerms2(Q, Qp, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp, T, Tp[s], eqPhiQ, eqPhiQp);
                 
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
 				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
@@ -146,6 +144,7 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 
 /**************************************************************************************************************************************************/
 /* (flux deltaHX/deltaX + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving x gradient of shear, bulk and baryon diffusion
+/* contribution from x gradient of slow modes to x component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
 void eulerStepKernelX(PRECISION t,
@@ -312,6 +311,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 
 /**************************************************************************************************************************************************/
 /* (flux deltaHY/deltaY + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving y gradient of shear, bulk and baryon diffusion
+/* contribution from y gradient of slow modes to y component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
 void eulerStepKernelY(PRECISION t,
@@ -458,6 +458,7 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 
 /**************************************************************************************************************************************************/
 /* (flux deltaHZ/deltaZ + J) times delta \tau for T^\tau^mu and N^tau, in J terms involving eta_s gradient of shear, bulk and baryon diffusion
+/* contribution from y gradient of slow modes to y component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
 void eulerStepKernelZ(PRECISION t,
@@ -732,6 +733,11 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 				PRECISION uy = u->uy[s];
 				PRECISION un = u->un[s];
 
+                
+                //===================================================
+                // regulation factor for shear stress tensor
+                //===================================================
+                
 				//PRECISION xi0 = (PRECISION)(1.0);
 				//PRECISION rhomax = (PRECISION)(10.0);
                 PRECISION xi0 = (PRECISION)(0.1);
@@ -770,11 +776,22 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 if(isnan(rho))   printf("found rho Nan\n");
 				if(isnan(fac))   printf("found fac Nan\n");
                 
+                
+                //===================================================
+                // regulation factor for bulk pressure
+                //===================================================
+                
                 //Regulation for bulk pressure
                 PRECISION rhoPi = fabs(Pi)/Norm;
                 PRECISION facPi = 1;
                 if(fabs(rhoPi)>1.e-7) facPi = tanh(rhoPi)/rhoPi;
                 if(isnan(facPi))  printf("found facPi Nan\n");
+                
+                
+                //===================================================
+                // regulation factor for baryon diffusion current
+                //===================================================
+                
 #ifdef VMU
                 //Regulation for baryon diffusion current
                 PRECISION xibmax = (PRECISION)(1.e-2);
@@ -798,6 +815,10 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 if(isnan(facb))     printf("found facb Nan\n");
 #endif
 
+                //===================================================
+                // regulating dissipative components
+                //===================================================
+                
 #ifdef PIMUNU
 				currrentVars->pitt[s] *= fac;
 				currrentVars->pitx[s] *= fac;

@@ -87,8 +87,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 		PRECISION dxut, PRECISION dyut, PRECISION dnut, PRECISION dxux, PRECISION dyux, PRECISION dnux,
 		PRECISION dxuy, PRECISION dyuy, PRECISION dnuy, PRECISION dxun, PRECISION dyun, PRECISION dnun,
         PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt, const PRECISION * const __restrict__ PhiQ,
-        const PRECISION * const __restrict__ equiPhiQ, const PRECISION *  const __restrict__ equiPhiQp,
-        PRECISION NablatPhiSum, PRECISION NablaxPhiSum, PRECISION NablayPhiSum, PRECISION NablanPhiSum
+        const PRECISION * const __restrict__ equiPhiQ, const PRECISION *  const __restrict__ equiPhiQp, PRECISION NablatPhiSum
                                
 ) {
 	//*********************************************************\
@@ -327,9 +326,9 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 
     // contribution from Hydro+ will be zero when slow modes are turned off by defination of NablaPhiSum
     nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt + lambda_alphaphi * NablatPhiSum;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk + lambda_alphaphi * NablaxPhiSum;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk + lambda_alphaphi * NablayPhiSum;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn + lambda_alphaphi * NablanPhiSum;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk;
 #endif
 
     //*********************************************************\
@@ -557,7 +556,7 @@ PRECISION d_dz
 /* load source terms for all components, but exclude source terms directly dependent of gradients of shear, bulk and baryon diffusion
 /**************************************************************************************************************************************************/
 
-void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
+void loadSourceTerms2(const PRECISION * const __restrict__ Q, const PRECISION * const __restrict__ Qp, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u,
 PRECISION utp, PRECISION uxp, PRECISION uyp, PRECISION unp,
 PRECISION t, const PRECISION * const __restrict__ evec, const PRECISION * const __restrict__ pvec,
 int s, int d_ncx, int d_ncy, int d_ncz, PRECISION d_etabar, PRECISION d_dt, PRECISION d_dx, PRECISION d_dy, PRECISION d_dz,
@@ -616,13 +615,27 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 #endif
 #ifdef HydroPlus
     PRECISION PhiQ[NUMBER_SLOW_MODES];
+    PRECISION PhiQp[NUMBER_SLOW_MODES];
     PRECISION equiPhiQ[NUMBER_SLOW_MODES];
     PRECISION equiPhiQp[NUMBER_SLOW_MODES];
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
         PhiQ[n] = Q[ALL_NUMBER_CONSERVED_VARIABLES+n];
+        PhiQp[n] = Qp[ALL_NUMBER_CONSERVED_VARIABLES+n];
         equiPhiQ[n] = eqPhiQ->phiQ[n][s];
         equiPhiQp[n] = eqPhiQp->phiQ[n][s];
+    }
+#else
+    PRECISION PhiQ[NUMBER_SLOW_MODES];
+    PRECISION PhiQp[NUMBER_SLOW_MODES];
+    PRECISION equiPhiQ[NUMBER_SLOW_MODES];
+    PRECISION equiPhiQp[NUMBER_SLOW_MODES];
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        PhiQ[n] = 0;
+        PhiQp[n] = 0;
+        equiPhiQ[n] = 0;
+        equiPhiQp[n] = 0;
     }
 #endif
 
@@ -817,23 +830,28 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablan_alphaB = 0;
 #endif
     
-    //=========================================================
-    // Extra terms contributing to baryon diffusion from slow modes; by Lipei
-    //=========================================================
-    
-    PRECISION NablatPhiSum = 0;
-    PRECISION NablaxPhiSum = 0;
-    PRECISION NablayPhiSum = 0;
-    PRECISION NablanPhiSum = 0;
-    
+    // Extra source terms contributing to baryon diffusion from slow modes
 #ifdef HydroPlus
-    PRECISION NablatPhi[NUMBER_SLOW_MODES], NablaxPhi[NUMBER_SLOW_MODES], NablayPhi[NUMBER_SLOW_MODES], NablanPhi[NUMBER_SLOW_MODES];
+    PRECISION NablatPhiQsum = 0;
     
+    /*for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        PRECISION PhiQ2 = PhiQ[n] * PhiQ[n];
+        PRECISION equiPhiQ2 = equiPhiQ[n] * equiPhiQ[n];
+        PRECISION dtPhiQ = (PhiQ[n] - PhiQp[n]) / d_dt;
+        PRECISION dtequiPhiQ = (equiPhiQ[n] - equiPhiQp[n]) / d_dt;
+        
+        NablatPhiQsum += dtPhiQ / PhiQ2 - dtequiPhiQ / equiPhiQ2;
+    }
     
+    NablatPhiQsum /= 2;*/
+
+#else
+    PRECISION NablatPhiQsum = 0;
 #endif
     
 	//=========================================================
-	// \pi^{\mu\nu} source terms and nb^\mu source terms
+	// calculate source terms for dissipative components
 	//=========================================================
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
@@ -842,7 +860,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     
 	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, phiQRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
             T, t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp, pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
-			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp, NablatPhiSum, NablaxPhiSum, NablayPhiSum, NablanPhiSum);
+			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp, NablatPhiQsum);
     
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
