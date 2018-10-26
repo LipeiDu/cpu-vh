@@ -92,7 +92,7 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 #ifdef HydroPlus
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
                     Q[ALL_NUMBER_CONSERVED_VARIABLES+n] = currrentVars->phiQ[n][s];
-                    Qp[ALL_NUMBER_CONSERVED_VARIABLES+n] = previousVars->phiQ[n][s]; // only time gradient of slow modes is needed, other components not initialized
+                    Qp[ALL_NUMBER_CONSERVED_VARIABLES+n] = previousVars->phiQ[n][s]; // only time gradient of slow modes is calculated in this function, other components not initialized
                 }
 #endif
 

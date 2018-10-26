@@ -10,10 +10,13 @@
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
 #include "../include/PrimaryVariables.h"
-#include "../include/FullyDiscreteKurganovTadmorScheme.h" // for ghost cells
-#include "../include/EquationOfState.h"//Lipei
-
+#include "../include/FullyDiscreteKurganovTadmorScheme.h"
+#include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
+
+/**************************************************************************************************************************************************/
+/* instances
+/**************************************************************************************************************************************************/
 
 CONSERVED_VARIABLES *q, *Q, *qS;
 
@@ -25,11 +28,12 @@ PRECISION *muB, *muBp, *muBS;
 
 PRECISION *T, *Tp, *TS;
 
-EQUATION_OF_STATE *EOState;//Lipei
+EQUATION_OF_STATE *EOState;
 
-DYNAMICAL_SOURCE *Source;//Lipei
+DYNAMICAL_SOURCE *Source;
 
 PRECISION *Qvec; // Q vectors of slow modes
+
 SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS; // Slow modes at equilibrium: updated, previous, intermediate values
 
 
@@ -49,73 +53,49 @@ int columnMajorLinearIndex(int i, int j, int k, int nx, int ny) {
 void allocateHostMemory(int len) {
 	size_t bytes = sizeof(PRECISION);
 
-    // dynamical source terms
-    Source = (DYNAMICAL_SOURCE *)calloc(1, sizeof(DYNAMICAL_SOURCE));
-    Source->sourcet = (PRECISION *)calloc(len, bytes);//Lipei
-    Source->sourcex = (PRECISION *)calloc(len, bytes);//Lipei
-    Source->sourcey = (PRECISION *)calloc(len, bytes);//Lipei
-    Source->sourcen = (PRECISION *)calloc(len, bytes);//Lipei
-    Source->sourceb = (PRECISION *)calloc(len, bytes);//Lipei
-    // baryon density
-    rhob = (PRECISION *)calloc(len, bytes);//Lipei
-    // baryon chemical potential
-    muB = (PRECISION *)calloc(len, bytes);//Lipei
-    muBp= (PRECISION *)calloc(len, bytes);//Lipei
-    muBS= (PRECISION *)calloc(len, bytes);//Lipei
-    // temperature
-    T = (PRECISION *)calloc(len, bytes);//Lipei
-    Tp= (PRECISION *)calloc(len, bytes);//Lipei
-    TS= (PRECISION *)calloc(len, bytes);//Lipei
-
-    // equation of state table
-    EOState = (EQUATION_OF_STATE *)calloc(1, sizeof(EQUATION_OF_STATE));
-    EOState->Pressure      = (PRECISION *)calloc(188580, bytes);//Lipei
-    EOState->Temperature   = (PRECISION *)calloc(188580, bytes);//Lipei
-    EOState->Mubovert      = (PRECISION *)calloc(188580, bytes);//Lipei
-    EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);//Lipei
-    
-    EOState->sigmaB = (PRECISION *)calloc(5751, bytes);//Lipei
 	//=======================================================
 	// Primary variables
 	//=======================================================
+    
 	e = (PRECISION *)calloc(len, bytes);
 	p = (PRECISION *)calloc(len, bytes);
+    rhob = (PRECISION *)calloc(len, bytes);
+    
+    // baryon chemical potential
+    muB = (PRECISION *)calloc(len, bytes);
+    muBp= (PRECISION *)calloc(len, bytes);
+    muBS= (PRECISION *)calloc(len, bytes);
+    
+    // temperature
+    T = (PRECISION *)calloc(len, bytes);
+    Tp= (PRECISION *)calloc(len, bytes);
+    TS= (PRECISION *)calloc(len, bytes);
+    
 	// fluid velocity at current time step
 	u = (FLUID_VELOCITY *)calloc(1, sizeof(FLUID_VELOCITY));
 	u->ut = (PRECISION *)calloc(len,bytes);
 	u->ux = (PRECISION *)calloc(len,bytes);
 	u->uy = (PRECISION *)calloc(len,bytes);
 	u->un = (PRECISION *)calloc(len,bytes);
+    
 	// fluid velocity at previous time step
 	up = (FLUID_VELOCITY *)calloc(1, sizeof(FLUID_VELOCITY));
 	up->ut = (PRECISION *)calloc(len,bytes);
 	up->ux = (PRECISION *)calloc(len,bytes);
 	up->uy = (PRECISION *)calloc(len,bytes);
 	up->un = (PRECISION *)calloc(len,bytes);
+    
 	// fluid velocity at intermediate time step
 	uS = (FLUID_VELOCITY *)calloc(1, sizeof(FLUID_VELOCITY));
 	uS->ut = (PRECISION *)calloc(len,bytes);
 	uS->ux = (PRECISION *)calloc(len,bytes);
 	uS->uy = (PRECISION *)calloc(len,bytes);
 	uS->un = (PRECISION *)calloc(len,bytes);
-    
-#ifdef HydroPlus
-    Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
-    
-    eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    eqPhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-    eqPhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
-
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
-        eqPhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
-        eqPhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
-    }
-#endif
 
 	//=======================================================
 	// Conserved variables
 	//=======================================================
+    
 	q = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
 	q->ttt = (PRECISION *)calloc(len, bytes);
 	q->ttx = (PRECISION *)calloc(len, bytes);
@@ -145,12 +125,9 @@ void allocateHostMemory(int len) {
     q->nby = (PRECISION *)calloc(len, bytes);
     q->nbn = (PRECISION *)calloc(len, bytes);
 #endif
-#ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         q->phiQ[n]  = (PRECISION *)calloc(len, bytes);
     }
-#endif
-
 
 	// upated variables at the n+1 time step
 	Q = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
@@ -182,11 +159,9 @@ void allocateHostMemory(int len) {
     Q->nby = (PRECISION *)calloc(len, bytes);
     Q->nbn = (PRECISION *)calloc(len, bytes);
 #endif
-#ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         Q->phiQ[n]  = (PRECISION *)calloc(len, bytes);
     }
-#endif
 
 	// updated variables at the intermediate time step
 	qS = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
@@ -218,11 +193,46 @@ void allocateHostMemory(int len) {
     qS->nby = (PRECISION *)calloc(len, bytes);
     qS->nbn = (PRECISION *)calloc(len, bytes);
 #endif
-#ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         qS->phiQ[n]  = (PRECISION *)calloc(len, bytes);
     }
-#endif
+    
+    //=======================================================
+    // dynamical sources and Equation of State
+    //=======================================================
+    
+    // dynamical source terms
+    Source = (DYNAMICAL_SOURCE *)calloc(1, sizeof(DYNAMICAL_SOURCE));
+    Source->sourcet = (PRECISION *)calloc(len, bytes);
+    Source->sourcex = (PRECISION *)calloc(len, bytes);
+    Source->sourcey = (PRECISION *)calloc(len, bytes);
+    Source->sourcen = (PRECISION *)calloc(len, bytes);
+    Source->sourceb = (PRECISION *)calloc(len, bytes);
+    
+    // equation of state table
+    EOState = (EQUATION_OF_STATE *)calloc(1, sizeof(EQUATION_OF_STATE));
+    EOState->Pressure      = (PRECISION *)calloc(188580, bytes);
+    EOState->Temperature   = (PRECISION *)calloc(188580, bytes);
+    EOState->Mubovert      = (PRECISION *)calloc(188580, bytes);
+    EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);
+    EOState->sigmaB = (PRECISION *)calloc(5751, bytes);
+    
+    //=======================================================
+    // Slow modes
+    //=======================================================
+    
+    Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
+    
+    eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    eqPhiQp = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    eqPhiQS = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
+        eqPhiQp->phiQ[n] = (PRECISION *)calloc(len, bytes);
+        eqPhiQS->phiQ[n] = (PRECISION *)calloc(len, bytes);
+    }
+    
 }
 
 
@@ -245,6 +255,10 @@ void setConservedVariables(double t, void * latticeParams) {
                 
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
 
+                //=======================================================
+                // u, e, p, pi and Pi, rhob, nb initialized in initial condition
+                //=======================================================
+                
 				PRECISION ux_s = u->ux[s];
 				PRECISION uy_s = u->uy[s];
 				PRECISION un_s = u->un[s];
@@ -268,6 +282,10 @@ void setConservedVariables(double t, void * latticeParams) {
 				Pi_s = q->Pi[s];
 #endif
 
+                //=======================================================
+                // initialize Tmunu, Nbmu, Temperature and potential
+                //=======================================================
+                
 				q->ttt[s] = Ttt(e_s, p_s+Pi_s, ut_s, pitt_s);
 				q->ttx[s] = Ttx(e_s, p_s+Pi_s, ut_s, ux_s, pitx_s);
 				q->tty[s] = Tty(e_s, p_s+Pi_s, ut_s, uy_s, pity_s);
@@ -276,8 +294,7 @@ void setConservedVariables(double t, void * latticeParams) {
                 PRECISION rhob_s = rhob[s];
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
-                if (T[s] < 1.e-7)
-                    T[s] = 1.e-7;
+                if (T[s] < 1.e-7) T[s] = 1.e-7;
                 
                 Tp[s] = T[s];
 #ifdef VMU
@@ -300,13 +317,13 @@ void setConservedVariables(double t, void * latticeParams) {
 
 
 /**************************************************************************************************************************************************/
-/* set values at ghost cells
+/* set values for ghost cells
 /**************************************************************************************************************************************************/
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,
 SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	setGhostCellsKernelI(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);
@@ -318,7 +335,7 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
                       PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
                       FLUID_VELOCITY * const __restrict__ u,
                       int s, int sBC,
-                      PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+                      PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,
                       SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
     e[s] = e[sBC];
@@ -331,7 +348,6 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
     q->ttx[s] = q->ttx[sBC];
     q->tty[s] = q->tty[sBC];
     q->ttn[s] = q->ttn[sBC];
-    // set \pi^\mu\nu ghost cells if evolved
 #ifdef PIMUNU
     q->pitt[s] = q->pitt[sBC];
     q->pitx[s] = q->pitx[sBC];
@@ -344,7 +360,6 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
     q->piyn[s] = q->piyn[sBC];
     q->pinn[s] = q->pinn[sBC];
 #endif
-    // set \Pi ghost cells if evolved
 #ifdef PI
     q->Pi[s] = q->Pi[sBC];
 #endif
@@ -373,7 +388,7 @@ void setGhostCellVars(CONSERVED_VARIABLES * const __restrict__ q,
 void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,
 SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -406,7 +421,7 @@ SLOW_MODES *  const __restrict__ eqPhiQ
 void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,
 SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -439,7 +454,7 @@ SLOW_MODES *  const __restrict__ eqPhiQ
 void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
 FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,//by Lipei
+PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T,
 SLOW_MODES *  const __restrict__ eqPhiQ
 ) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -495,7 +510,6 @@ void swapSlowModes(SLOW_MODES **arr1, SLOW_MODES **arr2) {
     *arr2 = tmp;
 }
 
-//swap energy density or baryon density; Lipei
 void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2) {
     PRECISION *tmp = *arr1;
     *arr1 = *arr2;
@@ -508,21 +522,19 @@ void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2) {
 /**************************************************************************************************************************************************/
 
 void freeHostMemory() {
-    free(Source->sourcet);//Lipei
-    free(Source->sourcex);//Lipei
-    free(Source->sourcey);//Lipei
-    free(Source->sourcen);//Lipei
-    free(Source->sourceb);//Lipei
+    free(Source->sourcet);
+    free(Source->sourcex);
+    free(Source->sourcey);
+    free(Source->sourcen);
+    free(Source->sourceb);
 
-    //free(EOState->ChemicalPotential);//Lipei
-    free(EOState->Pressure);//Lipei
-    free(EOState->Temperature);//Lipei
-    free(EOState->Mubovert);//Lipei
+    free(EOState->Pressure);
+    free(EOState->Temperature);
+    free(EOState->Mubovert);
     free(EOState->dpdrhob);
-    
-    free(EOState->sigmaB);//Lipei
+    free(EOState->sigmaB);
 
-    free(rhob);//Lipei
+    free(rhob);
     free(muB);
     free(muBp);
     free(muBS);

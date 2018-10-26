@@ -855,7 +855,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 	//=========================================================
 #ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_DISSIPATIVE_CURRENTS];
-    PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];//Lipei
+    PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];
     PRECISION phiQRHS[NUMBER_SLOW_MODES];
     
 	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, phiQRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
@@ -863,14 +863,15 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
 			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp, NablatPhiQsum);
     
 #ifdef PIMUNU
-    for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];
+    for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];// for shear and bulk
 #endif
 #ifdef VMU
-    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];//Source terms for baryon diffusion current
+    for(unsigned int n = 0; n < NUMBER_PROPAGATED_VMU_COMPONENTS; ++n) S[n+1+NUMBER_CONSERVED_VARIABLES] = nbmuRHS[n];// for baryon diffusion current
+#endif
+#ifdef HydroPlus
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[ALL_NUMBER_CONSERVED_VARIABLES+n] = phiQRHS[n];// for slow modes
 #endif
 #endif
     
-#ifdef HydroPlus
-    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[ALL_NUMBER_CONSERVED_VARIABLES+n] = phiQRHS[n];
-#endif
+
 }

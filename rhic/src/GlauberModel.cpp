@@ -69,8 +69,8 @@ double woundedNucleons(double x, double y,
  * Mixture of wounded nucleon and binary collision energy density profile
 //************************************************************************************/
 void energyDensityTransverseProfileAA(double * const __restrict__ energyDensityTransverse, 
-int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB//thickness TA&TB by lipei
-                                      ) {
+int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB,
+int * const __restrict__ wn) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	double A = initCond->numberOfNucleonsPerNuclei;
 	double B = A;
@@ -84,7 +84,8 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
 	double TBminusNorm = TAminusNorm;
 	double TBplusNorm = TAplusNorm;
 	double nbcNorm = 1./binaryCollisionPairs(0,0,TAplusNorm,TBminusNorm,snn);
-	double wnNorm = 1./woundedNucleons(0,0,TAminusNorm,TAplusNorm,TBminusNorm,TBplusNorm,A,A,snn);
+    *wn = woundedNucleons(0,0,TAminusNorm,TAplusNorm,TBminusNorm,TBplusNorm,A,A,snn);
+    double wnNorm = 1./ (*wn);
 
 	for(int i = 0; i < nx; ++i) {
 		double x = (i - (nx-1)/2.)*dx;

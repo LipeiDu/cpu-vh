@@ -392,12 +392,12 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                     PhiQ[n] = q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s];
                 }
                 
-                PRECISION deltaS, deltaAlpha, deltaBeta;
+                //PRECISION deltaS, deltaAlpha, deltaBeta;
                 
-                getPrimaryVariablesFromSlowModes(&deltaS, &deltaAlpha, &deltaBeta, equiPhiQ, PhiQ, e[s], rhob[s]);
+                //getPrimaryVariablesFromSlowModes(&deltaS, &deltaAlpha, &deltaBeta, equiPhiQ, PhiQ, e[s], rhob[s]);
                 
-                T[s] = 1 / (1/T[s] + deltaBeta);
-                muB[s] = muB[s] + deltaAlpha;
+                //T[s] = 1 / (1/T[s] + deltaBeta);
+                //muB[s] = muB[s] + deltaAlpha;
 #endif
             }
         }

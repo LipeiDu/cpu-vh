@@ -79,10 +79,10 @@ PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
 
 // slow modes with Q=0
 PRECISION equilibriumPhi0(PRECISION e, PRECISION rhob){
-    return Cp(e, rhob) / (rhob * rhob); // Cp needs to be fixed, Eq.(90)
+    return Cp(e, rhob) / (rhob * rhob); // slow modes at equilibrium with Q = 0, Eq.(90)
 }
 
-// slow modes with Q
+// slow modes with nonzero Q
 PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION Q)
 {
     PRECISION corrL = xi(e, rhob);
@@ -99,10 +99,15 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     int ny = lattice->numLatticePointsY;
     int nz = lattice->numLatticePointsRapidity;
     
-    Qvec[0] = 0.1;
-    Qvec[1] = 1.0;
-    Qvec[2] = 2.0;
+    PRECISION dQvec = 1.0;
     
+#ifdef HydroPlus
+    // initialization of Q vectors
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        Qvec[n] = 0.0 + n * dQvec;
+    }
+    
+    // initialization of slow mdoes at/out of equilibrium
     for(int i = 2; i < nx+2; ++i) {
         for(int j = 2; j < ny+2; ++j) {
             for(int k = 2; k < nz+2; ++k) {
@@ -122,6 +127,8 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
             }
         }
     }
+    
+#endif
 }
 
 /**************************************************************************************************************************************************/

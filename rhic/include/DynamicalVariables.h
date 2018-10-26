@@ -8,11 +8,15 @@
 #ifndef DYNAMICALVARIABLES_H_
 #define DYNAMICALVARIABLES_H_
 
+/**************************************************************************************************************************************************/
+/* components: energy-momentun tensor, shear stress, bulk pressure, net baryon current, baryon diffusion current, slow modes
+/**************************************************************************************************************************************************/
+
 /*********************************************************/
 //Main switch//
 
 #define PIMUNU
-//#define PI
+#define PI
 
 #define NBMU
 #define VMU
@@ -21,6 +25,9 @@
 #define RootSolver_with_Baryon//Lipei
 #define EOS_with_baryon
 #endif
+
+// Slow modes only evolve in non-ideal case in the code
+//#define HydroPlus
 
 /*********************************************************/
 //Conservation laws//
@@ -70,8 +77,6 @@
 /*********************************************************/
 //HydroPlus extra modes//
 
-#define HydroPlus
-
 #ifndef HydroPlus
 #define NUMBER_SLOW_MODES 0
 #else
@@ -86,9 +91,16 @@
 #define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)//baryon part is defined seperately
 
 #define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)//with slow modes
+
 /*********************************************************/
+//Precision control//
 
 #define PRECISION double
+
+
+/**************************************************************************************************************************************************/
+/* conserved variables: energy momentum tensor, shear and bulk pressures, net baryon current, baryon diffusion current, slow modes
+/**************************************************************************************************************************************************/
 
 typedef struct
 {
@@ -120,11 +132,15 @@ typedef struct
     PRECISION *nby;
     PRECISION *nbn;
 #endif
-#ifdef HydroPlus
-    PRECISION *phiQ[NUMBER_SLOW_MODES];
-#endif
+    PRECISION *phiQ[NUMBER_SLOW_MODES];// slow modes for Hydro+
 } CONSERVED_VARIABLES;
 
+
+/**************************************************************************************************************************************************/
+/* flow velocity, Equation of State table, slow modes, dynamical source terms
+/**************************************************************************************************************************************************/
+
+// flow velocity
 typedef struct
 {
 	PRECISION *ut;
@@ -133,15 +149,7 @@ typedef struct
 	PRECISION *un;
 } FLUID_VELOCITY;
 
-typedef struct
-{
-    PRECISION *sourcet;
-    PRECISION *sourcex;
-    PRECISION *sourcey;
-    PRECISION *sourcen;
-    PRECISION *sourceb;
-} DYNAMICAL_SOURCE;
-
+// equation of state
 typedef struct
 {
     PRECISION *Pressure;
@@ -151,33 +159,59 @@ typedef struct
     PRECISION *sigmaB;
 } EQUATION_OF_STATE;
 
+// slow modes
 typedef struct
 {
     PRECISION *phiQ[NUMBER_SLOW_MODES];
 } SLOW_MODES;
 
+// dynamical sources
+typedef struct
+{
+    PRECISION *sourcet;
+    PRECISION *sourcex;
+    PRECISION *sourcey;
+    PRECISION *sourcen;
+    PRECISION *sourceb;
+} DYNAMICAL_SOURCE;
+
+
+/**************************************************************************************************************************************************/
+/* instances
+/**************************************************************************************************************************************************/
 
 extern SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS;  // Slow modes at equilibrium: updated, previous, intermediate values
 extern PRECISION *Qvec; // Q vectors of slow modes
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;
-extern DYNAMICAL_SOURCE *Source;
-extern EQUATION_OF_STATE *EOState;
 
 extern PRECISION *e, *p, *rhob;
 extern PRECISION *muB, *muBp, *muBS;
 extern PRECISION *T, *Tp, *TS;
 
-int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
+extern DYNAMICAL_SOURCE *Source;
 
-void allocateHostMemory(int len);
+extern EQUATION_OF_STATE *EOState;
+
+/**************************************************************************************************************************************************/
+/* initialization and update energy momentum tensor, net baryon current and slow modes
+/**************************************************************************************************************************************************/
 
 void setConservedVariables(double t, void * latticeParams);
 void setCurrentConservedVariables();
+
+/**************************************************************************************************************************************************/
+/* update values for the "previous step
+/**************************************************************************************************************************************************/
+
 void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) ;
 void swapSlowModes(SLOW_MODES **arr1, SLOW_MODES **arr2) ;
 void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2);
+
+/**************************************************************************************************************************************************/
+/* Ghost cells
+/**************************************************************************************************************************************************/
 
 void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
 PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
@@ -206,6 +240,14 @@ FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
 PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
 PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
 );
+
+/**************************************************************************************************************************************************/
+/* column index and memory
+/**************************************************************************************************************************************************/
+
+int columnMajorLinearIndex(int i, int j, int k, int nx, int ny);
+
+void allocateHostMemory(int len);
 
 void freeHostMemory();
 

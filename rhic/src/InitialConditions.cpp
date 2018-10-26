@@ -37,9 +37,9 @@
 using namespace std;//Lipei
 
 
-//*********************************************************************************************************\
-//* Read in all initial profiles from a single or seperate file
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Read in all initial profiles from a single file
+/**************************************************************************************************************************************************/
 
 //this reads all hydro variables from a single file; this way we do not need to fetch the coordinates many times
 //note that the file must contain values for all dissipative currents, even if they are zero !!!
@@ -106,6 +106,11 @@ void setInitialTmunuFromFile(void * latticeParams, void * initCondParams, void *
     }
     fclose(fileIn);
 }
+
+
+/**************************************************************************************************************************************************/
+/* Read in all initial profiles from seperate files
+/**************************************************************************************************************************************************/
 
 //this function reads a separate file for every hydrodynamic variable
 void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
@@ -487,12 +492,12 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
 #endif
 }
 
-//*********************************************************************************************************\
-//* Set initial flow profile
-//*	- u^\mu = (1, 0, 0, 0)
-//* 	- No transverse flow (ux = uy = 0)
-//*	- Longitudinal scaling flow (u_z = z/t, i.e. un = 0)
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Set initial flow profile
+/*	- u^\mu = (1, 0, 0, 0)
+/* 	- No transverse flow (ux = uy = 0)
+/*	- Longitudinal scaling flow (u_z = z/t, i.e. un = 0)
+/**************************************************************************************************************************************************/
 void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
@@ -524,37 +529,39 @@ void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) 
 	}
 }
 
-//*********************************************************************************************************\
-//* Set initial baryon diffusion current//Lipei
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Set initial baryon diffusion current to be 0
+/**************************************************************************************************************************************************/
 void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+    
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
-    printf("Initialize \\nb^\\mu to be zero.\n");
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    
     int nx = lattice->numLatticePointsX;
     int ny = lattice->numLatticePointsY;
     int nz = lattice->numLatticePointsRapidity;
+    
+#ifdef VMU
+    printf("Initialize \\nb^\\mu to be zero.\n");
     for(int i = 2; i < nx+2; ++i) {
         for(int j = 2; j < ny+2; ++j) {
             for(int k = 2; k < nz+2; ++k) {
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-#ifdef VMU
                 q->nbt[s] = 0;
                 q->nbx[s] = 0;
                 q->nby[s] = 0;
                 q->nbn[s] = 0;
-#endif
             }
         }
     }
-    return;
+#endif
 }
 
-//*********************************************************************************************************\
-//* Set initial shear-stress tensor \pi^\mu\nu
-//*	- Navier-Stokes value, i.e. \pi^\mu\nu = 2 * (\epsilon + P) / T * \eta/S * \sigma^\mu\nu
-//* 	- No initial pressure anisotropies (\pi^\mu\nu = 0)
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Set initial shear-stress tensor \pi^\mu\nu
+/*	- Navier-Stokes value, i.e. \pi^\mu\nu = 2 * (\epsilon + P) / T * \eta/S * \sigma^\mu\nu
+/* 	- No initial pressure anisotropies (\pi^\mu\nu = 0)
+/**************************************************************************************************************************************************/
 void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -617,6 +624,9 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 	}
 }
 
+/**************************************************************************************************************************************************/
+/* set initial shear stress tensor and bulk pressure to be 0
+/**************************************************************************************************************************************************/
 void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 	int initializePimunuNavierStokes = hydro->initializePimunuNavierStokes;
@@ -660,9 +670,9 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 	}
 }
 
-//*********************************************************************************************************\
-//* Longitudinal initial energy density distribution
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Longitudinal initial energy density distribution
+/**************************************************************************************************************************************************/
 void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void * latticeParams, void * initCondParams) {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -681,9 +691,9 @@ void longitudinalEnergyDensityDistribution(double * const __restrict__ eL, void 
     }
 }
 
-//*********************************************************************************************************\
-//* Longitudinal initial baryon density distribution
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Longitudinal initial baryon density distribution
+/**************************************************************************************************************************************************/
 void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, double * const __restrict__ rhoLb, void * latticeParams, void * initCondParams) {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -694,7 +704,7 @@ void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, do
     double etaVariance1 = initCond->bRapidityVariance1;
     double etaVariance2 = initCond->bRapidityVariance2;
     double etaMean = initCond->bRapidityMean;
-    //1/sqrt(2*3.1415926)*
+
     for(int k = 0; k < nz; ++k) {
         double eta = (k - (nz-1)/2)*dz;
         rhoLa[k] = 1/sqrt(2*3.1415926)*(exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance1*etaVariance1))*THETA_FUNCTION(eta-etaMean+1.e-2) + exp(-(eta-etaMean)*(eta-etaMean)/(2*etaVariance2*etaVariance2))*THETA_FUNCTION(etaMean-eta-1.e-2));
@@ -703,9 +713,9 @@ void longitudinalBaryonDensityDistribution(double * const __restrict__ rhoLa, do
 }
 
 
-//*********************************************************************************************************\
-//* Initial conditions for hydro with dynamical sources
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for hydro with dynamical sources
+/**************************************************************************************************************************************************/
 void setICfromSource(void * latticeParams, void * initCondParams, void * hydroParams, const char * rootDirectory){
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -1063,9 +1073,10 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
             }
     }
 }
-//*********************************************************************************************************\
-//* Constant initial energy density distribution
-//*********************************************************************************************************/
+
+/**************************************************************************************************************************************************/
+/* Constant initial energy density distribution
+/**************************************************************************************************************************************************/
 void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initCondParams) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	double initialEnergyDensity = initCond->initialEnergyDensity;
@@ -1104,9 +1115,9 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 }
 
 
-//*********************************************************************************************************\
-//* Continuous optical glauber Glauber initial energy density distribution
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Continuous optical glauber Glauber initial energy density distribution
+/**************************************************************************************************************************************************/
 void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1120,26 +1131,29 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 	double dz = lattice->latticeSpacingRapidity;
 
 	double e0 = initCond->initialEnergyDensity;
-    double T0 = 2.03;
-	e0 = (double) equilibriumEnergyDensity(T0);
+    double rhob0 = initCond->initialBaryonDensity;
+    
+    //double T0 = 2.03;
+	//e0 = (double) equilibriumEnergyDensity(T0);
 
 	double eT[nx*ny], eL[nz];
     double rhoLa[nz], rhoLb[nz];//Lipei
     double Ta[nx*ny], Tb[nx*ny];//Lipei
+    int wn;
     
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
-	energyDensityTransverseProfileAA(eT, nx, ny, dx, dy, initCondParams, Ta, Tb);
+	energyDensityTransverseProfileAA(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, &wn);
 	longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
-			double energyDensityTransverse = e0 * eT[i-2+(j-2)*nx];
+			double transverseDensity = eT[i-2+(j-2)*nx];
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				double energyDensityLongitudinal = eL[k-2];
-                double ed = energyDensityTransverse;// * energyDensityLongitudinal;
-				e[s] =  (PRECISION) 5*ed + 0.001*e0*2;
-                rhob[s] = (PRECISION)  0.01*energyDensityTransverse + 0.00001; //(rhoLa[k-2]*Ta[i-2+(j-2)*nx] + rhoLb[k-2]*Tb[i-2+(j-2)*nx]) + 0.00005; //Lipei
+                double ed = e0 * transverseDensity * energyDensityLongitudinal + 1.e-3;
+				e[s] =  (PRECISION) ed;
+                rhob[s] = (PRECISION) rhob0 * wn * (rhoLa[k-2] + rhoLb[k-2]) * transverseDensity + 0.00005; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
 		}
@@ -1148,9 +1162,10 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
     printf("Baryon density is initialized.\n");
 }
 
-//*********************************************************************************************************\
-//* Monte carlo Glauber initial energy density distribution
-//*********************************************************************************************************/
+
+/**************************************************************************************************************************************************/
+/* Monte carlo Glauber initial energy density distribution
+/**************************************************************************************************************************************************/
 void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1217,10 +1232,10 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
     printf("Baryon density is initialized.\n");
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the Gubser ideal hydro test
-//*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the Gubser ideal hydro test
+/*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+/**************************************************************************************************************************************************/
 void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1258,10 +1273,10 @@ void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams)
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the Gubser viscous hydro test
-//*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the Gubser viscous hydro test
+/*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+/**************************************************************************************************************************************************/
 void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 
@@ -1314,10 +1329,10 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the relativistic Sod shock-tube test
-//*		- set energy density, pressure, fluid velocity u^\mu
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the relativistic Sod shock-tube test
+/*		- set energy density, pressure, fluid velocity u^\mu
+/**************************************************************************************************************************************************/
 void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1355,10 +1370,10 @@ void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the relativistic Sod shock-tube test
-//*		- set energy density, pressure, fluid velocity u^\mu
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the relativistic Sod shock-tube test
+/*		- set energy density, pressure, fluid velocity u^\mu
+/**************************************************************************************************************************************************/
 void set2dSodShockTubeInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1393,10 +1408,10 @@ void set2dSodShockTubeInitialCondition(void * latticeParams, void * initCondPara
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the implosion in a box test
-//*		- set energy density, pressure, fluid velocity u^\mu
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the implosion in a box test
+/*		- set energy density, pressure, fluid velocity u^\mu
+/**************************************************************************************************************************************************/
 void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1447,10 +1462,10 @@ void setImplosionBoxInitialCondition(void * latticeParams, void * initCondParams
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the implosion in a box test
-//*		- set energy density, pressure, fluid velocity u^\mu
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the implosion in a box test
+/*		- set energy density, pressure, fluid velocity u^\mu
+/**************************************************************************************************************************************************/
 void setRayleighTaylorInstibilityInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1497,10 +1512,10 @@ void setRayleighTaylorInstibilityInitialCondition(void * latticeParams, void * i
 	}
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the implosion in a box test
-//*		- set energy density, pressure, fluid velocity u^\mu
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions for the implosion in a box test
+/*		- set energy density, pressure, fluid velocity u^\mu
+/**************************************************************************************************************************************************/
 void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParams) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
@@ -1542,9 +1557,9 @@ void setGaussianPulseInitialCondition(void * latticeParams, void * initCondParam
 	}
 }
 
-//*********************************************************************************************************\
-// * Gaussian
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Gaussian initial conditon
+/**************************************************************************************************************************************************/
 void GaussianProfile(void * latticeParams, void * initCondParams) {
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -1581,12 +1596,12 @@ void GaussianProfile(void * latticeParams, void * initCondParams) {
     }
 }
 
-//*********************************************************************************************************\
-//* Initial conditions for the sound propagation test
-//*        - set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
- /*********************************************************************************************************\
+/**************************************************************************************************************************************************/
+/* Initial conditions for the sound propagation test
+/*        - set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
+/**************************************************************************************************************************************************/
 
-void setSoundPropagationInitialCondition(void * latticeParams, void * initCondParams) {
+/*void setSoundPropagationInitialCondition(void * latticeParams, void * initCondParams) {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
     
@@ -1646,16 +1661,16 @@ void setSoundPropagationInitialCondition(void * latticeParams, void * initCondPa
     }
 }*/
 
-//*********************************************************************************************************\
-//* Initial conditions to use.
-//*	Set the energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny.
-//* 	0 - constant energy density
-//*		1 - Isreal-Stewart hydrodynamic Gubser flow test
-//*		2 - Continous optical Glauber
-//*		3 - Ideal hydrodynamic Gubser flow test
-//*		4 - Monte carlo Glauber
-//*		5 - Relativistic Sod shock-tube test
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Initial conditions to use.
+/*	Set the energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny.
+/* 	0 - constant energy density
+/*		1 - Isreal-Stewart hydrodynamic Gubser flow test
+/*		2 - Continous optical Glauber
+/*		3 - Ideal hydrodynamic Gubser flow test
+/*		4 - Monte carlo Glauber
+/*		5 - Relativistic Sod shock-tube test
+/**************************************************************************************************************************************************/
 void setInitialConditions(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int initialConditionType = initCond->initialConditionType;
@@ -1706,7 +1721,6 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
             setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
-
 		case 7: {
 			printf("Rayleigh-Taylor instability test.\n");
 			setRayleighTaylorInstibilityInitialCondition(latticeParams, initCondParams);
