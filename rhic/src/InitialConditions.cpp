@@ -1756,15 +1756,6 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
             setICfromSource(latticeParams, initCondParams, hydroParams, rootDirectory);
             return;
         }
-        case 14:{
-            printf("Hydro+ with Optical Glauber...\n");
-            setGlauberInitialCondition(latticeParams, initCondParams);
-            setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
-            setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
-            setInitialConditionSlowModes(latticeParams, hydroParams);
-            return;
-        }
 		default: {
 			printf("Initial condition type not defined. Exiting ...\n");
 			exit(-1);

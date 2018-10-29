@@ -221,6 +221,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   setInitialConditions(latticeParams, initCondParams, hydroParams, rootDirectory);
   // Calculate conserved quantities
   setConservedVariables(t, latticeParams);
+  // Slow modes for Hydro+
+  setInitialConditionSlowModes(latticeParams, hydroParams);
   // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);//rhob by Lipei
 

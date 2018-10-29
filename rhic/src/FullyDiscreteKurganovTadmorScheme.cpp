@@ -882,7 +882,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	t+=dt;
 
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc.
-	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS, eqPhiQS);
+	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, hydroParams, rhob, muBS, TS, eqPhiQS);
 
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
@@ -911,7 +911,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
     swapSlowModes(&eqPhiQp, &eqPhiQ);
     
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc. Q, e, p, u, rhob etc will store the final updated values
-	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T, eqPhiQ);
+	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, hydroParams, rhob, muB, T, eqPhiQ);
     
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);

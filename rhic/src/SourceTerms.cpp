@@ -325,10 +325,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
 
     // contribution from Hydro+ will be zero when slow modes are turned off by defination of NablaPhiSum
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt + lambda_alphaphi * NablatPhiSum;
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
     nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
     nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
 #endif
 
     //*********************************************************\
@@ -342,7 +342,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
         gammaQ = relaxationCoefficientPhiQ(e, rhob, Qvec[n]);
-        phiQRHS[n] = utInv * (-2) * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
+        phiQRHS[n] = - utInv * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
     }
 #endif
 }

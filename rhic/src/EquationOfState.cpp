@@ -489,8 +489,8 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob) {
 #endif
 }
 
-PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alpha){
-    return (e + p) / T - alpha * rhob;
+PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB){
+    return (e + p) / T - alphaB * rhob;
 }
 /**************************************************************************************************************************************************/
 /* 1D Equation of State

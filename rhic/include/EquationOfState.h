@@ -36,6 +36,6 @@ PRECISION dPdRhob(PRECISION e, PRECISION rhob);
 
 PRECISION equilibriumEnergyDensity(PRECISION T);
 
-PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob);
+PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB);
 
 #endif /* EQUATIONOFSTATE_H_ */
