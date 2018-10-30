@@ -128,8 +128,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         Qvec[n] = 0.0 + n * dQvec;
     }
-    
-    printf("before initialization of slow modes...\n");
+
     // initialization of slow mdoes at/out of equilibrium
     for(int i = 2; i < nx+2; ++i) {
         for(int j = 2; j < ny+2; ++j) {
@@ -164,7 +163,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 /**************************************************************************************************************************************************/
 
 // note: the integrands of alpha and beta only work for f2 defined above.
-// this function takes e/p/rhob/T/muBT and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
+// this function takes e/p/rhob/T/alphaB and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
 void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION ePrev, PRECISION rhobPrev, PRECISION pPrev, PRECISION TPrev, PRECISION alphaBPrev)
 {
 

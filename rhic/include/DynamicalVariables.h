@@ -80,7 +80,7 @@
 #ifndef HydroPlus
 #define NUMBER_SLOW_MODES 0
 #else
-#define NUMBER_SLOW_MODES 3
+#define NUMBER_SLOW_MODES 7
 #endif
 
 /*********************************************************/
