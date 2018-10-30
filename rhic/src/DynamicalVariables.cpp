@@ -96,6 +96,7 @@ void allocateHostMemory(int len) {
 	// Conserved variables
 	//=======================================================
     
+    // current variables at the n time step
 	q = (CONSERVED_VARIABLES *)calloc(1, sizeof(CONSERVED_VARIABLES));
 	q->ttt = (PRECISION *)calloc(len, bytes);
 	q->ttx = (PRECISION *)calloc(len, bytes);

@@ -5,10 +5,7 @@
 *      Author: bazow
 */
 #include <stdlib.h>
-// for printf
 #include <stdio.h>
-
-// for timing
 #include <ctime>
 #include <iostream>
 
@@ -31,11 +28,11 @@
 #include "../include/FullyDiscreteKurganovTadmorScheme.h"
 #include "../include/PrimaryVariables.h"
 #include "../include/EquationOfState.h"
-#include "../include/DynamicalSources.h"//lipei
+#include "../include/DynamicalSources.h"
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 
-#define FREQ 100 //write output to file every FREQ timesteps
+#define FREQ 10 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -50,13 +47,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   output(p, t, outputDir, "p", latticeParams);
   //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
-  output(u->un, t, outputDir, "un", latticeParams);
+  //output(u->un, t, outputDir, "un", latticeParams);
   //output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
-  //output(termX, t, outputDir, "termx", latticeParams);
-  //output(termY, t, outputDir, "termy", latticeParams);
-  //output(termZ, t, outputDir, "termz", latticeParams);
   #ifdef PIMUNU
   //output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
@@ -71,20 +65,20 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
   output(muB, t, outputDir, "muBT", latticeParams);
-  //output(T, t, outputDir, "T", latticeParams);
-  //output(termX, t, outputDir, "kappaB", latticeParams);
-  //output(term2, t, outputDir, "muB", latticeParams);
+  output(T, t, outputDir, "T", latticeParams);
   //output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
   //output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  output(q->nbn, t, outputDir, "nbn", latticeParams);
+  //output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
   #ifdef HydroPlus
   output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);
+  output(q->phiQ[2], t, outputDir, "phiQ2", latticeParams);
   output(eqPhiQ->phiQ[0], t, outputDir, "eqPhiQ0", latticeParams);
+  output(eqPhiQ->phiQ[2], t, outputDir, "eqPhiQ2", latticeParams);
   #endif
 }
 
@@ -214,7 +208,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   else freezeoutSurfaceFile.open("output/surface.dat", ios::binary);
 
   //************************************************************************************\
-  //* Fluid dynamic initialization
+  //* Fluid dynamics initialization
   //************************************************************************************/
   double t = t0;
   // Generate initial conditions
@@ -223,6 +217,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   setConservedVariables(t, latticeParams);
   // Slow modes for Hydro+
   setInitialConditionSlowModes(latticeParams, hydroParams);
+    printf("after IC of slow modes\n");
   // Impose boundary conditions with ghost cells
   setGhostCells(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);//rhob by Lipei
 

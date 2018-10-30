@@ -19,11 +19,13 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
+#define dQvec 0.2 // difference between Q vectors of slow modes
+
 /**************************************************************************************************************************************************/
 /* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
 /**************************************************************************************************************************************************/
 
-#define Cr 1.0
+#define Cr 1.0 // LambdaT = Cr * T^2
 #define xi02 1.0 // correlation length squared
 
 // heat conductivity
@@ -70,21 +72,23 @@ PRECISION f2(PRECISION x){
     return 1.0 / (1.0 + x*x); // Eq. (93)
 }
 
-// relaxation coefficents of fluctuations, only work for f2 defined above.
-PRECISION relaxationCoefficientPhiQ(PRECISION e, PRECISION rhob, PRECISION s, PRECISION T, PRECISION Q)
+// relaxation coefficents of fluctuations, without (Q*xi)f2(Q*xi), just 2*lambdaT/(Cp*xi^2).
+PRECISION relaxationCoefficientPhi(PRECISION rhob, PRECISION s, PRECISION T, PRECISION corrL2)
 {
-    PRECISION corrL = xi(e, rhob);
-    PRECISION corrL2 = corrL * corrL;
-    
-    PRECISION qL = Q * corrL;
-    PRECISION qL2 = qL * qL;
-    PRECISION qL3 = qL2 * qL;
-    PRECISION qL4 = qL3 * qL;
-    
     PRECISION lambdat = lambdaT(T);
     PRECISION cp = Cp(s, rhob, corrL2);
     
-    return 2 * lambdat/(cp * corrL2) * (qL2 + qL4);
+    return 2 * lambdat/(cp * corrL2);
+}
+
+// relaxation coefficents of fluctuations, only work for f2 defined above.
+PRECISION relaxationCoefficientPhiQ(PRECISION gammaPhi, PRECISION corrL2, PRECISION Q)
+{
+    PRECISION Q2 = Q * Q;
+    PRECISION qL2 = corrL2 * Q2;
+    PRECISION qL4 = qL2 * qL2;
+    
+    return gammaPhi * (qL2 + qL4);
 }
 
 
@@ -117,9 +121,6 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     int ny = lattice->numLatticePointsY;
     int nz = lattice->numLatticePointsRapidity;
     
-    PRECISION dQvec;
-    dQvec = hydro->dQvec;
-    
 #ifdef HydroPlus
     printf("Hydro+ is on...\n");
     
@@ -128,6 +129,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
         Qvec[n] = 0.0 + n * dQvec;
     }
     
+    printf("before initialization of slow modes...\n");
     // initialization of slow mdoes at/out of equilibrium
     for(int i = 2; i < nx+2; ++i) {
         for(int j = 2; j < ny+2; ++j) {
@@ -135,20 +137,21 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                 
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 
+                PRECISION es = e[s];
+                PRECISION rhobs = rhob[s];
+                PRECISION ps = p[s];
+                PRECISION Ts = T[s];
+                PRECISION alphaBs = muB[s];
+                PRECISION entropy = equilibriumEntropy(es, rhobs, ps, Ts, alphaBs);
+                
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-                    PRECISION es = e[s];
-                    PRECISION rhobs = rhob[s];
-                    PRECISION ps = p[s];
-                    PRECISION Ts = T[s];
-                    PRECISION alphaBs = muB[s];
                     
-                    PRECISION entropy = equilibriumEntropy(es, rhobs, ps, Ts, alphaBs);
                     PRECISION equiPhiQ = equilibriumPhiQ(es, rhobs, entropy, Qvec[n]);
                     
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
                     eqPhiQp->phiQ[n][s] = equiPhiQ;
-                    q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s] = equiPhiQ;
-                    Q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s] = equiPhiQ;
+                    q->phiQ[n][s] = equiPhiQ;
+                    Q->phiQ[n][s] = equiPhiQ;
                 }
             }
         }
@@ -162,7 +165,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 
 // note: the integrands of alpha and beta only work for f2 defined above.
 // this function takes e/p/rhob/T/muBT and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
-void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION ePrev, PRECISION rhobPrev, PRECISION pPrev, PRECISION TPrev, PRECISION alphaBPrev, PRECISION dQvec)
+void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION ePrev, PRECISION rhobPrev, PRECISION pPrev, PRECISION TPrev, PRECISION alphaBPrev)
 {
 
     PRECISION corrL = xi(ePrev, rhobPrev); // correlation length
@@ -218,7 +221,7 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     
     // contributions from slow modes to entrop, inverse temperature, chemical potential over temperature and pressure
     PRECISION deltaS = facQ * entropy;
-    PRECISION deltaAlphaB = facQ * alpha;
+    PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
     
     // variables(+) with contribution from slow modes

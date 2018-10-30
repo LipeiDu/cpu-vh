@@ -130,10 +130,8 @@ PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRE
 /* calculate primary variables u^\mu, e, rhob and pressure, from T^\tau^mu N^\tau and dissipative components
 /**************************************************************************************************************************************************/
 
-void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, PRECISION utPrev,
-PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION * const __restrict__ uy, PRECISION * const __restrict__ un,
-PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ T, PRECISION * const __restrict__ muB, const PRECISION *  const __restrict__ PhiQ, PRECISION *  const __restrict__ equiPhiQ, PRECISION dQvec) {
+void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, PRECISION utPrev, PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION * const __restrict__ uy, PRECISION * const __restrict__ un, PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ T, PRECISION * const __restrict__ muB, PRECISION *  const __restrict__ equiPhiQ) {
+    
 	PRECISION ttt = q[0];
 	PRECISION ttx = q[1];
 	PRECISION tty = q[2];
@@ -169,6 +167,19 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __res
     PRECISION nbx = 0;
     PRECISION nby = 0;
     PRECISION nbn = 0;
+#endif
+#ifdef HydroPlus
+    PRECISION PhiQ[NUMBER_SLOW_MODES];
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        PhiQ[n]= q[ALL_NUMBER_CONSERVED_VARIABLES+n];
+    }
+#else
+    PRECISION PhiQ[NUMBER_SLOW_MODES];
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        PhiQ[n]= 0;
+    }
 #endif
     
 	PRECISION M0 = ttt - pitt;
@@ -314,11 +325,11 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __res
     // before including contributions from slow modes
     //===================================================================
     
-    *T = effectiveTemperature(_e, _rhob);
+    *T = effectiveTemperature(*e, *rhob);
     if (*T < 1.e-7) *T = 1.e-7;
     
 #ifdef NBMU
-    *muB = chemicalPotentialOverT(_e, _rhob);
+    *muB = chemicalPotentialOverT(*e, *rhob);
     if (*muB>=0 && *muB < 1.e-7) *muB = 1.e-7;
     else if (*muB <=0 && *muB > -1.e-7)  *muB = -1.e-7;
 #endif
@@ -326,15 +337,15 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __res
     //===================================================================
     // to include contributions from slow modes
     //===================================================================
+#ifdef HydroPlus
+    PRECISION eIn = *e;
+    PRECISION rhobIn = *rhob;
+    PRECISION pIn = *p;
+    PRECISION TIn = *T;
+    PRECISION muBIn = *muB;
     
-    getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, PRECISION ePrev,
-                         PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, PRECISION utPrev,
-                         PRECISION * const __restrict__ ut, PRECISION * const __restrict__ ux, PRECISION * const __restrict__ uy, PRECISION * const __restrict__ un,
-                         PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ T, PRECISION * const __restrict__ muB, const PRECISION *  const __restrict__ PhiQ, PRECISION *  const __restrict__ equiPhiQ, PRECISION dQvec)
-    getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&ut,&ux,&uy,&un,rhob[s],&_rhob,&_T,&_muB,PhiQ,&_equiPhiQ,dQvec);
-    
-    getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION ePrev, PRECISION rhobPrev, PRECISION pPrev, PRECISION TPrev, PRECISION alphaBPrev, PRECISION dQvec)
-    
+    getPrimaryVariablesFromSlowModes(p, T, muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);
+#endif
 
 }
 
@@ -343,18 +354,14 @@ PRECISION rhobPrev, PRECISION * const __restrict__ rhob, PRECISION * const __res
 /* kernel for setting primary variables
 /**************************************************************************************************************************************************/
 
-void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ uPrev, FLUID_VELOCITY * const __restrict__ u, PRECISION t, void * latticeParams, void * hydroParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ) {
+void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ uPrev, FLUID_VELOCITY * const __restrict__ u, PRECISION t, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ) {
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
-    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
     
     int ncx,ncy,ncz;
     ncx = lattice->numComputationalLatticePointsX;
     ncy = lattice->numComputationalLatticePointsY;
     ncz = lattice->numComputationalLatticePointsRapidity;
-    
-    PRECISION dQvec;
-    dQvec = hydro->dQvec;
     
     for(int i = 2; i < ncx-2; ++i) {
         for(int j = 2; j < ncy-2; ++j) {
@@ -397,11 +404,9 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 q_s[NUMBER_CONSERVED_VARIABLES+4] = q->nbn[s];
 #endif
 #ifdef HydroPlus
-                PRECISION PhiQ[NUMBER_SLOW_MODES];
-                
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
                 {
-                    PhiQ[n] = q->phiQ[n+ALL_NUMBER_CONSERVED_VARIABLES][s];
+                    q_s[ALL_NUMBER_CONSERVED_VARIABLES+n] = q->phiQ[ALL_NUMBER_CONSERVED_VARIABLES+n][s];
                 }
 #endif
             
@@ -415,7 +420,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 PRECISION _e,_rhob,_p,_T,_muB,ut,ux,uy,un;
                 PRECISION _equiPhiQ[NUMBER_SLOW_MODES];
                 
-                getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&ut,&ux,&uy,&un,rhob[s],&_rhob,&_T,&_muB,PhiQ,&_equiPhiQ,dQvec);
+                getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&ut,&ux,&uy,&un,rhob[s],&_rhob,&_T,&_muB,_equiPhiQ);
                 
                 //===================================================================
                 // pass the updated value to external arries
@@ -436,7 +441,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
 #ifdef HydroPlus
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
                 {
-                    eqPhiQ[n][s] = _equiPhiQ[n];
+                    eqPhiQ->phiQ[n][s] = _equiPhiQ[n];
                 }
 #endif
             }

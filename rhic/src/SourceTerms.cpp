@@ -338,10 +338,15 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #ifdef HydroPlus
     PRECISION gammaQ = 0;
     PRECISION utInv = 1.0/ut;
+    PRECISION entropy = equilibriumEntropy(e, rhob, p, T, mub);
+    PRECISION corrL = xi(e, rhob);
+    PRECISION corrL2 = corrL * corrL;
+    
+    PRECISION gammaPhi = relaxationCoefficientPhi(rhob, entropy, T, corrL2);
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
-        gammaQ = relaxationCoefficientPhiQ(e, rhob, Qvec[n]);
+        gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Qvec[n]);
         phiQRHS[n] = - utInv * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
     }
 #endif
