@@ -87,7 +87,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 		PRECISION dxut, PRECISION dyut, PRECISION dnut, PRECISION dxux, PRECISION dyux, PRECISION dnux,
 		PRECISION dxuy, PRECISION dyuy, PRECISION dnuy, PRECISION dxun, PRECISION dyun, PRECISION dnun,
         PRECISION dkvk, PRECISION d_etabar, PRECISION d_dt, const PRECISION * const __restrict__ PhiQ,
-        const PRECISION * const __restrict__ equiPhiQ, const PRECISION *  const __restrict__ equiPhiQp, PRECISION NablatPhiSum
+        const PRECISION * const __restrict__ equiPhiQ, const PRECISION *  const __restrict__ equiPhiQp
                                
 ) {
 	//*********************************************************\
@@ -835,26 +835,6 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     PRECISION Nablan_alphaB = 0;
 #endif
     
-    // Extra source terms contributing to baryon diffusion from slow modes
-#ifdef HydroPlus
-    PRECISION NablatPhiQsum = 0;
-    
-    /*for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
-    {
-        PRECISION PhiQ2 = PhiQ[n] * PhiQ[n];
-        PRECISION equiPhiQ2 = equiPhiQ[n] * equiPhiQ[n];
-        PRECISION dtPhiQ = (PhiQ[n] - PhiQp[n]) / d_dt;
-        PRECISION dtequiPhiQ = (equiPhiQ[n] - equiPhiQp[n]) / d_dt;
-        
-        NablatPhiQsum += dtPhiQ / PhiQ2 - dtequiPhiQ / equiPhiQ2;
-    }
-    
-    NablatPhiQsum /= 2;*/
-
-#else
-    PRECISION NablatPhiQsum = 0;
-#endif
-    
 	//=========================================================
 	// calculate source terms for dissipative components
 	//=========================================================
@@ -865,7 +845,7 @@ const DYNAMICAL_SOURCE * const __restrict__ Source, const PRECISION * const __re
     
 	setDissipativeSourceTerms(pimunuRHS, nbmuRHS, phiQRHS, nbt, nbx, nby, nbn, rhobs, mubs, Nablat_alphaB, Nablax_alphaB, Nablay_alphaB, Nablan_alphaB,
             T, t, es, p, ut, ux, uy, un, utp, uxp, uyp, unp, pitt, pitx, pity, pitn, pixx, pixy, pixn, piyy, piyn, pinn, Pi,
-			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp, NablatPhiQsum);
+			dxut, dyut, dnut, dxux, dyux, dnux, dxuy, dyuy, dnuy, dxun, dyun, dnun, dkvk, d_etabar, d_dt, PhiQ, equiPhiQ, equiPhiQp);
     
 #ifdef PIMUNU
     for(unsigned int n = 0; n < NUMBER_DISSIPATIVE_CURRENTS; ++n) S[n+4] = pimunuRHS[n];// for shear and bulk

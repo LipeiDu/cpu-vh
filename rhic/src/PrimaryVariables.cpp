@@ -337,15 +337,20 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     //===================================================================
     // to include contributions from slow modes
     //===================================================================
-/*#ifdef HydroPlus
+#ifdef HydroPlus
     PRECISION eIn = *e;
     PRECISION rhobIn = *rhob;
     PRECISION pIn = *p;
     PRECISION TIn = *T;
     PRECISION muBIn = *muB;
     
-    getPrimaryVariablesFromSlowModes(p, T, muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);
-#endif*/
+    /*getPrimaryVariablesFromSlowModes(p, T, muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);*/
+    
+    for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
+    {
+        equiPhiQ[n] = 2.0;
+    }
+#endif
 
 }
 
@@ -442,6 +447,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
                 {
                     eqPhiQ->phiQ[n][s] = _equiPhiQ[n];
+                    //printf("_equiPhiQ[n]=%f\n",_equiPhiQ[n]);
                 }
 #endif
             }

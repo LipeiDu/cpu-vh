@@ -1105,7 +1105,7 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 e[s] = (PRECISION) ed*eL[k-2] + 1.e-1;
-                rhob[s] = rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-3; //Lipei
+                rhob[s] = (PRECISION) rhobd + 1.e-3; // rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-3; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
 		}

@@ -6,12 +6,15 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
 #include "../include/PrimaryVariables.h"
+#include "../include/EquationOfState.h"
 #include "../include/HydroAnalysis.h"
+#include "../include/HydroPlus.h"
 
 
 void outputAnalysis(double t, const char *outputDir, void * latticeParams)
@@ -34,7 +37,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     int i,j,k;
     int s;
     
-    double v2t,becc,eecc,v2t1,v2t2;
+    /*double v2t,becc,eecc,v2t1,v2t2;
     v2t = 0;
     v2t1 = 0;
     v2t2 = 0;
@@ -45,7 +48,9 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     double bypx = 0;
     double eymx = 0;
     double exy = 0;
-    double eypx = 0;
+    double eypx = 0;*/
+    
+    PRECISION phiQ;
     
     //k=(nz+3)/2;
     //j=(ny+3)/2;
@@ -61,7 +66,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 //double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
                 //double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
                 //double tn=Ttn(e[s],p[s],u->ut[s],u->un[s],q->pitn[s]);
-#ifndef PIMUNU
+/*#ifndef PIMUNU
                 double pixx=0;
                 double piyy=0;
 #else
@@ -82,16 +87,40 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 exy = exy + x*y*e[s];
                 eypx = eypx + (y*y + x*x)*e[s];
                 v2t1 = v2t1 + (xx-yy);
-                v2t2 = v2t2 + (xx+yy);
+                v2t2 = v2t2 + (xx+yy);*/
+                
+                //if(x==0&&y==0)
+               // phiQ = q->phiQ[0][s];
+                
+                PRECISION eIn = e[s];
+                PRECISION rhobIn = rhob[s];
+                PRECISION pIn = p[s];
+                PRECISION TIn = T[s];
+                PRECISION muBIn = muB[s];
+                PRECISION equiPhiQ[NUMBER_SLOW_MODES];
+                PRECISION PhiQ[NUMBER_SLOW_MODES];
+                
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    
+                    equiPhiQ[n] = eqPhiQ->phiQ[n][s];
+                    PhiQ[n] = q->phiQ[n][s];//for test
+                }
+                
+                PRECISION p,T,muB;
+
+                getPrimaryVariablesFromSlowModes(&p, &T, &muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);
             }
         }
     }
     
-    becc = sqrt(bymx*bymx + 4*bxy*bxy)/bypx;
+    /*becc = sqrt(bymx*bymx + 4*bxy*bxy)/bypx;
     eecc = sqrt(eymx*eymx + 4*exy*exy)/eypx;
     v2t = v2t1/v2t2;
     
-    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,v2t,becc,eecc);
+    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,v2t,becc,eecc);*/
+    
+    //fprintf(fp, "%.3f\t%.8f\n",t,phiQ);
+    exit(0);
     
     fclose(fp);
 }

@@ -19,7 +19,7 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-#define dQvec 0.2 // difference between Q vectors of slow modes
+#define dQvec 0.4 // difference between Q vectors of slow modes
 
 /**************************************************************************************************************************************************/
 /* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
@@ -40,27 +40,36 @@ PRECISION Cp(PRECISION s, PRECISION rhob, PRECISION corrL2){
 
 // correlation length
 PRECISION xi(PRECISION e, PRECISION rhob){
-    return 1.0; // to be fixed
+    PRECISION xi0 = 8.0;
+    PRECISION sigmae = 50.0;
+    PRECISION sigman = 10.0;
+    PRECISION ec = 250.0;
+    PRECISION nc = 40.0;
+    return xi0 / (2*M_PI*sigmae*sigman) * exp(-((e - ec)*(e - ec)/(2*sigmae*sigmae)) - (rhob - nc)*(rhob - nc)/(2*sigman*sigman)); // to be fixed
 }
 
 // derivative of log(phi0) with respect to energy
 PRECISION dlnPhi0de(PRECISION e, PRECISION rhob){
-    return 1.0; // to be fixed
+    return pow(rhob,0.4); // to be fixed
 }
 
 // derivative of log(xi) with respect to energy
 PRECISION dlnXide(PRECISION e, PRECISION rhob){
-    return 1.0; // to be fixed
+    PRECISION ec = 250.0;
+    PRECISION sigmae = 50.0;
+    return -((e - ec)/(sigmae*sigmae)); // to be fixed
 }
 
 // derivative of log(phi0) with respect to baryon density
 PRECISION dlnPhi0drhob(PRECISION e, PRECISION rhob){
-    return 1.0; // to be fixed
+    return pow(e,0.2); // to be fixed
 }
 
 // derivative of log(xi) with respect to baryon density
 PRECISION dlnXidrhob(PRECISION e, PRECISION rhob){
-    return 1.0; // to be fixed
+    PRECISION nc = 40.0;
+    PRECISION sigman = 10.0;
+    return -((rhob - nc)/(sigman*sigman)); // to be fixed
 }
 
 /**************************************************************************************************************************************************/
@@ -164,19 +173,23 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 
 // note: the integrands of alpha and beta only work for f2 defined above.
 // this function takes e/p/rhob/T/alphaB and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
-void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION ePrev, PRECISION rhobPrev, PRECISION pPrev, PRECISION TPrev, PRECISION alphaBPrev)
+void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn)
 {
 
-    PRECISION corrL = xi(ePrev, rhobPrev); // correlation length
+    PRECISION corrL = xi(eIn, rhobIn); // correlation length
     PRECISION corrL2 = corrL * corrL;
     
-    PRECISION s = equilibriumEntropy(ePrev, rhobPrev, pPrev, TPrev, alphaBPrev);
-    PRECISION heatC = Cp(s, rhobPrev, corrL2); // heat capacity
+    //printf("eIn =%f\t rhobIn =%f\n",eIn,rhobIn);
     
-    PRECISION dlnPhi0_de = dlnPhi0de(ePrev, rhobPrev);
-    PRECISION dlnPhi0_drhob = dlnPhi0drhob(ePrev, rhobPrev);
-    PRECISION dlnXi_de = dlnXide(ePrev, rhobPrev);
-    PRECISION dlnXi_drhob = dlnXidrhob(ePrev, rhobPrev);
+    PRECISION s = equilibriumEntropy(eIn, rhobIn, pIn, TIn, alphaBIn);
+    PRECISION heatC = Cp(s, rhobIn, corrL2); // heat capacity
+    
+    PRECISION dlnPhi0_de = dlnPhi0de(eIn, rhobIn);
+    PRECISION dlnPhi0_drhob = dlnPhi0drhob(eIn, rhobIn);
+    PRECISION dlnXi_de = dlnXide(eIn, rhobIn);
+    PRECISION dlnXi_drhob = dlnXidrhob(eIn, rhobIn);
+    
+    //printf("corrL =%f\t dlnPhi0_de =%f\t dlnPhi0_drhob =%f\t dlnXi_de =%f\t dlnXi_drhob =%f\t \n",corrL,dlnPhi0_de,dlnPhi0_drhob,dlnXi_de,dlnXi_drhob);
     
     PRECISION entropy = 0.0;
     PRECISION alpha = 0.0;
@@ -194,12 +207,15 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         PRECISION phiRatioOne = phiRatio - 1;
 
         // (Q*xi)f2(Q*xi)
-        PRECISION qL = Qvec[n] * corrL;
+        PRECISION Q = Qvec[n] + 0.5 * dQvec;
+        PRECISION qL = Q * corrL;
         PRECISION qL2= qL * qL;
         PRECISION qLf2 = qL / (1 + qL2);
         
+        //printf("phiRatio =%f\t qLf2=%.4e\n",phiRatio,qLf2);
+        
         // Q^2
-        PRECISION Q2 = Qvec[n] * Qvec[n];
+        PRECISION Q2 = Q * Q;
         // Q^2*(Phi/eqPhi-1)
         PRECISION QphiRatioOne = Q2 * phiRatioOne;
         // Q^2*ln(Phi/eqPhi)
@@ -216,6 +232,8 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         // delta entropy, Eq.(85)
         PRECISION intEntropy = QphiRatioLog - QphiRatioOne;
         entropy += intEntropy;
+        
+        //printf("%f\t%f\t%f\t%f\n",Qvec[n],intEntropy,intBeta,intAlpha);
     }
     
     // contributions from slow modes to entrop, inverse temperature, chemical potential over temperature and pressure
@@ -223,10 +241,12 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
     
-    // variables(+) with contribution from slow modes
-    *T = 1 / (1/TPrev + deltaBeta);
-    *alphaB = alphaBPrev + deltaAlphaB;
+    //printf("%f\t%f\t%f\n",deltaS,deltaBeta,deltaAlphaB);
     
-    PRECISION deltaP = (*T) * (deltaS - (ePrev + pPrev) * deltaBeta + rhobPrev * deltaAlphaB);
-    *p = pPrev + deltaP;
+    // variables(+) with contribution from slow modes
+    *T = 1 / (1/TIn + deltaBeta);
+    *alphaB = alphaBIn + deltaAlphaB;
+    
+    PRECISION deltaP = (*T) * (deltaS - (eIn + pIn) * deltaBeta + rhobIn * deltaAlphaB);
+    *p = pIn + deltaP;
 }
