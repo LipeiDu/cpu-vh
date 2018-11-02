@@ -25,8 +25,14 @@
 /* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
 /**************************************************************************************************************************************************/
 
+// for testing
 #define Cr 1.0 // LambdaT = Cr * T^2
+#define xi0 1.0
 #define xi02 1.0 // correlation length squared
+#define sigmae 50.0
+#define sigman 10.0
+#define ec 250.0
+#define rhobc 40.0
 
 // heat conductivity
 PRECISION lambdaT(PRECISION T){
@@ -40,36 +46,29 @@ PRECISION Cp(PRECISION s, PRECISION rhob, PRECISION corrL2){
 
 // correlation length
 PRECISION xi(PRECISION e, PRECISION rhob){
-    PRECISION xi0 = 8.0;
-    PRECISION sigmae = 50.0;
-    PRECISION sigman = 10.0;
-    PRECISION ec = 250.0;
-    PRECISION nc = 40.0;
-    return xi0 / (2*M_PI*sigmae*sigman) * exp(-((e - ec)*(e - ec)/(2*sigmae*sigmae)) - (rhob - nc)*(rhob - nc)/(2*sigman*sigman)); // to be fixed
-}
-
-// derivative of log(phi0) with respect to energy
-PRECISION dlnPhi0de(PRECISION e, PRECISION rhob){
-    return pow(rhob,0.4); // to be fixed
+    PRECISION deltaE = e - ec;
+    PRECISION deltaRhob = rhob - rhobc;
+    return xi0 * exp(- deltaE * deltaE/(2*sigmae*sigmae) - deltaRhob * deltaRhob/(2*sigman*sigman)); // to be fixed
 }
 
 // derivative of log(xi) with respect to energy
 PRECISION dlnXide(PRECISION e, PRECISION rhob){
-    PRECISION ec = 250.0;
-    PRECISION sigmae = 50.0;
     return -((e - ec)/(sigmae*sigmae)); // to be fixed
-}
-
-// derivative of log(phi0) with respect to baryon density
-PRECISION dlnPhi0drhob(PRECISION e, PRECISION rhob){
-    return pow(e,0.2); // to be fixed
 }
 
 // derivative of log(xi) with respect to baryon density
 PRECISION dlnXidrhob(PRECISION e, PRECISION rhob){
-    PRECISION nc = 40.0;
-    PRECISION sigman = 10.0;
-    return -((rhob - nc)/(sigman*sigman)); // to be fixed
+    return -((rhob - rhobc)/(sigman*sigman)); // to be fixed
+}
+
+// derivative of log(phi0) with respect to energy
+PRECISION dlnPhi0de(PRECISION T, PRECISION s, PRECISION dlnXi_de){
+    return 2/(s*T) + 2 * dlnXi_de; // to be fixed
+}
+
+// derivative of log(phi0) with respect to baryon density
+PRECISION dlnPhi0drhob(PRECISION alphaB, PRECISION rhob, PRECISION s, PRECISION dlnXi_drhob){
+    return -2 * alphaB / s - 3 / rhob + 2 * dlnXi_drhob; // to be fixed
 }
 
 /**************************************************************************************************************************************************/
@@ -156,6 +155,8 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                     
                     PRECISION equiPhiQ = equilibriumPhiQ(es, rhobs, entropy, Qvec[n]);
                     
+                    //printf("equiPhiQ=%f",equiPhiQ);
+                    
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
                     eqPhiQp->phiQ[n][s] = equiPhiQ;
                     q->phiQ[n][s] = equiPhiQ;
@@ -184,10 +185,12 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION s = equilibriumEntropy(eIn, rhobIn, pIn, TIn, alphaBIn);
     PRECISION heatC = Cp(s, rhobIn, corrL2); // heat capacity
     
-    PRECISION dlnPhi0_de = dlnPhi0de(eIn, rhobIn);
-    PRECISION dlnPhi0_drhob = dlnPhi0drhob(eIn, rhobIn);
+    // for testing
     PRECISION dlnXi_de = dlnXide(eIn, rhobIn);
     PRECISION dlnXi_drhob = dlnXidrhob(eIn, rhobIn);
+    PRECISION dlnPhi0_de = dlnPhi0de(TIn, s, dlnXi_de);
+    PRECISION dlnPhi0_drhob = dlnPhi0drhob(alphaBIn, rhobIn, s, dlnXi_drhob);
+    
     
     //printf("corrL =%f\t dlnPhi0_de =%f\t dlnPhi0_drhob =%f\t dlnXi_de =%f\t dlnXi_drhob =%f\t \n",corrL,dlnPhi0_de,dlnPhi0_drhob,dlnXi_de,dlnXi_drhob);
     
@@ -200,6 +203,8 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     
     // contributions from slow modes to alpha, beta and entropy
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+        
+        //printf("n=%d,equiPhiQ[n]=%f\n",n,equiPhiQ[n]);
         
         // ln(Phi/eqPhi) and (Phi/eqPhi-1)
         PRECISION phiRatio = PhiQ[n] / equiPhiQ[n];

@@ -344,8 +344,12 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     PRECISION TIn = *T;
     PRECISION muBIn = *muB;
     
-    /*getPrimaryVariablesFromSlowModes(p, T, muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);*/
+    //note: equiPhiQ needes to be initialized before calling this function
+    getPrimaryVariablesFromSlowModes(p, T, muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);
     
+    //printf("eIn=%f,rhobIn=%f,pIn=%f,TIn=%f,muBIn=%f,p=%f,T=%f,muB=%f\n",eIn,rhobIn,pIn,TIn,muBIn,*p,*T,*muB);
+    
+    //note: equiPhiQ needes to be updated with the final e and rhob
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
         equiPhiQ[n] = 2.0;
