@@ -131,16 +131,18 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
 // designed for the case with baryon evolution and slow modes
 void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ muB, PRECISION * const __restrict__ v, PRECISION * const __restrict__ equiPhiQ, PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION vPrev, const PRECISION * const __restrict__ PhiQ, PRECISION absoluteError, PRECISION relativeError)
 {
-    int j = 0;
     PRECISION vAbsoluteError = 10.0;
     PRECISION vRelativeError = 10.0;
+    //printf("vPrev=%5e\n",vPrev);
     
     PRECISION e0, rhob0, p0, T0, muB0, v0, equiPhiQ0[NUMBER_SLOW_MODES];
     
-    do {
+    for(int j = 0; j < MAX_ITERS; ++j)
+    {
+        //printf("v j=%d\n",j);
 
-        PRECISION e0 = M0 - vPrev * Ms;
-        PRECISION rhob0 = N0 * sqrt(1 - vPrev * vPrev);
+        e0 = M0 - vPrev * Ms;
+        rhob0 = N0 * sqrt(1 - vPrev * vPrev);
         
         // without contributions from the slow modes
         PRECISION peq = equilibriumPressure(e0, rhob0);
@@ -152,6 +154,7 @@ void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e
         for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
         {
             equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, seq, Qvec[n]);
+            //printf("equiPhiQ0[%d] = %5e\n",n,equiPhiQ0[n]);
         }
         
         getPrimaryVariablesFromSlowModes(&p0, &T0, &muB0, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, muBeq);
@@ -159,20 +162,27 @@ void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e
         // recalculate the flow velocity, with p(+) from Hydro+
         v0 = Ms/(M0 + p0 + Pi);
         
+        //printf("v0=%5e\n",v0);
+        
         vAbsoluteError = fabs(v0 - vPrev);
         vRelativeError = 2 * vAbsoluteError/(v0 + vPrev + 1.e-15);
+        
+        if (vAbsoluteError < absoluteError && vRelativeError < relativeError)
+            break;
+        
         vPrev = v0;
         
-        j++;
-        
-    } while (vAbsoluteError > absoluteError && vRelativeError > relativeError);
-    
-    if(j > MAX_ITERS) printf("v = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,N0);
+        if(j == MAX_ITERS-1) printf("v = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,N0);
+        //printf("in the loop: Teq=%5e,\t T0=%5e,\t muBeq=%5e,\t muB0=%5e,\t peq=%5e,\t p0=%5e\n",Teq,T0,muBeq,muB0,peq,p0);
+    }
     
     // after iteration, update v, e, rhob, p, T, muB and eqPhiQ
     *v = v0;
     *e = e0;
     *rhob = rhob0;
+    
+    //printf("rhob0 = %5e, *rhob=%5e\n",rhob0,*rhob);
+    
     *p = p0;
     *T = T0;
     *muB = muB0;
@@ -191,7 +201,9 @@ void InferredVariablesUtauIterationConverge(PRECISION * const __restrict__ e, PR
     
     PRECISION e0, rhob0, p0, T0, muB0, ut0, equiPhiQ0[NUMBER_SLOW_MODES];
     
-    do {
+    for(int j = 0; j < MAX_ITERS; ++j)
+    {
+        //printf("utau j=%d\n",j);
         e0 = M0 - Ms * sqrt(1 - 1 / (utPrev * utPrev));
         rhob0 = N0/utPrev;
         
@@ -214,12 +226,15 @@ void InferredVariablesUtauIterationConverge(PRECISION * const __restrict__ e, PR
         
         utAbsoluteError = fabs(ut0 - utPrev);
         utRelativeError = 2 * utAbsoluteError/(ut0 + utPrev + 1.e-15);
+        
+        if (utAbsoluteError > absoluteError && utRelativeError > relativeError)
+            break;
+        
         utPrev = ut0;
         
-        j++;
-    } while (utAbsoluteError > absoluteError && utRelativeError > relativeError);
+        if(j == MAX_ITERS-1) printf("ut = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,N0);
+    }
     
-    if(j > MAX_ITERS) printf("ut = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,N0);
     
     // after iteration, update ut, e, rhob, p, T, muB and eqPhiQ
     *ut = ut0;
@@ -457,11 +472,12 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     
     PRECISION v = 0;
     
-    printf("Before: rhob = %5e\n", *rhob);
+    //printf("Before: vPrev = %5e\n", vPrev);
     
     // STEP II: update v or utau, and then calculate e, rhob and p with contributions from slow modes
     
-    InferredVariablesVelocityIterationConverge(e, rhob, p, T, muB, &v, equiPhiQ, M0, Ms, Pi, N0, vPrev, PhiQ, absoluteError, relativeError);;
+    InferredVariablesVelocityIterationConverge(e, rhob, p, T, muB, &v, equiPhiQ, M0, Ms, Pi, N0, vPrev, PhiQ, absoluteError, relativeError);
+    //printf("After: rhob = %5e\n", *rhob);
     
     if (isnan(v))
     {
@@ -481,7 +497,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         }
     }
     
-    printf("After: rhob = %5e\n", *rhob);
+    
     
     // STEP III: with updated pressure(+), update ux, uy, un
     
@@ -559,6 +575,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
             
                 // old flow velocity
                 PRECISION ut_s = uPrev->ut[s];
+                //printf("old M0 = %5e \n",(e[s]+p[s])*(ut_s*ut_s)-p[s]);
                 
                 //===================================================================
                 // _e, _rhob, _p, _muBT and _equiPhiQ etc will have updated values.
@@ -567,6 +584,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 PRECISION _e,_rhob,_p,_T,_muB,_ut,_ux,_uy,_un;
                 PRECISION _equiPhiQ[NUMBER_SLOW_MODES];
                 
+                //printf("_rhob = %5e\n",_rhob);
                 getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&_ut,&_ux,&_uy,&_un,rhob[s],&_rhob,&_T,&_muB,_equiPhiQ);
                 
                 //===================================================================
@@ -582,6 +600,10 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 u->ux[s] = _ux;
                 u->uy[s] = _uy;
                 u->un[s] = _un;
+                //printf("updated M0 = %5e,\t reconst M0 = %5e\n",q->ttt[s]-q->pitt[s],(_e+_p)*(_ut*_ut)-_p);
+                //printf("updated Nb^tau = %5e,\t reconst Nb^tau = %5e\n",q->Nbt[s],rhob[s]*_ut+q->nbt[s]);
+                //printf("updated T^tautau = %5e,\t reconst T^tautau = %5e\n",q->ttt[s],(_e+_p)*(_ut*_ut)-_p+q->pitt[s]);
+                //printf("updated M1 = %5e,\t reconst M1 = %5e\n",(q->ttx[s])-(q->pitx[s]),(_e+_p+q->Pi[s])*(_ut*_ux));
 #ifdef NBMU
                 muB[s] = _muB;
 #endif

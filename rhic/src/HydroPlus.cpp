@@ -19,7 +19,7 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-#define dQvec 0.4 // difference between Q vectors of slow modes
+#define dQvec 3.0 // difference between Q vectors of slow modes
 
 /**************************************************************************************************************************************************/
 /* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
@@ -180,7 +180,7 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION corrL = xi(eIn, rhobIn); // correlation length
     PRECISION corrL2 = corrL * corrL;
     
-    //printf("eIn =%f\t rhobIn =%f\n",eIn,rhobIn);
+    //printf("xi =%f\n",corrL);
     
     PRECISION s = equilibriumEntropy(eIn, rhobIn, pIn, TIn, alphaBIn);
     PRECISION heatC = Cp(s, rhobIn, corrL2); // heat capacity
@@ -246,7 +246,7 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
     
-    //printf("%f\t%f\t%f\n",deltaS,deltaBeta,deltaAlphaB);
+    //printf("deltaS=%f\t deltaAlphaB=%f\t deltaBeta=%f\n",deltaS,deltaAlphaB,deltaBeta);
     
     // variables(+) with contribution from slow modes
     *T = 1 / (1/TIn + deltaBeta);
