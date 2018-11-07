@@ -207,7 +207,7 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         //printf("n=%d,equiPhiQ[n]=%f\n",n,equiPhiQ[n]);
         
         // ln(Phi/eqPhi) and (Phi/eqPhi-1)
-        PRECISION phiRatio = PhiQ[n] / equiPhiQ[n];
+        PRECISION phiRatio = PhiQ[n] / (equiPhiQ[n] + 1e-15);
         PRECISION phiRatioLog = log(phiRatio);
         PRECISION phiRatioOne = phiRatio - 1;
 
