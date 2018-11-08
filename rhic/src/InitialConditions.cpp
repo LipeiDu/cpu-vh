@@ -1213,10 +1213,10 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 double T = effectiveTemperature(e[s], rhob[s]);
-                double mub = chemicalPotentialOverT(e[s], rhob[s]);
+                double alphaB = chemicalPotentialOverT(e[s], rhob[s]);
 
-                double kappa1 = 0.4/T * rhob[s] * (0.3333333*1/tanh(mub) - rhob[s]*T/(e[s]+p[s]));
-                double kappa2 = baryonDiffusionConstant(T, mub*T)*T;
+                double kappa1 = 0.4/T * rhob[s] * (0.3333333*1/tanh(alphaB) - rhob[s]*T/(e[s]+p[s]));
+                double kappa2 = baryonDiffusionConstant(T, alphaB*T)*T;
                 
                 baryonden1 << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
                 << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << kappa1 << endl;//Lipei

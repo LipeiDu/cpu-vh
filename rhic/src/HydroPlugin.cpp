@@ -64,7 +64,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #endif
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  output(muB, t, outputDir, "muBT", latticeParams);
+  output(alphaB, t, outputDir, "aplhaB", latticeParams);
   output(T, t, outputDir, "T", latticeParams);
   //output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
@@ -218,7 +218,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Slow modes for Hydro+
   setInitialConditionSlowModes(latticeParams, hydroParams);
   // Impose boundary conditions with ghost cells
-  setGhostCells(q,e,p,u,latticeParams,rhob,muB,T,eqPhiQ);//rhob by Lipei
+  setGhostCells(q,e,p,u,latticeParams,rhob,alphaB,T,seq,eqPhiQ);//rhob by Lipei
 
   //************************************************************************************\
   //* Evolve the system in time

@@ -88,7 +88,7 @@ void getEquationOfStateTable(){
     {
         fseek(eosfilembt,0L,SEEK_SET);
         for(int i = 0; i < 188580; ++i){
-            fscanf(eosfilembt,"%lf %lf %lf", & energy, & baryon, & EOState->Mubovert[i]);
+            fscanf(eosfilembt,"%lf %lf %lf", & energy, & baryon, & EOState->alphab[i]);
         }
     }
     fclose(eosfilembt);
@@ -299,24 +299,24 @@ void testEOS(){
     }
 }*/
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION mub){
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB){
     PRECISION T0 = T*HBARC*1000;
-    PRECISION mub0 = fabs(mub*HBARC*1000);
+    PRECISION alphaB0 = fabs(alphaB*HBARC*1000);
     if((100<=T0)&&(T0<=450)){
-        if((0<=mub0)&&(mub0<=400))
-            return InferredPrimaryVariable(mub0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=alphaB0)&&(alphaB0<=400))
+            return InferredPrimaryVariable(alphaB0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return InferredPrimaryVariable(400, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
     }else if(T0<100)
     {
-        if((0<=mub0)&&(mub0<=400))
-            return InferredPrimaryVariable(mub0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=alphaB0)&&(alphaB0<=400))
+            return InferredPrimaryVariable(alphaB0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return 0.0543361/HBARC/1000;
     }else
     {
-        if((0<=mub0)&&(mub0<=400))
-            return InferredPrimaryVariable(mub0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=alphaB0)&&(alphaB0<=400))
+            return InferredPrimaryVariable(alphaB0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return 22.5093/HBARC/1000;
     }
@@ -328,8 +328,8 @@ PRECISION dPdRhob(PRECISION e, PRECISION rhob){
 }
 
 PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){
-    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->Mubovert)*HBARC;
-    else return -primaryVariablesEOS(e, fabs(rhob), EOState->Mubovert)*HBARC;
+    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->alphab)*HBARC;
+    else return -primaryVariablesEOS(e, fabs(rhob), EOState->alphab)*HBARC;
 }
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {

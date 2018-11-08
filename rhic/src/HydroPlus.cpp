@@ -148,7 +148,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                 PRECISION rhobs = rhob[s];
                 PRECISION ps = p[s];
                 PRECISION Ts = T[s];
-                PRECISION alphaBs = muB[s];
+                PRECISION alphaBs = alphaB[s];
                 PRECISION entropy = equilibriumEntropy(es, rhobs, ps, Ts, alphaBs);
                 
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
@@ -158,9 +158,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                     //printf("equiPhiQ=%f",equiPhiQ);
                     
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
-                    eqPhiQp->phiQ[n][s] = equiPhiQ;
                     q->phiQ[n][s] = equiPhiQ;
-                    Q->phiQ[n][s] = equiPhiQ;
                 }
             }
         }

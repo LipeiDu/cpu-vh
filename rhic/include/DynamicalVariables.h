@@ -154,7 +154,7 @@ typedef struct
 {
     PRECISION *Pressure;
     PRECISION *Temperature;
-    PRECISION *Mubovert;
+    PRECISION *alphab;
     PRECISION *dpdrhob;
     PRECISION *sigmaB;
 } EQUATION_OF_STATE;
@@ -180,14 +180,14 @@ typedef struct
 /* instances
 /**************************************************************************************************************************************************/
 
-extern SLOW_MODES *eqPhiQ, *eqPhiQp, *eqPhiQS;  // Slow modes at equilibrium: updated, previous, intermediate values
+extern SLOW_MODES *eqPhiQ;  // Slow modes at equilibrium: updated, previous, intermediate values
 extern PRECISION *Qvec; // Q vectors of slow modes
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;
 
-extern PRECISION *e, *p, *rhob;
-extern PRECISION *muB, *muBp, *muBS;
+extern PRECISION *e, *p, *rhob, *seq;
+extern PRECISION *alphaB, *alphaBp, *alphaBS;
 extern PRECISION *T, *Tp, *TS;
 
 extern DYNAMICAL_SOURCE *Source;
@@ -206,40 +206,19 @@ void setCurrentConservedVariables();
 /**************************************************************************************************************************************************/
 
 void swapFluidVelocity(FLUID_VELOCITY **arr1, FLUID_VELOCITY **arr2) ;
-void swapSlowModes(SLOW_MODES **arr1, SLOW_MODES **arr2) ;
 void swapPrimaryVariables(PRECISION **arr1, PRECISION **arr2);
 
 /**************************************************************************************************************************************************/
 /* Ghost cells
 /**************************************************************************************************************************************************/
 
-void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
-PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
-);
+void setGhostCells(CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ alphaB, PRECISION * const __restrict__ T, PRECISION * const __restrict__ seq, SLOW_MODES *  const __restrict__ eqPhiQ);
 
-void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
-PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
-);
+void setGhostCellsKernelI(CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ alphaB, PRECISION * const __restrict__ T, PRECISION * const __restrict__ seq, SLOW_MODES *  const __restrict__ eqPhiQ);
 
-void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
-PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
-);
+void setGhostCellsKernelJ(CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ alphaB, PRECISION * const __restrict__ T, PRECISION * const __restrict__ seq, SLOW_MODES *  const __restrict__ eqPhiQ);
 
-void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q,
-PRECISION * const __restrict__ e, PRECISION * const __restrict__ p,
-FLUID_VELOCITY * const __restrict__ u, void * latticeParams,
-PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ muB,
-PRECISION * const __restrict__ T, SLOW_MODES *  const __restrict__ eqPhiQ
-);
+void setGhostCellsKernelK(CONSERVED_VARIABLES * const __restrict__ q, PRECISION * const __restrict__ e, PRECISION * const __restrict__ p, FLUID_VELOCITY * const __restrict__ u, void * latticeParams, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ alphaB, PRECISION * const __restrict__ T, PRECISION * const __restrict__ seq, SLOW_MODES *  const __restrict__ eqPhiQ);
 
 /**************************************************************************************************************************************************/
 /* column index and memory

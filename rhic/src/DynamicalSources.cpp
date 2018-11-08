@@ -22,11 +22,12 @@
 #include "../include/InitialConditionParameters.h"
 #include "../include/HydroParameters.h"
 
-
 using namespace std;
-//*********************************************************************************************************\
-//* Initialize the dynamical source terms
-//*********************************************************************************************************/
+
+
+/**************************************************************************************************************************************************/
+/* Initialize the dynamical source terms
+/**************************************************************************************************************************************************/
 
 void readInSource(int n, void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory)
 {
@@ -86,6 +87,10 @@ void readInSource(int n, void * latticeParams, void * initCondParams, void * hyd
     fclose(sourcefile);
 }
 
+/**************************************************************************************************************************************************/
+/* When dynamical source ends, zero it
+/**************************************************************************************************************************************************/
+
 void noSource(void * latticeParams, void * initCondParams)
 {
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -109,9 +114,9 @@ void noSource(void * latticeParams, void * initCondParams)
     }//i
 }
 
-//*********************************************************************************************************\
-//* Dynamical source terms from the jet traversing the medium
-//*********************************************************************************************************/
+/**************************************************************************************************************************************************/
+/* Dynamical source terms from the jet traversing the medium
+/**************************************************************************************************************************************************/
 
 void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp_dtau, double *pos) //dp_dtau is the jet energy loss, pos is the jet position
 {
@@ -145,7 +150,9 @@ void setDynamicalSources(void * latticeParams, void * initCondParams, double *dp
                 double x = (double)i * dx + xmin;
                 double y = (double)j * dy + ymin;
                 double z = (double)k * dz + zmin;
-                smearedPosition[s] = exp((-1.0)*(pos[1] - x) * (pos[1] - x) / width) * exp((-1.0)*(pos[2] - y) * (pos[2] - y) / width) * exp((-1.0)*(pos[3] - z) * (pos[3] - z) / width);
+                smearedPosition[s] = exp((-1.0)*(pos[1] - x) * (pos[1] - x) / width)
+                                   * exp((-1.0)*(pos[2] - y) * (pos[2] - y) / width)
+                                   * exp((-1.0)*(pos[3] - z) * (pos[3] - z) / width);
             }//k
         }//j
     }//i

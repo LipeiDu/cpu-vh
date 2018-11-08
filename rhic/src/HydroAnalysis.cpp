@@ -96,7 +96,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 PRECISION rhobIn = rhob[s];
                 PRECISION pIn = p[s];
                 PRECISION TIn = T[s];
-                PRECISION muBIn = muB[s];
+                PRECISION alphaBIn = alphaB[s];
                 PRECISION equiPhiQ[NUMBER_SLOW_MODES];
                 PRECISION PhiQ[NUMBER_SLOW_MODES];
                 
@@ -106,9 +106,9 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                     PhiQ[n] = q->phiQ[n][s];//for test
                 }
                 
-                PRECISION p,T,muB;
+                PRECISION p,T,alphaB;
 
-                getPrimaryVariablesFromSlowModes(&p, &T, &muB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, muBIn);
+                getPrimaryVariablesFromSlowModes(&p, &T, &alphaB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, alphaBIn);
             }
         }
     }

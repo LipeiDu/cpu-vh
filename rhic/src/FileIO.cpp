@@ -29,20 +29,7 @@ void output(const PRECISION * const var, double t, const char *pathToOutDir, con
 
 	int i,j,k;
 	int s;
-/*
-	for(i = 2; i < nx+2; ++i) {
-		x = (i-2 - (nx-1)/2.)*dx;
-		for(j = 2; j < ny+2; ++j) {
-			y = (j-2 - (ny-1)/2.)*dy;
-			offset = (nz+4) * (j + (ny+4) * i);
-			for(k = 2; k < nz+2; ++k) {
-				s = k + offset;
-				z = (k-2 - (nz-1)/2.)*dz;
-				fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,var[s]);
-			}
-		}
-	}
-*/
+
 	for(k = 2; k < nz+2; ++k) {
 		z = (k-2 - (nz-1)/2.)*dz;
 		for(j = 2; j < ny+2; ++j) {
@@ -50,7 +37,6 @@ void output(const PRECISION * const var, double t, const char *pathToOutDir, con
 			for(i = 2; i < nx+2; ++i) {
 				x = (i-2 - (nx-1)/2.)*dx;
 				s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                //if(x==0&&y==0)
 				fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,var[s]);
 			}
 		}

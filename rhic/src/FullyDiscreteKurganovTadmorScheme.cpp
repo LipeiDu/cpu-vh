@@ -30,8 +30,8 @@
 /**************************************************************************************************************************************************/
 
 void setNeighborCellsJK2(const PRECISION * const __restrict__ in, PRECISION * const __restrict__ out,
-int s, int ptr, int smm, int sm, int sp, int spp
-) {
+int s, int ptr, int smm, int sm, int sp, int spp)
+{
 	PRECISION data_ns= in[s];
 	*(out + ptr    ) = in[smm];
 	*(out + ptr + 1) = in[sm];
@@ -45,13 +45,8 @@ int s, int ptr, int smm, int sm, int sp, int spp
 /* contribution from t gradient of slow modes to tau component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
-void eulerStepKernelSource(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, CONSERVED_VARIABLES * const __restrict__ previousVars,
-const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p,
-const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar,
-const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ muB, const PRECISION * const __restrict__ muBp, const PRECISION * const __restrict__ T, const PRECISION * const __restrict__ Tp, SLOW_MODES *  const __restrict__ eqPhiQ, SLOW_MODES *  const __restrict__ eqPhiQp
-) {
+void eulerStepKernelSource(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, const PRECISION * const __restrict__ e, const PRECISION * const __restrict__ p, const FLUID_VELOCITY * const __restrict__ u, const FLUID_VELOCITY * const __restrict__ up, int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, PRECISION dy, PRECISION dz, PRECISION etabar, const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ alphaBp, const PRECISION * const __restrict__ T, const PRECISION * const __restrict__ Tp, const PRECISION * const __restrict__ seq, SLOW_MODES *  const __restrict__ eqPhiQ)
+{
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
@@ -92,11 +87,10 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 #ifdef HydroPlus
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
                     Q[ALL_NUMBER_CONSERVED_VARIABLES+n] = currrentVars->phiQ[n][s];
-                    Qp[ALL_NUMBER_CONSERVED_VARIABLES+n] = previousVars->phiQ[n][s]; // only time gradient of slow modes is calculated in this function, other components not initialized
                 }
 #endif
 
-				loadSourceTerms2(Q, Qp, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, muB, muBp, T, Tp[s], eqPhiQ, eqPhiQp);
+				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, alphaB, alphaBp, T, Tp[s], seq[s], eqPhiQ);
                 
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
 				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
@@ -147,11 +141,8 @@ const PRECISION * const __restrict__ rhob, const PRECISION * const __restrict__ 
 /* contribution from x gradient of slow modes to x component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
-void eulerStepKernelX(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const __restrict__ rhob
-) {
+void eulerStepKernelX(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e, int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const __restrict__ rhob)
+{
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
@@ -314,11 +305,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dx, const PRECISION * const _
 /* contribution from y gradient of slow modes to y component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
-void eulerStepKernelY(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const __restrict__ rhob
-) {
+void eulerStepKernelY(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e, int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const __restrict__ rhob)
+{
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
@@ -461,11 +449,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dy, const PRECISION * const _
 /* contribution from y gradient of slow modes to y component of baryon diffusion current included
 /**************************************************************************************************************************************************/
 
-void eulerStepKernelZ(PRECISION t,
-const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars,
-const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e,
-int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const __restrict__ rhob
-) {
+void eulerStepKernelZ(PRECISION t, const CONSERVED_VARIABLES * const __restrict__ currrentVars, CONSERVED_VARIABLES * const __restrict__ updatedVars, const FLUID_VELOCITY * const __restrict__ u, const PRECISION * const __restrict__ e, int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const __restrict__ rhob)
+{
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
@@ -610,9 +595,8 @@ int ncx, int ncy, int ncz, PRECISION dt, PRECISION dz, const PRECISION * const _
 /* two-step explicit Runge-Kutta for time integration
 /**************************************************************************************************************************************************/
 
-void convexCombinationEulerStepKernel(const CONSERVED_VARIABLES * const __restrict__ q, CONSERVED_VARIABLES * const __restrict__ Q,
-int ncx, int ncy, int ncz
-) {
+void convexCombinationEulerStepKernel(const CONSERVED_VARIABLES * const __restrict__ q, CONSERVED_VARIABLES * const __restrict__ Q, int ncx, int ncy, int ncz)
+{
 	for(int i = 2; i < ncx-2; ++i) {
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
@@ -850,7 +834,8 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
 /* Kurganov-Tadmor algorithm for integration of hyperbolic equations
 /**************************************************************************************************************************************************/
 
-void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q, CONSERVED_VARIABLES * __restrict__ Q, void * latticeParams, void * hydroParams) {
+void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q, CONSERVED_VARIABLES * __restrict__ Q, void * latticeParams, void * hydroParams)
+{
     
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
@@ -874,7 +859,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	//===================================================
     
     // Q: previous value, q: current value, qS: to be updated value. Q is added for time gradient of slow modes.
-	eulerStepKernelSource(t, q, qS, Q, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muB, muBp, T, Tp, eqPhiQ, eqPhiQp);
+	eulerStepKernelSource(t, q, qS, e, p, u, up, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, alphaB, alphaBp, T, Tp, seq, eqPhiQ);
     eulerStepKernelX(t, q, qS, u, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, q, qS, u, e, ncx, ncy, ncz, dt, dy, rhob);
     eulerStepKernelZ(t, q, qS, u, e, ncx, ncy, ncz, dt, dz, rhob);
@@ -882,13 +867,13 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	t+=dt;
 
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc.
-	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, muBS, TS, eqPhiQS);
+	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, alphaBS, TS, seq, eqPhiQ);
 
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
 #endif
 
-	setGhostCells(qS, e, p, uS, latticeParams, rhob, muBS, TS, eqPhiQS);
+	setGhostCells(qS, e, p, uS, latticeParams, rhob, alphaBS, TS, seq, eqPhiQ);
 
     
 	//===================================================
@@ -896,28 +881,27 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 	//===================================================
     
     // q: previous value, qS: current value, Q: to be updated value. q is added for time gradient slow modes
-	eulerStepKernelSource(t, qS, Q, q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, muBS, muB, TS, T, eqPhiQS, eqPhiQ);
+	eulerStepKernelSource(t, qS, Q, e, p, uS, u, ncx, ncy, ncz, dt, dx, dy, dz, etabar, rhob, alphaBS, alphaB, TS, T, seq, eqPhiQ);
 	eulerStepKernelX(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dx, rhob);
 	eulerStepKernelY(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dy, rhob);
 	eulerStepKernelZ(t, qS, Q, uS, e, ncx, ncy, ncz, dt, dz, rhob);
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
-    // u, muB etc will store the final updated value after setInferredVariablesKernel() and, in the next step, become the "current value". Before doing this,
-    // give their values to up, muBp etc, so that the "current value" will become the "previous value" stored in up, muBp etc. in the next step.
+    // u, alphaB etc will store the final updated value after setInferredVariablesKernel() and, in the next step, become the "current value". Before doing this,
+    // give their values to up, alphaBp etc, so that the "current value" will become the "previous value" stored in up, alphaBp etc. in the next step.
 	swapFluidVelocity(&up, &u);
-    swapPrimaryVariables(&muBp, &muB);
+    swapPrimaryVariables(&alphaBp, &alphaB);
     swapPrimaryVariables(&Tp, &T);
-    swapSlowModes(&eqPhiQp, &eqPhiQ);
     
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc. Q, e, p, u, rhob etc will store the final updated values
-	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, muB, T, eqPhiQ);
+	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, alphaB, T, seq, eqPhiQ);
     
 #ifndef IDEAL
 	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
 #endif
     
-	setGhostCells(Q, e, p, u, latticeParams, rhob, muB, T, eqPhiQ);
+	setGhostCells(Q, e, p, u, latticeParams, rhob, alphaB, T, seq, eqPhiQ);
     
     // setCurrentConservedVariables() in HydroPlugin.cpp swap q and Q
 }
