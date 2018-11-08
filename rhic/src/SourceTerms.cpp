@@ -14,8 +14,8 @@
 #include "../include/DynamicalVariables.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
 #include "../include/EquationOfState.h" // for bulk terms
-#include "../include/DynamicalSources.h"//Lipei
-#include "../include/FluxLimiter.h"//Lipei
+#include "../include/DynamicalSources.h"
+#include "../include/FluxLimiter.h"
 
 #include "../include/HydroPlus.h"
 
@@ -327,11 +327,13 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #ifdef HydroPlus
     PRECISION gammaQ = 0;
     PRECISION utInv = 1.0/ut;
-    PRECISION entropy = equilibriumEntropy(e, rhob, p, T, alphaB);
+    
     PRECISION corrL = xi(e, rhob);
     PRECISION corrL2 = corrL * corrL;
     
-    PRECISION gammaPhi = relaxationCoefficientPhi(rhob, entropy, T, corrL2);
+    //PRECISION entropy = equilibriumEntropy(e, rhob, p, T, alphaB);
+    
+    PRECISION gammaPhi = relaxationCoefficientPhi(rhob, seq, T, corrL2);
     
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {

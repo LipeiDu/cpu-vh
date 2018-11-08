@@ -33,10 +33,11 @@
 #define sigman 10.0
 #define ec 250.0
 #define rhobc 40.0
+#define Tc 200.0 // to be fixed
 
 // heat conductivity
 PRECISION lambdaT(PRECISION T){
-    return Cr * T * T;
+    return Cr * Tc * Tc;
 }
 
 // heat capacity density
@@ -146,14 +147,11 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                 
                 PRECISION es = e[s];
                 PRECISION rhobs = rhob[s];
-                PRECISION ps = p[s];
-                PRECISION Ts = T[s];
-                PRECISION alphaBs = alphaB[s];
-                PRECISION entropy = equilibriumEntropy(es, rhobs, ps, Ts, alphaBs);
+                PRECISION seqs = seq[s];
                 
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
                     
-                    PRECISION equiPhiQ = equilibriumPhiQ(es, rhobs, entropy, Qvec[n]);
+                    PRECISION equiPhiQ = equilibriumPhiQ(es, rhobs, seqs, Qvec[n]);
                     
                     //printf("equiPhiQ=%f",equiPhiQ);
                     

@@ -608,6 +608,11 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 alphaB[s] = _alphaB;
 #endif
 #ifdef HydroPlus
+                PRECISION peq = equilibriumPressure(_e,_rhob);
+                PRECISION Teq = effectiveTemperature(_e,_rhob);
+                PRECISION alphaBeq = chemicalPotentialOverT(_e,_rhob);
+                seq[s] = equilibriumEntropy(_e, _rhob, peq, Teq, alphaBeq);
+                
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
                 {
                     eqPhiQ->phiQ[n][s] = _equiPhiQ[n];
