@@ -52,10 +52,12 @@ void eulerStepKernelSource(PRECISION t, const CONSERVED_VARIABLES * const __rest
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 
+                //=====================================================================================
+                // I: current variables
+                //=====================================================================================
+                
 				PRECISION Q[NUMBER_ALL_EVOLVING_VARIABLES];
-                PRECISION Qp[NUMBER_ALL_EVOLVING_VARIABLES];
-				PRECISION S[NUMBER_ALL_EVOLVING_VARIABLES];
-
+				
 				Q[0] = currrentVars->ttt[s];
 				Q[1] = currrentVars->ttx[s];
 				Q[2] = currrentVars->tty[s];
@@ -90,12 +92,21 @@ void eulerStepKernelSource(PRECISION t, const CONSERVED_VARIABLES * const __rest
                 }
 #endif
 
+                //=====================================================================================
+                // II: source terms
+                //=====================================================================================
+                
+                PRECISION S[NUMBER_ALL_EVOLVING_VARIABLES];
 				loadSourceTerms2(Q, S, u, up->ut[s], up->ux[s], up->uy[s], up->un[s], t, e, p, s, ncx, ncy, ncz, etabar, dt, dx, dy, dz, Source, rhob, alphaB, alphaBp, T, Tp[s], seq[s], eqPhiQ);
                 
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
 				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
 					*(result+n) = *(Q+n) + dt * ( *(S+n) );
 				}
+                
+                //=====================================================================================
+                // III: update variables
+                //=====================================================================================
                 
 				updatedVars->ttt[s] = result[0];
 				updatedVars->ttx[s] = result[1];
@@ -147,8 +158,12 @@ void eulerStepKernelX(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
+                
+                //=====================================================================================
+                // I: current variables
+                //=====================================================================================
+                
 				PRECISION I[5 * NUMBER_ALL_EVOLVING_VARIABLES];
-				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
 				// calculate neighbor cell indices;
 				int sim  = s-1;
@@ -191,75 +206,30 @@ void eulerStepKernelX(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
                 }
 #endif
                 
+                //=====================================================================================
+                // II: source terms
+                //=====================================================================================
+                
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
                 
-				flux(I, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
+                PRECISION Hforward[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(I, Hforward, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
+                
+                PRECISION Hbackwards[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(I, Hbackwards, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
+                
+                PRECISION Hx[NUMBER_ALL_EVOLVING_VARIABLES];
+                loadSourceTermsX(I, Hx, u, s, dx);
+                
 				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) = - *(H+n);
-				}
-                
-				flux(I, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusX, &Fx, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) /= dx;
-				}
-
-                //===================================================
-                // Conserved currents
-                //===================================================
-#ifndef IDEAL
-                //------------Non-ideal case------------
-                
-				loadSourceTermsX(I, H, u, s, dx);
-
-                
-                //for energy-momentum tensor
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) *= dt;
-				}
-
-                //for baryon current
-#ifdef NBMU
-                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
-
-#else
-                //------------Ideal case------------
-                
-                //for energy-momentum tensor
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) *= dt;
-				}
-#ifdef NBMU
-                //for baryon current
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
-#endif
-
-                //===================================================
-                // Dissipative currents
-                //===================================================
-                
-                // the components of array H for dissipative currents are not initialized (so it's possible to have random values), but they are not added to update these components, so it's safe. This part should be cleaned. lipei Oct 22/2018
-                
-#ifdef PIMUNU
-				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-					*(result+n) *= dt;
-                }
-#endif
-#ifdef VMU
-                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                    *(result+n) = (*(Hbackwards+n) - *(Hforward+n))/dx + *(Hx+n);
                     *(result+n) *= dt;
-                }
-#endif
-#ifdef HydroPlus
-                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
-                    *(result+n) *= dt;
-                }
-#endif
+				}
                 
+                
+                //=====================================================================================
+                // III: update variables
+                //=====================================================================================
                 
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
@@ -311,6 +281,11 @@ void eulerStepKernelY(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
+                
+                //=====================================================================================
+                // I: current variables
+                //=====================================================================================
+                
 				PRECISION J[5* NUMBER_ALL_EVOLVING_VARIABLES];
 				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
@@ -355,55 +330,29 @@ void eulerStepKernelY(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
                 }
 #endif
                 
+                //=====================================================================================
+                // II: source terms
+                //=====================================================================================
                 
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
-				flux(J, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) = - *(H+n);
-				}
                 
-				flux(J, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) /= dy;
-				}
-#ifndef IDEAL
-				loadSourceTermsY(J, H, u, s, dy);
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) *= dt;
-				}
-                
-#ifdef NBMU
-                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
-#else
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) *= dt;
-				}
-#ifdef NBMU
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
-#endif
-                
-#ifdef PIMUNU
-				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-					*(result+n) *= dt;
-				}
-#endif
-#ifdef VMU
-                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
-                    *(result+n) *= dt;
-                }
-#endif
-#ifdef HydroPlus
-                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
-                    *(result+n) *= dt;
-                }
-#endif
+                PRECISION Hforward[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(J, Hforward, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
 
-                
+                PRECISION Hbackwards[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(J, Hbackwards, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusY, &Fy, t, e[s], rhob[s], u->ut[s]);
+
+                PRECISION Hy[NUMBER_ALL_EVOLVING_VARIABLES];
+				loadSourceTermsY(J, Hy, u, s, dy);
+
+                for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
+                    *(result+n) = (*(Hbackwards+n) - *(Hforward+n))/dy + *(Hy+n);
+                    *(result+n) *= dt;
+                }
+
+                //=====================================================================================
+                // III: update variables
+                //=====================================================================================
                 
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
@@ -455,6 +404,11 @@ void eulerStepKernelZ(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 		for(int j = 2; j < ncy-2; ++j) {
 			for(int k = 2; k < ncz-2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
+                
+                //=====================================================================================
+                // I: current variables
+                //=====================================================================================
+                
 				PRECISION K[5 * NUMBER_ALL_EVOLVING_VARIABLES];
 				PRECISION H[NUMBER_ALL_EVOLVING_VARIABLES];
 
@@ -500,57 +454,29 @@ void eulerStepKernelZ(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
                 }
 #endif
                 
+                //=====================================================================================
+                // II: source terms
+                //=====================================================================================
+                
 				PRECISION result[NUMBER_ALL_EVOLVING_VARIABLES];
-				flux(K, H, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) = -*(H+n);
-				}
                 
-				flux(K, H, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
-				for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) /= dz;
-				}
-                
-#ifndef IDEAL
-				loadSourceTermsZ(K, H, u, s, t, dz);
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) += *(H+n);
-					*(result+n) *= dt;
-				}
+                PRECISION Hforward[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(K, Hforward, &rightHalfCellExtrapolationForward, &leftHalfCellExtrapolationForward, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
 
-#ifdef NBMU
-                *(result+NUMBER_CONSERVED_VARIABLES) += *(H+NUMBER_CONSERVED_VARIABLES);
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
+                PRECISION Hbackwards[NUMBER_ALL_EVOLVING_VARIABLES];
+				flux(K, Hbackwards, &rightHalfCellExtrapolationBackwards, &leftHalfCellExtrapolationBackwards, &spectralRadiusZ, &Fz, t, e[s], rhob[s], u->ut[s]);
 
-#else
-				for (unsigned int n = 0; n < 4; ++n) {
-					*(result+n) *= dt;
-				}
+                PRECISION Hz[NUMBER_ALL_EVOLVING_VARIABLES];
+				loadSourceTermsZ(K, Hz, u, s, t, dz);
 
-#ifdef NBMU
-                *(result+NUMBER_CONSERVED_VARIABLES) *= dt;
-#endif
-#endif
-        
-                
-#ifdef PIMUNU
-				for (unsigned int n = 4; n < NUMBER_CONSERVED_VARIABLES; ++n) {
-					*(result+n) *= dt;
-				}
-#endif
-#ifdef VMU
-                for (unsigned int n = NUMBER_CONSERVED_VARIABLES+1; n < ALL_NUMBER_CONSERVED_VARIABLES; ++n) {
+                for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
+                    *(result+n) = (*(Hbackwards+n) - *(Hforward+n))/dz + *(Hz+n);
                     *(result+n) *= dt;
                 }
-#endif
-#ifdef HydroPlus
-                for(unsigned int n = ALL_NUMBER_CONSERVED_VARIABLES; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n){
-                    *(result+n) *= dt;
-                }
-#endif
                 
+                //=====================================================================================
+                // III: update variables
+                //=====================================================================================
                 
 				updatedVars->ttt[s] += result[0];
 				updatedVars->ttx[s] += result[1];
@@ -888,8 +814,7 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
 
 	convexCombinationEulerStepKernel(q, Q, ncx, ncy, ncz);
 
-    // u, alphaB etc will store the final updated value after setInferredVariablesKernel() and, in the next step, become the "current value". Before doing this,
-    // give their values to up, alphaBp etc, so that the "current value" will become the "previous value" stored in up, alphaBp etc. in the next step.
+    // u, alphaB etc will store the final updated value after setInferredVariablesKernel() and, in the next step, become the "current value".
 	swapFluidVelocity(&up, &u);
     swapPrimaryVariables(&alphaBp, &alphaB);
     swapPrimaryVariables(&Tp, &T);

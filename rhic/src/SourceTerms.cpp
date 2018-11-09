@@ -351,6 +351,11 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 void loadSourceTermsX(const PRECISION * const __restrict__ I, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dx
 ) {
+    for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
+        S[n] = 0.0;
+    }
+    
+#ifndef IDEAL
 	//=========================================================
 	// spatial derivatives of the conserved variables \pi^{\mu\nu}
 	//=========================================================
@@ -409,6 +414,7 @@ PRECISION d_dx
     S[NUMBER_CONSERVED_VARIABLES] = 0.0;
 #endif
 #endif
+#endif
 }
 
 
@@ -419,6 +425,11 @@ PRECISION d_dx
 void loadSourceTermsY(const PRECISION * const __restrict__ J, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s,
 PRECISION d_dy
 ) {
+    for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
+        S[n] = 0.0;
+    }
+    
+#ifndef IDEAL
 	//=========================================================
 	// spatial derivatives of the conserved variables \pi^{\mu\nu}
 	//=========================================================
@@ -477,6 +488,7 @@ PRECISION d_dy
     S[NUMBER_CONSERVED_VARIABLES] = 0.0;
 #endif
 #endif
+#endif
 }
 
 
@@ -487,6 +499,11 @@ PRECISION d_dy
 void loadSourceTermsZ(const PRECISION * const __restrict__ K, PRECISION * const __restrict__ S, const FLUID_VELOCITY * const __restrict__ u, int s, PRECISION t,
 PRECISION d_dz
 ) {
+    for (unsigned int n = 0; n < NUMBER_ALL_EVOLVING_VARIABLES; ++n) {
+        S[n] = 0.0;
+    }
+    
+#ifndef IDEAL
 	//=========================================================
 	// spatial derivatives of the conserved variables \pi^{\mu\nu}
 	//=========================================================
@@ -543,6 +560,7 @@ PRECISION d_dz
     S[NUMBER_CONSERVED_VARIABLES] = dnnbt*vn - dnnbn;
 #else
     S[NUMBER_CONSERVED_VARIABLES] = 0.0;
+#endif
 #endif
 #endif
 }
