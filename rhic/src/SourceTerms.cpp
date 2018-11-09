@@ -9,7 +9,6 @@
 #include <math.h> // for math functions
 
 #include "../include/SourceTerms.h"
-//#include "../include/FiniteDifference.h"
 #include "../include/PrimaryVariables.h"
 #include "../include/DynamicalVariables.h"
 #include "../include/FullyDiscreteKurganovTadmorScheme.h" // for const params
@@ -212,14 +211,20 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION ps  = pitt*stt-2*pitx*stx-2*pity*sty+pixx*sxx+2*pixy*sxy+piyy*syy - 2*pitn*stn*t2+2*pixn*sxn*t2+2*piyn*syn*t2+pinn*snn*t2*t2;
 
 	PRECISION I4tt = (pitt * stt - pitx * stx  - pity * sty - t2 * pitn * stn) - (1 - ut2) * ps / 3;
-	PRECISION I4tx = (pitt * stx + pitx * stt) / 2 - (pitx * sxx + pixx * stx) / 2 - (pity * sxy + pixy * sty) / 2 - t2 * (pitn * sxn + pixn * stn) / 2 + (ut * ux) * ps / 3;
-	PRECISION I4ty = (pitt * sty + pity * stt) / 2 - (pitx * sxy + pixy * stx) / 2 - (pity * syy + piyy * sty) / 2 - t2 * (pitn * syn + piyn * stn) / 2 + (ut * uy) * ps / 3;
-	PRECISION I4tn = (pitt * stn + pitn * stt) / 2 - (pitx * sxn + pixn * stx) / 2 - (pity * syn + piyn * sty) / 2 - t2 * (pitn * snn + pinn * stn) / 2 + (ut * un) * ps / 3;
+	PRECISION I4tx = (pitt * stx + pitx * stt) / 2 - (pitx * sxx + pixx * stx) / 2 - (pity * sxy + pixy * sty) / 2
+                    - t2 * (pitn * sxn + pixn * stn) / 2 + (ut * ux) * ps / 3;
+	PRECISION I4ty = (pitt * sty + pity * stt) / 2 - (pitx * sxy + pixy * stx) / 2 - (pity * syy + piyy * sty) / 2
+                    - t2 * (pitn * syn + piyn * stn) / 2 + (ut * uy) * ps / 3;
+	PRECISION I4tn = (pitt * stn + pitn * stt) / 2 - (pitx * sxn + pixn * stx) / 2 - (pity * syn + piyn * sty) / 2
+                    - t2 * (pitn * snn + pinn * stn) / 2 + (ut * un) * ps / 3;
 	PRECISION I4xx = (pitx * stx - pixx * sxx  - pixy * sxy - t2 * pixn * sxn) + (1 + ux2) * ps / 3;
-	PRECISION I4xy = (pitx * sty + pity * stx) / 2 - (pixx * sxy + pixy * sxx) / 2 - (pixy * syy + piyy * sxy) / 2 - t2 * (pixn * syn + piyn * sxn) / 2 + (ux * uy) * ps / 3;
-	PRECISION I4xn = (pitx * stn + pitn * stx) / 2 - (pixx * sxn + pixn * sxx) / 2 - (pixy * syn + piyn * sxy) / 2 - t2 * (pixn * snn + pinn * sxn) / 2 + (ux * un) * ps / 3;
+	PRECISION I4xy = (pitx * sty + pity * stx) / 2 - (pixx * sxy + pixy * sxx) / 2 - (pixy * syy + piyy * sxy) / 2
+                    - t2 * (pixn * syn + piyn * sxn) / 2 + (ux * uy) * ps / 3;
+	PRECISION I4xn = (pitx * stn + pitn * stx) / 2 - (pixx * sxn + pixn * sxx) / 2 - (pixy * syn + piyn * sxy) / 2
+                    - t2 * (pixn * snn + pinn * sxn) / 2 + (ux * un) * ps / 3;
 	PRECISION I4yy = (pity * sty - pixy * sxy  - piyy * syy - t2 * piyn * syn) + (1 + uy2) * ps / 3;
-	PRECISION I4yn = (pity * stn + pitn * sty) / 2 - (pixy * sxn + pixn * sxy) / 2 - (piyy * syn + piyn * syy) / 2 - t2 * (piyn * snn + pinn * syn) / 2 + (uy * un) * ps / 3;
+	PRECISION I4yn = (pity * stn + pitn * sty) / 2 - (pixy * sxn + pixn * sxy) / 2 - (piyy * syn + piyn * syy) / 2
+                    - t2 * (piyn * snn + pinn * syn) / 2 + (uy * un) * ps / 3;
 	PRECISION I4nn = (pitn * stn - pixn * sxn  - piyn * syn - t2 * pinn * snn) + (1 / t2 + un2) * ps / 3;
 
 	//*********************************************************\
@@ -285,7 +290,6 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION tau_n = Cb/T;
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
-    PRECISION lambda_alphaphi = 1.0; // extra terms contributing to baryon diffusion from slow modes
 
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
     PRECISION NBI1t = ut * facNBI1;
@@ -783,8 +787,6 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION dxalphaB = (*(alphaBvec + s + 1) - *(alphaBvec + s - 1)) * facX;
     PRECISION dyalphaB = (*(alphaBvec + s + d_ncx) - *(alphaBvec + s - d_ncx)) * facY;
     PRECISION dnalphaB = (*(alphaBvec + s + stride) - *(alphaBvec + s - stride)) * facZ;
-    
-    //termX[s] = baryonDiffusionCoefficient(T, rhobs, alphaBs, es, pc);//baryonDiffusionConstant(T, alphaBs*T)*T;//
     
     /*PRECISION mubxp1 = muBvec[s+1];
     PRECISION mubxp2 = muBvec[s+2];

@@ -153,8 +153,6 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                     
                     PRECISION equiPhiQ = equilibriumPhiQ(es, rhobs, seqs, Qvec[n]);
                     
-                    //printf("equiPhiQ=%f",equiPhiQ);
-                    
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
                     q->phiQ[n][s] = equiPhiQ;
                 }
@@ -176,8 +174,6 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION corrL = xi(eIn, rhobIn); // correlation length
     PRECISION corrL2 = corrL * corrL;
     
-    //printf("xi =%f\n",corrL);
-    
     PRECISION s = equilibriumEntropy(eIn, rhobIn, pIn, TIn, alphaBIn);
     PRECISION heatC = Cp(s, rhobIn, corrL2); // heat capacity
     
@@ -186,9 +182,6 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION dlnXi_drhob = dlnXidrhob(eIn, rhobIn);
     PRECISION dlnPhi0_de = dlnPhi0de(TIn, s, dlnXi_de);
     PRECISION dlnPhi0_drhob = dlnPhi0drhob(alphaBIn, rhobIn, s, dlnXi_drhob);
-    
-    
-    //printf("corrL =%f\t dlnPhi0_de =%f\t dlnPhi0_drhob =%f\t dlnXi_de =%f\t dlnXi_drhob =%f\t \n",corrL,dlnPhi0_de,dlnPhi0_drhob,dlnXi_de,dlnXi_drhob);
     
     PRECISION entropy = 0.0;
     PRECISION alpha = 0.0;
@@ -200,8 +193,6 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     // contributions from slow modes to alpha, beta and entropy
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         
-        //printf("n=%d,equiPhiQ[n]=%f\n",n,equiPhiQ[n]);
-        
         // ln(Phi/eqPhi) and (Phi/eqPhi-1)
         PRECISION phiRatio = PhiQ[n] / (equiPhiQ[n] + 1e-15);
         PRECISION phiRatioLog = log(phiRatio);
@@ -212,8 +203,6 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         PRECISION qL = Q * corrL;
         PRECISION qL2= qL * qL;
         PRECISION qLf2 = qL / (1 + qL2);
-        
-        //printf("phiRatio =%f\t qLf2=%.4e\n",phiRatio,qLf2);
         
         // Q^2
         PRECISION Q2 = Q * Q;
@@ -233,16 +222,12 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         // delta entropy, Eq.(85)
         PRECISION intEntropy = QphiRatioLog - QphiRatioOne;
         entropy += intEntropy;
-        
-        //printf("%f\t%f\t%f\t%f\n",Qvec[n],intEntropy,intBeta,intAlpha);
     }
     
     // contributions from slow modes to entrop, inverse temperature, chemical potential over temperature and pressure
     PRECISION deltaS = facQ * entropy;
     PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
-    
-    //printf("deltaS=%f\t deltaAlphaB=%f\t deltaBeta=%f\n",deltaS,deltaAlphaB,deltaBeta);
     
     // variables(+) with contribution from slow modes
     *T = 1 / (1/TIn + deltaBeta);

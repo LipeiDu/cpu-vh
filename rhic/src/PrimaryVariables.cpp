@@ -133,14 +133,12 @@ void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e
 {
     PRECISION vAbsoluteError = 10.0;
     PRECISION vRelativeError = 10.0;
-    //printf("vPrev=%5e\n",vPrev);
     
     PRECISION e0, rhob0, p0, T0, alphaB0, v0, equiPhiQ0[NUMBER_SLOW_MODES];
     
     for(int j = 0; j < MAX_ITERS; ++j)
     {
-        //printf("v j=%d\n",j);
-
+       
         e0 = M0 - vPrev * Ms;
         rhob0 = N0 * sqrt(1 - vPrev * vPrev);
         
@@ -154,15 +152,12 @@ void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e
         for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
         {
             equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, seq, Qvec[n]);
-            //printf("equiPhiQ0[%d] = %5e\n",n,equiPhiQ0[n]);
         }
         
         getPrimaryVariablesFromSlowModes(&p0, &T0, &alphaB0, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq);
         
         // recalculate the flow velocity, with p(+) from Hydro+
         v0 = Ms/(M0 + p0 + Pi);
-        
-        //printf("v0=%5e\n",v0);
         
         vAbsoluteError = fabs(v0 - vPrev);
         vRelativeError = 2 * vAbsoluteError/(v0 + vPrev + 1.e-15);
@@ -173,15 +168,12 @@ void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e
         vPrev = v0;
         
         if(j == MAX_ITERS-1) printf("v = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,N0);
-        //printf("in the loop: Teq=%5e,\t T0=%5e,\t alphaBeq=%5e,\t alphaB0=%5e,\t peq=%5e,\t p0=%5e\n",Teq,T0,alphaBeq,alphaB0,peq,p0);
     }
     
     // after iteration, update v, e, rhob, p, T, alphaB and eqPhiQ
     *v = v0;
     *e = e0;
     *rhob = rhob0;
-    
-    //printf("rhob0 = %5e, *rhob=%5e\n",rhob0,*rhob);
     
     *p = p0;
     *T = T0;
@@ -203,7 +195,6 @@ void InferredVariablesUtauIterationConverge(PRECISION * const __restrict__ e, PR
     
     for(int j = 0; j < MAX_ITERS; ++j)
     {
-        //printf("utau j=%d\n",j);
         e0 = M0 - Ms * sqrt(1 - 1 / (utPrev * utPrev));
         rhob0 = N0/utPrev;
         
@@ -454,15 +445,13 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     *alphaB = chemicalPotentialOverT(*e, *rhob);
     if (*alphaB>=0 && *alphaB < 1.e-7) *alphaB = 1.e-7;
     else if (*alphaB <=0 && *alphaB > -1.e-7)  *alphaB = -1.e-7;
-
-
+    
+#else // HydroPlus
+    
     //========================================================================================
     // SECTION III: baryon evolution is on, slow modes are evolved
     //========================================================================================
-    
     // Note: the root sloving routine below, which is not Newton's method, is adapted from a version of MUSIC
-    
-#else // HydroPlus
     
     // STEP I: setup
     
@@ -472,12 +461,9 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     
     PRECISION v = 0;
     
-    //printf("Before: vPrev = %5e\n", vPrev);
-    
     // STEP II: update v or utau, and then calculate e, rhob and p with contributions from slow modes
     
     InferredVariablesVelocityIterationConverge(e, rhob, p, T, alphaB, &v, equiPhiQ, M0, Ms, Pi, N0, vPrev, PhiQ, absoluteError, relativeError);
-    //printf("After: rhob = %5e\n", *rhob);
     
     if (isnan(v))
     {
@@ -496,8 +482,6 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
             printf("ut = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t N0=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
         }
     }
-    
-    
     
     // STEP III: with updated pressure(+), update ux, uy, un
     
@@ -575,7 +559,6 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
             
                 // old flow velocity
                 PRECISION ut_s = uPrev->ut[s];
-                //printf("old M0 = %5e \n",(e[s]+p[s])*(ut_s*ut_s)-p[s]);
                 
                 //===================================================================
                 // _e, _rhob, _p, _alphaB and _equiPhiQ etc will have updated values.
@@ -584,7 +567,6 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 PRECISION _e,_rhob,_p,_T,_alphaB,_ut,_ux,_uy,_un;
                 PRECISION _equiPhiQ[NUMBER_SLOW_MODES];
                 
-                //printf("_rhob = %5e\n",_rhob);
                 getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&_ut,&_ux,&_uy,&_un,rhob[s],&_rhob,&_T,&_alphaB,_equiPhiQ);
                 
                 //===================================================================
@@ -600,10 +582,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 u->ux[s] = _ux;
                 u->uy[s] = _uy;
                 u->un[s] = _un;
-                //printf("updated M0 = %5e,\t reconst M0 = %5e\n",q->ttt[s]-q->pitt[s],(_e+_p)*(_ut*_ut)-_p);
-                //printf("updated Nb^tau = %5e,\t reconst Nb^tau = %5e\n",q->Nbt[s],rhob[s]*_ut+q->nbt[s]);
-                //printf("updated T^tautau = %5e,\t reconst T^tautau = %5e\n",q->ttt[s],(_e+_p)*(_ut*_ut)-_p+q->pitt[s]);
-                //printf("updated M1 = %5e,\t reconst M1 = %5e\n",(q->ttx[s])-(q->pitx[s]),(_e+_p+q->Pi[s])*(_ut*_ux));
+
 #ifdef NBMU
                 alphaB[s] = _alphaB;
 #endif
@@ -616,7 +595,6 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
                 {
                     eqPhiQ->phiQ[n][s] = _equiPhiQ[n];
-                    //printf("_equiPhiQ[n]=%f\n",_equiPhiQ[n]);
                 }
 #endif
             }
