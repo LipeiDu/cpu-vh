@@ -15,11 +15,11 @@
 /*********************************************************/
 //Main switch//
 
-#define PIMUNU
-#define PI
+//#define PIMUNU
+//#define PI
 
 #define NBMU
-#define VMU
+//#define VMU
 
 #ifdef NBMU
 #define RootSolver_with_Baryon
@@ -27,7 +27,7 @@
 #endif
 
 // Slow modes only evolve in non-ideal case in the code
-#define HydroPlus
+//#define HydroPlus
 
 /*********************************************************/
 //Conservation laws//

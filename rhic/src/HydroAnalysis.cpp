@@ -8,6 +8,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <iostream>//Lipei
+#include <istream>//Lipei
+#include <fstream>//Lipei
+#include <stdio.h>//Lipei
+#include <stdlib.h>//Lipei
+#include <cassert>//Lipei
+#include <string>//Lipei
+#include <iomanip>//by Lipei
+using namespace std;//Lipei
 
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
@@ -16,7 +25,7 @@
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 
-
+#define HBARC 0.197326938
 void outputAnalysis(double t, const char *outputDir, void * latticeParams)
 {
     FILE *fp;

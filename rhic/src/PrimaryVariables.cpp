@@ -14,11 +14,12 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-#define MAX_ITERS 100
+#define MAX_ITERS 10000
 
+#define Method_Newton
 
 /**************************************************************************************************************************************************/
-/* calculate v, u^tau or energy density
+/* calculate v, u^tau or energy density, Newton method
 /**************************************************************************************************************************************************/
 
 // designed for the case without baryon evolution
@@ -51,10 +52,11 @@ PRECISION energyDensityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRE
 }
 
 // designed for the case with baryon evolution, but no slow modes
-PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION N0, PRECISION vPrev) {
-    PRECISION e0 = ePrev;
-    PRECISION rhob0 = rhobPrev;
+PRECISION velocityFromConservedVariables(PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION vPrev) {
+
     PRECISION v0 = vPrev;
+    PRECISION e0 = M0 - v0*Ms;
+    PRECISION rhob0 = N0*sqrt(1-v0*v0);
     PRECISION alpha = 1;
     
     for(int j = 0; j < MAX_ITERS; ++j) {
@@ -62,37 +64,30 @@ PRECISION velocityFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISIO
         PRECISION cs2  = speedOfSoundSquared(e0, rhob0);
         PRECISION dp_drhob = dPdRhob(e0, rhob0);
         
-        PRECISION cst2 = p/e0;
-        PRECISION dcst2_de = 1/e0 * cs2 - p/e0/e0;
-        PRECISION dcst2_drhob = 1/e0 * dp_drhob;
-        PRECISION dcst2_dv = -dcst2_de * M - dcst2_drhob * N0 * v0/sqrt(1-v0*v0);
-        
-        PRECISION A = M0*(1+cst2)+Pi;
-        PRECISION B = A*A-4*cst2*M*M;
-        
-        PRECISION f = A*v0 + sqrt(B)*v0 - 2*M;
-        PRECISION fp = A + v0*M0*dcst2_dv + sqrt(B) + v0*(A*M0*dcst2_dv - 2*M*M*dcst2_dv)/sqrt(B);
+        PRECISION f = v0 - Ms / (M0 + p + Pi);
+        PRECISION fp = 1 - Ms /(M0 + p + Pi)/(M0 + p + Pi) * ( Ms * cs2 + N0 * dp_drhob * v0 / sqrt(1-v0*v0));
         PRECISION v = v0 - alpha*f/fp;
 
         if(fabs(v - v0) <=  0.001 * fabs(v)) return v;
         
         v0 = v;
-        e0 = M0 - v0*M;
+        e0 = M0 - v0*Ms;
         rhob0 = N0*sqrt(1-v0*v0);
         
         if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillates back and forth forever
     }
     
-    printf("v0 = Maxiter.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t M =%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,M,Pi,rhobPrev,N0);
+    printf("v0 = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,N0);
     
     return v0;
 }
 
 // designed for the case with baryon evolution, but no slow modes
-PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M, PRECISION Pi, PRECISION rhobPrev, PRECISION N0, PRECISION utPrev) {
-    PRECISION e0 = ePrev;
-    PRECISION rhob0 = rhobPrev;
+PRECISION utauFromConservedVariables(PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION utPrev) {
+
     PRECISION u0 = utPrev;
+    PRECISION e0 = M0 - Ms * sqrt(1 - 1 / (u0 * u0));
+    PRECISION rhob0 = N0 / u0;
     PRECISION alpha = 1;
     
     for(int j = 0; j < MAX_ITERS; ++j) {
@@ -100,33 +95,107 @@ PRECISION utauFromConservedVariables(PRECISION ePrev, PRECISION M0, PRECISION M,
         PRECISION cs2  = speedOfSoundSquared(e0, rhob0);
         PRECISION dp_drhob = dPdRhob(e0, rhob0);
         
-        PRECISION cst2 = p/e0;
-        PRECISION dcst2_de = 1/e0 * cs2 - p/e0/e0;
-        PRECISION dcst2_drhob = 1/e0 * dp_drhob;
-        PRECISION groot = sqrt(u0*u0-1);
+        PRECISION u02 = u0 * u0;
+        PRECISION v0 = sqrt(1 - 1 / u02);
+        PRECISION de_du0   = - Ms / (u02 * u0 * v0 + 1.e-10);
+        PRECISION drhob_du0 = - N0 / (u02 + 1.e-10);
+        PRECISION dp_du0 = dp_drhob * drhob_du0 + cs2 * de_du0;
         
-        PRECISION dcst2_du = -dcst2_de * M/(u0*u0*groot) - dcst2_drhob * N0/(u0*u0);
+        PRECISION epsum = e0 + p + Pi;
+        PRECISION mpsum = M0 + p + Pi;
         
-        PRECISION A = M0*(1+cst2)+Pi;
-        PRECISION B = A*A-4*cst2*M*M;
+        PRECISION f = u0 - sqrt(mpsum / epsum);
+        PRECISION fp  = 1 - 0.5 * dp_du0 * (1 - mpsum / epsum) / sqrt(mpsum * epsum);
         
-        PRECISION f = A + sqrt(B) - 2*M*u0/groot;
-        PRECISION fp = (M0 + (A*M0-2*M*M)/sqrt(B))*dcst2_du + 2*M/(groot*groot*groot);
         PRECISION u = u0 - alpha*f/fp;
         
         if(fabs(u - u0) <=  0.001 * fabs(u)) return u;
         
         u0 = u;
-        e0 = M0 - M*sqrt(1-1/(u0*u0));
-        rhob0 = N0/u0;
+        e0 = M0 - Ms * sqrt(1 - 1 / (u0 * u0));
+        rhob0 = N0 / u0;
         
         if(j == floor(0.4 * MAX_ITERS)) alpha = 0.9;//In case the root solver oscillates back and forth forever
     }
     
-    printf("u0 = Maxiter.\t uPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t M =%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,M,Pi,rhobPrev,N0);
+    printf("u0 = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms =%5e,\t Pi=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,N0);
     
     return u0;
 }
+
+/**************************************************************************************************************************************************/
+/* calculate v, u^tau, non Newton method
+/**************************************************************************************************************************************************/
+
+// designed for the case with baryon evolution, but no slow modes, not Newton method
+PRECISION velocityIterationFromConservedVariables(PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION vPrev, PRECISION absoluteError, PRECISION relativeError) {
+    
+    PRECISION vAbsoluteError = 10.0;
+    PRECISION vRelativeError = 10.0;
+    
+    PRECISION v0 = vPrev;
+    
+    PRECISION e0 = M0 - vPrev * Ms;
+    PRECISION rhob0 = N0 * sqrt(1 - vPrev * vPrev);
+    
+    for(int j = 0; j < MAX_ITERS; ++j) {
+        
+        PRECISION p0 = equilibriumPressure(e0, rhob0);
+        
+        v0 = Ms/(M0 + p0 + Pi);
+        
+        vAbsoluteError = fabs(v0 - vPrev);
+        vRelativeError = 2 * vAbsoluteError/(v0 + vPrev + 1.e-15);
+        
+        if (vAbsoluteError < absoluteError && vRelativeError < relativeError)
+            return v0;
+        
+        vPrev = v0;
+        e0 = M0 - vPrev * Ms;
+        rhob0 = N0 * sqrt(1 - vPrev * vPrev);
+    }
+    
+    printf("v0 = Maxiter.\t vPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,N0);
+    
+    return v0;
+}
+
+// designed for the case with baryon evolution, but no slow modes, not Newton method
+PRECISION utauIterationFromConservedVariables(PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION utPrev, PRECISION absoluteError, PRECISION relativeError) {
+    
+    PRECISION utAbsoluteError = 1.0;
+    PRECISION utRelativeError = 1.0;
+    
+    PRECISION ut0 = utPrev;
+    
+    PRECISION e0 = M0 - Ms * sqrt(1 - 1 / (utPrev * utPrev));
+    PRECISION rhob0 = N0 / utPrev;
+    
+    for(int j = 0; j < MAX_ITERS; ++j) {
+        
+        PRECISION p0 = equilibriumPressure(e0, rhob0);
+        
+        ut0 = sqrt((M0 + p0 + Pi)/(e0 + p0 + Pi));
+        
+        utAbsoluteError = fabs(ut0 - utPrev);
+        utRelativeError = 2 * utAbsoluteError/(ut0 + utPrev + 1.e-15);
+        
+        if (utAbsoluteError < absoluteError && utRelativeError < relativeError)
+            return ut0;
+        
+        utPrev = ut0;
+        e0 = M0 - Ms * sqrt(1 - 1 / (utPrev * utPrev));
+        rhob0 = N0 / utPrev;
+    }
+    
+    printf("u0 = Maxiter.\t uPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,N0);
+    
+    return ut0;
+}
+
+/**************************************************************************************************************************************************/
+/* calculate v, u^tau with slow modes, non Newton
+/**************************************************************************************************************************************************/
 
 // designed for the case with baryon evolution and slow modes
 void InferredVariablesVelocityIterationConverge(PRECISION * const __restrict__ e, PRECISION * const __restrict__ rhob, PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, PRECISION * const __restrict__ v, PRECISION * const __restrict__ equiPhiQ, PRECISION M0, PRECISION Ms, PRECISION Pi, PRECISION N0, PRECISION vPrev, const PRECISION * const __restrict__ PhiQ, PRECISION absoluteError, PRECISION relativeError)
@@ -363,6 +432,9 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
 
 #ifndef HydroPlus // HydroPlus
 
+    //------------------------Newton------------------------
+#ifdef Method_Newton
+    
 #ifdef Pi
     if(M0 + Pi - Ms < 0){
         Pi = Ms - M0;
@@ -377,7 +449,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     if(ePrev <= 0.1)
         v0 = Ms/M0;
     else
-        v0 = velocityFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, N0, vPrev);
+        v0 = velocityFromConservedVariables(M0, Ms, Pi, N0, vPrev);
     
     if (isnan(v0)) {
         printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
@@ -412,7 +484,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         if(ePrev <= 0.1)
             u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
         else
-            u0 = utauFromConservedVariables(ePrev, M0, Ms, Pi, rhobPrev, N0, utPrev);
+            u0 = utauFromConservedVariables(M0, Ms, Pi, N0, utPrev);
         
         if (isnan(u0)) {
             printf("u0 = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
@@ -445,6 +517,67 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     *alphaB = chemicalPotentialOverT(*e, *rhob);
     if (*alphaB>=0 && *alphaB < 1.e-7) *alphaB = 1.e-7;
     else if (*alphaB <=0 && *alphaB > -1.e-7)  *alphaB = -1.e-7;
+    
+    //------------------------non-Newton------------------------
+#else
+    
+    PRECISION absoluteError = 1.e-16;
+    PRECISION relativeError = 1.e-8;
+    
+    PRECISION v0 = 0;
+    PRECISION u0 = 0;
+    
+    PRECISION vPrev = sqrt(1-1/(utPrev*utPrev));
+
+    v0 = velocityIterationFromConservedVariables(M0, Ms, Pi, N0, vPrev, absoluteError, relativeError);
+    
+    if (isnan(v0)) {
+        printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
+    }
+    
+    if(v0<0.563624&&v0>=0){
+        
+        *e    = M0 - v0 * Ms;
+        *rhob = N0 * sqrt(1 - v0*v0);
+        
+        *p = equilibriumPressure(*e, *rhob);
+        
+        PRECISION P  = *p + Pi;
+        PRECISION v1 = M1/(M0 + P);
+        PRECISION v2 = M2/(M0 + P);
+        PRECISION v3 = M3/(M0 + P);
+        u0  = 1/sqrt(1 - v0*v0);
+        *ut = u0;
+        *ux = u0 * v1;
+        *uy = u0 * v2;
+        *un = u0 * v3;
+    }
+    else{
+        
+        utPrev = 1/sqrt(1 - v0*v0);
+        
+        u0 = utauIterationFromConservedVariables(M0, Ms, Pi, N0, utPrev, absoluteError, relativeError);
+        
+        if (isnan(u0)) {
+            printf("u0 = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
+        }
+        
+        *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
+        *rhob = N0/u0;
+        
+        *p = equilibriumPressure(*e, *rhob);
+        
+        PRECISION P  = *p + Pi;
+        *ut = u0;
+        *ux = u0 * M1/(M0 + P);
+        *uy = u0 * M2/(M0 + P);
+        *un = u0 * M3/(M0 + P);
+    }
+    
+    *T = effectiveTemperature(*e, *rhob);
+    *alphaB = chemicalPotentialOverT(*e, *rhob);
+    
+#endif
     
 #else // HydroPlus
     

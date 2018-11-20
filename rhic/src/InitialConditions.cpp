@@ -1209,7 +1209,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
 				double energyDensityLongitudinal = eL[k-2];
                 double eta = (k-2 - (nz-1)/2)*dz;//Lipei
                 e[s] = 0.5*e0 * Prefactor * energyDensityLongitudinal * (Ta[i-2 + (j-2)*nx]*(2.0+eta)/4.0 + Tb[i-2 + (j-2)*nx]*(2.0-eta)/4.0) + 0.001*e0*2;
-                rhob[s] = 0.05*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.0001; //Lipei
+                rhob[s] = 0.5*Prefactor * (n1 * rhoLa[k-2] * Ta[i-2+(j-2)*nx] + n2 * rhoLb[k-2] * Tb[i-2+(j-2)*nx]) + 0.0001; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
                 double T = effectiveTemperature(e[s], rhob[s]);
