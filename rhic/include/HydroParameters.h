@@ -18,6 +18,7 @@ struct HydroParameters
 	double shearViscosityToEntropyDensity;
 	double freezeoutTemperatureGeV;
 	int initializePimunuNavierStokes;
+    int initializePiNavierStokes;
 };
 
 void loadHydroParameters(config_t *cfg, const char* configDirectory, void * params);

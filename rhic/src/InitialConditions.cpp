@@ -36,7 +36,7 @@
 
 using namespace std;//Lipei
 
-
+#define HBARC 0.197326938
 /**************************************************************************************************************************************************/
 /* Read in all initial profiles from a single file
 /**************************************************************************************************************************************************/
@@ -550,7 +550,7 @@ void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void *
                 q->nbt[s] = 0;
                 q->nbx[s] = 0;
                 q->nby[s] = 0;
-                q->nbn[s] = 0;
+                q->nbn[s] = 400.0;
             }
         }
     }
@@ -577,6 +577,8 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 	PRECISION t = hydro->initialProperTimePoint;
 
 	PRECISION e0 = initCond->initialEnergyDensity;
+    
+    int initializePiNavierStokes = hydro->initializePiNavierStokes;
 
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
@@ -584,7 +586,7 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 				PRECISION T = effectiveTemperature(e[s]);
 				if (T == 0) T = 1.e-3;
-				PRECISION pinn = -4.0/(3*t*t*t)*etabar*(e[s]+p[s])/T;//was wrong by factor of 2
+				PRECISION pinn = -4.0/(3*t*t*t)*etabar*(e[s]+p[s])/T;
 #ifdef PIMUNU
 				q->pitt[s] = 0;
 				q->pitx[s] = 0;
@@ -598,6 +600,7 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 				q->pinn[s] = pinn;
 #endif
 #ifdef PI
+                if (initializePiNavierStokes==1) {
 #define A_1 -13.77
 #define A_2 27.55
 #define A_3 13.45
@@ -618,6 +621,8 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 				else if(x < 0.995)
 					zetabar = LAMBDA_3*exp((x-1)/SIGMA_3)+ LAMBDA_4*exp((x-1)/SIGMA_4)+0.03;
 				q->Pi[s] = -zetabar*(e[s]+p[s])/T/t;
+                }
+                else q->Pi[s] = 0;
 #endif
 			}
 		}
@@ -1093,9 +1098,9 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
     double eL[nz];
     longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     
-    double ed = initialEnergyDensity;//Lipei
-    //double T0 = 3.05;
-    //double ed = equilibriumEnergyDensity(T0);
+    //double ed = initialEnergyDensity;//Lipei
+    double T0 = 4.5;
+    double ed = equilibriumEnergyDensity(T0);
     double rhobd = initialBaryonDensity;//Lipei
     double rhoLa[nz], rhoLb[nz];//Lipei
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);//Lipei
@@ -1104,7 +1109,8 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                e[s] = (PRECISION) ed*eL[k-2] + 1.e-1;
+                //e[s] = (PRECISION) ed*eL[k-2] + 1.e-1;
+                e[s] = (PRECISION) ed + 1.e-3;
                 rhob[s] = (PRECISION) rhobd + 1.e-3; // rhoLa[k-2] * rhobd + rhoLb[k-2] * rhobd + 1.e-3; //Lipei
                 p[s] = equilibriumPressure(e[s], rhob[s]);
 			}
@@ -1329,6 +1335,76 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 	}
 }
 
+
+void setMusicInitialCondition(void * latticeParams, const char *rootDirectory) {
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    double eta,ed,rhobd;
+    
+    FILE *file;
+    char fname[255];
+    sprintf(fname, "%s/%s", rootDirectory, "/input/musictest.dat");
+    file = fopen(fname, "r");
+
+    for(int i = 2; i < 3; ++i) {
+        for(int j = 2; j < 3; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                int status = fscanf(file,"%le\t%le\t%le\n",&eta,&ed,&rhobd);
+
+                e[s] = (PRECISION) ed/HBARC;
+                rhob[s] = (PRECISION) rhobd;
+                p[s] = equilibriumPressure(e[s], rhob[s]);
+                
+                /*u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1.0;
+                q->nbt[s] = 0;
+                q->nbx[s] = 0;
+                q->nby[s] = 0;
+                q->nbn[s] = 0;*/
+            }
+        }
+    }
+    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                int s1= columnMajorLinearIndex(2, 2, k, nx+4, ny+4);
+
+                if(i !=2 || j!=2){
+                    e[s] = e[s1];
+                    rhob[s] = rhob[s1];
+                    p[s] = p[s1];
+                }
+                
+                u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1.0;
+#ifdef VMU
+                q->nbt[s] = 0;
+                q->nbx[s] = 0;
+                q->nby[s] = 0;
+                q->nbn[s] = 0;
+#endif
+            }
+        }
+    }
+
+}
+
 /**************************************************************************************************************************************************/
 /* Initial conditions for the relativistic Sod shock-tube test
 /*		- set energy density, pressure, fluid velocity u^\mu
@@ -1354,6 +1430,8 @@ void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams
 
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+#ifndef NBMU
+#ifdef CONFORMAL_EOS
 				if(x > 0) 	e[s] = (PRECISION) (0.00778147);
 				else 			e[s] = (PRECISION) (0.124503);
 //				if(y > 0) 	e[s] = (PRECISION) (0.00778147);
@@ -1365,6 +1443,49 @@ void setSodShockTubeInitialCondition(void * latticeParams, void * initCondParams
 				u->uy[s] = 0;
 				u->un[s] = 0;
 				u->ut[s] = 1;
+#endif
+#else
+#ifdef POLYTROPIC_EOS
+                if(x > 0){
+                    p[s] = (PRECISION) (0.1);
+                    rhob[s] = (PRECISION) (0.125);
+                    //p[s] = (PRECISION) (1.0);
+                    //rhob[s] = (PRECISION) (2.0);
+                }
+                else{
+                    p[s] = (PRECISION) (1.0);
+                    rhob[s] = (PRECISION) (1.0);
+                    //p[s] = (PRECISION) (13.3333);
+                    //rhob[s] = (PRECISION) (10.0);
+                }
+                
+                double gamma=1.4;
+                e[s] = p[s]/(gamma-1) + rhob[s];
+                
+                u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1;
+#else
+                if(x > 0)
+                {
+                    p[s] = (PRECISION) (0.0625);
+                    rhob[s] = (PRECISION) (0.125);
+                }
+                else
+                {
+                    p[s] = (PRECISION) (1.0);
+                    rhob[s] = (PRECISION) (1.0);
+                }
+                
+                
+                e[s] = 3.0*p[s];
+                u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1;
+#endif
+#endif
 			}
 		}
 	}
@@ -1395,14 +1516,31 @@ void set2dSodShockTubeInitialCondition(void * latticeParams, void * initCondPara
 
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				if(y > x) 	e[s] = (PRECISION) (0.00778147);
+				/*if(y > x) 	e[s] = (PRECISION) (0.00778147);
 //				if(atan(y/x)>0.7853981634) 	e[s] = (PRECISION) (0.00778147);
 				else 			e[s] = (PRECISION) (0.124503);
 				p[s] = e[s]/3;
 				u->ux[s] = 0;
 				u->uy[s] = 0;
 				u->un[s] = 0;
-				u->ut[s] = 1;
+				u->ut[s] = 1;*/
+                
+                if(x > 0){
+                    p[s] = (PRECISION) (5.0);
+                    rhob[s] = (PRECISION) (3.5);
+                }
+                else{
+                    p[s] = (PRECISION) (13.33);
+                    rhob[s] = (PRECISION) (10.0);
+                }
+                
+                e[s] = p[s]/(0.3333333*rhob[s]);
+                
+                u->ux[s] = 0;
+                u->uy[s] = 0;
+                u->un[s] = 0;
+                u->ut[s] = 1;
+
 			}
 		}
 	}
@@ -1754,6 +1892,11 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
         case 13:{
             printf("Hydro with dynamical sources...\n");
             setICfromSource(latticeParams, initCondParams, hydroParams, rootDirectory);
+            return;
+        }
+        case 14:{
+            printf("Test against MUSIC...\n");
+            setMusicInitialCondition(latticeParams, rootDirectory);
             return;
         }
 		default: {

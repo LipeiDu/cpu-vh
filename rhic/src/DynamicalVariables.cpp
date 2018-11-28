@@ -293,7 +293,7 @@ void setConservedVariables(double t, void * latticeParams) {
                 PRECISION rhob_s = rhob[s];
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
-                if (T[s] < 1.e-7) T[s] = 1.e-7;
+                //if (T[s] < 1.e-7) T[s] = 1.e-7;
                 
                 Tp[s] = T[s];
 #ifdef VMU
@@ -304,8 +304,8 @@ void setConservedVariables(double t, void * latticeParams) {
 
                 alphaB[s] = chemicalPotentialOverT(e_s, rhob_s);
                 
-                if (alphaB[s]>=0 && alphaB[s] < 1.e-7) alphaB[s] = 1.e-7;
-                else if (alphaB[s]<=0 && alphaB[s] > -1.e-7)  alphaB[s] = -1.e-7;
+                //if (alphaB[s]>=0 && alphaB[s] < 1.e-7) alphaB[s] = 1.e-7;
+                //else if (alphaB[s]<=0 && alphaB[s] > -1.e-7)  alphaB[s] = -1.e-7;
 
                 alphaBp[s] = alphaB[s];
                 

@@ -730,25 +730,25 @@ void regulateDissipativeCurrents(PRECISION t, const CONSERVED_VARIABLES * const 
                 //===================================================
                 
 #ifdef PIMUNU
-				currrentVars->pitt[s] *= fac;
-				currrentVars->pitx[s] *= fac;
-				currrentVars->pity[s] *= fac;
-				currrentVars->pitn[s] *= fac;
-				currrentVars->pixx[s] *= fac;
-				currrentVars->pixy[s] *= fac;
-				currrentVars->pixn[s] *= fac;
-				currrentVars->piyy[s] *= fac;
-				currrentVars->piyn[s] *= fac;
-				currrentVars->pinn[s] *= fac;
+				currrentVars->pitt[s] *= 1.0;//fac;
+				currrentVars->pitx[s] *= 1.0;//fac;
+				currrentVars->pity[s] *= 1.0;//fac;
+				currrentVars->pitn[s] *= 1.0;//fac;
+				currrentVars->pixx[s] *= 1.0;//fac;
+				currrentVars->pixy[s] *= 1.0;//fac;
+				currrentVars->pixn[s] *= 1.0;//fac;
+				currrentVars->piyy[s] *= 1.0;//fac;
+				currrentVars->piyn[s] *= 1.0;//fac;
+				currrentVars->pinn[s] *= 1.0;//fac;
 #endif
 #ifdef PI
-                currrentVars->Pi[s] *= facPi;
+                currrentVars->Pi[s] *= 1.0;//facPi;
 #endif
 #ifdef VMU
-                currrentVars->nbt[s] *= facb;
-                currrentVars->nbx[s] *= facb;
-                currrentVars->nby[s] *= facb;
-                currrentVars->nbn[s] *= facb;
+                currrentVars->nbt[s] *= 1.0;//facb;
+                currrentVars->nbx[s] *= 1.0;//facb;
+                currrentVars->nby[s] *= 1.0;//facb;
+                currrentVars->nbn[s] *= 1.0;//facb;
 #endif
 			}
 		}

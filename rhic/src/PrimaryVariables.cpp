@@ -377,7 +377,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     // SECTION I: baryon evolution is off
     //========================================================================================
     
-#ifndef RootSolver_with_Baryon // RootSolver_with_Baryon
+#ifndef RootSolver_with_Baryon // RootSolver_without_Baryon
     
 #ifdef Pi
 	if ((M0 * M0 - M + M0 * Pi) < 0)
@@ -435,20 +435,20 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     //------------------------Newton------------------------
 #ifdef Method_Newton
     
-#ifdef Pi
-    if(M0 + Pi - Ms < 0){
-        Pi = Ms - M0;
-    }
-#endif
+//#ifdef Pi
+//    if(M0 + Pi - Ms < 0){
+//        Pi = Ms - M0;
+//    }
+//#endif
     
     PRECISION v0 = 0;
     PRECISION u0 = 0;
 
     PRECISION vPrev = sqrt(1-1/(utPrev*utPrev));
     
-    if(ePrev <= 0.1)
-        v0 = Ms/M0;
-    else
+    //if(ePrev <= 0.1)
+    //    v0 = Ms/M0;
+    //else
         v0 = velocityFromConservedVariables(M0, Ms, Pi, N0, vPrev);
     
     if (isnan(v0)) {
@@ -459,16 +459,16 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *e    = M0 - v0 * Ms;
         *rhob = N0 * sqrt(1 - v0*v0);
 
-        if (*e < 3.e-4)
-        {
-            *e = 3.e-4;
-            *p = 3.e-4;
-        }else{
+        //if (*e < 3.e-4)
+        //{
+        //    *e = 3.e-4;
+        //    *p = 3.e-4;
+        //}else{
             *p = equilibriumPressure(*e, *rhob);
-        }
+        //}
         
-        if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
-        else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
+        //if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
+        //else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -481,9 +481,10 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *un = u0 * v3;
     }
     else{
-        if(ePrev <= 0.1)
-            u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
-        else
+        printf("Solving for u0.\n");
+        //if(ePrev <= 0.1)
+        //    u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
+        //else
             u0 = utauFromConservedVariables(M0, Ms, Pi, N0, utPrev);
         
         if (isnan(u0)) {
@@ -493,16 +494,16 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = N0/u0;
         
-        if (*e < 3.e-4)
-        {
-            *e = 3.e-4;
-            *p = 3.e-4;
-        }else{
+        //if (*e < 3.e-4)
+        //{
+        //    *e = 3.e-4;
+        //    *p = 3.e-4;
+        //}else{
             *p = equilibriumPressure(*e, *rhob);
-        }
+        //}
         
-        if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
-        else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
+        //if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
+        //else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
         
         PRECISION P  = *p + Pi;
         *ut = u0;
@@ -512,11 +513,11 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     }
     
     *T = effectiveTemperature(*e, *rhob);
-    if (*T < 1.e-7) *T = 1.e-7;
+    //if (*T < 1.e-7) *T = 1.e-7;
     
     *alphaB = chemicalPotentialOverT(*e, *rhob);
-    if (*alphaB>=0 && *alphaB < 1.e-7) *alphaB = 1.e-7;
-    else if (*alphaB <=0 && *alphaB > -1.e-7)  *alphaB = -1.e-7;
+    //if (*alphaB>=0 && *alphaB < 1.e-7) *alphaB = 1.e-7;
+    //else if (*alphaB <=0 && *alphaB > -1.e-7)  *alphaB = -1.e-7;
     
     //------------------------non-Newton------------------------
 #else

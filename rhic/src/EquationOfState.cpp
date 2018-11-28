@@ -21,6 +21,7 @@ using namespace std;//Lipei
 #include "../include/EquationOfState.h"
 
 #define HBARC 0.197326938
+#define GAMMA 1.4 //POLYTROPIC_EOS
 
 /**************************************************************************************************************************************************/
 /* The following few functions only defined for a specific EoS table, By Lipei Jan 18, 2018
@@ -261,13 +262,25 @@ PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB){
 }
 
 PRECISION dPdRhob(PRECISION e, PRECISION rhob){
+#ifndef EOS_with_baryon
+    return 0.0;
+#else
+#ifndef POLYTROPIC_EOS
     if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->dpdrhob);
     else return -primaryVariablesEOS(e, fabs(rhob), EOState->dpdrhob);
+#else
+    return -(GAMMA-1);
+#endif
+#endif
 }
 
 PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){
+#ifndef EOS_with_baryon
+    return 0.0;
+#else
     if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->alphab)*HBARC;
     else return -primaryVariablesEOS(e, fabs(rhob), EOState->alphab)*HBARC;
+#endif
 }
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
@@ -305,6 +318,7 @@ PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
     return 1/3;
 #endif
 #else
+#ifndef POLYTROPIC_EOS
     PRECISION e0 = e*HBARC;
     PRECISION delta_e = 0;
     if((0<=e0) && (e0<0.0036))
@@ -323,17 +337,20 @@ PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
         delta_e = 10;
     
     PRECISION ep, em, pp, pm, p0;
-    ep = (e0 + delta_e)/HBARC;
-    em = (e0 - delta_e)/HBARC;
+    ep = (e0 + 0.1 * delta_e)/HBARC;
+    em = (e0 - 0.1 * delta_e)/HBARC;
     
     pp = primaryVariablesEOS(ep, rhob, EOState->Pressure);
     if(em>=0){
         pm = primaryVariablesEOS(em, rhob, EOState->Pressure);
-        return (pp-pm)/(2*delta_e/HBARC);
+        return (pp-pm)/(2*0.1 * delta_e/HBARC);
     }else{
         p0 = primaryVariablesEOS(e0, rhob, EOState->Pressure);
-        return (pp-p0)/delta_e/HBARC;
+        return (pp-p0)/(0.1*delta_e)/HBARC;
     }
+#else
+    return (GAMMA-1);
+#endif
 #endif
 }
 
@@ -388,7 +405,11 @@ PRECISION equilibriumPressure(PRECISION e, PRECISION rhob) {
     return e/3;
 #endif
 #else
+#ifndef POLYTROPIC_EOS
     return primaryVariablesEOS(e, fabs(rhob), EOState->Pressure);
+#else
+    return (GAMMA-1)*(e-rhob);
+#endif
 #endif
 }
 
@@ -423,7 +444,11 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob) {
     return powf(e/EOS_FACTOR, 0.25);
 #endif
 #else
+#ifndef POLYTROPIC_EOS
     return primaryVariablesEOS(e, fabs(rhob), EOState->Temperature);
+#else
+    return powf(e/EOS_FACTOR, 0.25);
+#endif
 #endif
 }
 

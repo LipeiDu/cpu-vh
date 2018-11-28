@@ -71,6 +71,10 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
             for(i = 2; i < nx+2; ++i) {
                 x = (i-2 - (nx-1)/2.)*dx;
                 s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                //if(x==0&&y==0)
+                //fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,e[s],q->pinn[s],q->Pi[s],rhob[s],q->nbn[s],T[s],p[s]);
+                
                 //double tt=Ttt(e[s],p[s],u->ut[s],q->pitt[s]);
                 //double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
                 //double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
@@ -101,7 +105,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 //if(x==0&&y==0)
                // phiQ = q->phiQ[0][s];
                 
-                PRECISION eIn = e[s];
+                /*PRECISION eIn = e[s];
                 PRECISION rhobIn = rhob[s];
                 PRECISION pIn = p[s];
                 PRECISION TIn = T[s];
@@ -117,7 +121,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 
                 PRECISION p,T,alphaB;
 
-                getPrimaryVariablesFromSlowModes(&p, &T, &alphaB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, alphaBIn);
+                getPrimaryVariablesFromSlowModes(&p, &T, &alphaB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, alphaBIn);*/
             }
         }
     }
@@ -129,6 +133,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,v2t,becc,eecc);*/
     
     //fprintf(fp, "%.3f\t%.8f\n",t,phiQ);
+    if(t>20)
     exit(0);
     
     fclose(fp);
