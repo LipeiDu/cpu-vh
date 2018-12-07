@@ -15,15 +15,15 @@
 /*********************************************************/
 //Main switch//
 
-//#define PIMUNU
+#define PIMUNU
 //#define PI
 
-#define NBMU
+//#define NBMU
 //#define VMU
 
 #ifdef NBMU
 #define RootSolver_with_Baryon
-#define EOS_with_baryon
+//#define EOS_with_baryon
 #endif
 
 // Slow modes only evolve in non-ideal case in the code

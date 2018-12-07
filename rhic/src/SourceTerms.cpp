@@ -120,7 +120,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION DunUpper = ut*dtun + ux*dxun + uy*dyun + un*dnun + 2*ut*un/t;
 	PRECISION Dun = -t2*DunUpper;
 
-	PRECISION dut = Dut -t*un*un;
+	PRECISION dut = Dut - t*un*un;
 	PRECISION dux = ut*dtux + ux*dxux + uy*dyux + un*dnux;
 	PRECISION duy = ut*dtuy + ux*dxuy + uy*dyuy + un*dnuy;
 	PRECISION dun = ut*dtun + ux*dxun + uy*dyun + un*dnun;

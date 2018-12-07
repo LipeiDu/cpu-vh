@@ -10,7 +10,7 @@
 
 #include "../include/DynamicalVariables.h"
 
-#define THETA 1.1//Lipei
+#define THETA 1.8//Lipei
 
 PRECISION approximateDerivative(PRECISION x, PRECISION y, PRECISION z);
 

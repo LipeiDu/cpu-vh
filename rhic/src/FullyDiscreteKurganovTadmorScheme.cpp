@@ -795,9 +795,9 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc.
 	setInferredVariablesKernel(qS, e, p, u, uS, t, latticeParams, rhob, alphaBS, TS, seq, eqPhiQ);
 
-#ifndef IDEAL
-	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
-#endif
+//#ifndef IDEAL
+//	regulateDissipativeCurrents(t, qS, e, p, rhob, uS, ncx, ncy, ncz);
+//#endif
 
 	setGhostCells(qS, e, p, uS, latticeParams, rhob, alphaBS, TS, seq, eqPhiQ);
 
@@ -822,9 +822,9 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
     // calculate e, p and T etc. from the updated T^tau^mu and shear etc. Q, e, p, u, rhob etc will store the final updated values
 	setInferredVariablesKernel(Q, e, p, uS, u, t, latticeParams, rhob, alphaB, T, seq, eqPhiQ);
     
-#ifndef IDEAL
-	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
-#endif
+//#ifndef IDEAL
+//	regulateDissipativeCurrents(t, Q, e, p, rhob, u, ncx, ncy, ncz);
+//#endif
     
 	setGhostCells(Q, e, p, u, latticeParams, rhob, alphaB, T, seq, eqPhiQ);
     

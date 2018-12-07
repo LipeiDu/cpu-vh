@@ -379,17 +379,17 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     
 #ifndef RootSolver_with_Baryon // RootSolver_without_Baryon
     
-#ifdef Pi
-	if ((M0 * M0 - M + M0 * Pi) < 0)
-		Pi = M / M0 - M0;
-#endif
+//#ifdef Pi
+//	if ((M0 * M0 - M + M0 * Pi) < 0)
+//		Pi = M / M0 - M0;
+//#endif
 
-	if (ePrev <= 0.1) {
-        *e = M0 - M / M0;
-	}
-    else {
+	//if (ePrev <= 0.1) {
+    //    *e = M0 - M / M0;
+	//}
+    //else {
 		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi, rhobPrev);
-    }
+    //}
     
 	if (isnan(*e)) {
 		printf("e is nan. \n M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
@@ -452,7 +452,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         v0 = velocityFromConservedVariables(M0, Ms, Pi, N0, vPrev);
     
     if (isnan(v0)) {
-        printf("v0 = nan.\t vPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",vPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
+        printf("v0 = nan.\t vPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,rhobPrev,N0);
     }
     
     if(v0<0.563624&&v0>=0){
@@ -488,7 +488,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
             u0 = utauFromConservedVariables(M0, Ms, Pi, N0, utPrev);
         
         if (isnan(u0)) {
-            printf("u0 = nan.\t utPrev=%5e,\t ePrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t d_nbt=%5e.\n",utPrev,ePrev,M0,Ms,Pi,rhobPrev,N0);
+            printf("u0 = nan.\t utPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,rhobPrev,N0);
         }
         
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));

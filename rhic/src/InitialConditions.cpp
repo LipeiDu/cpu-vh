@@ -532,7 +532,7 @@ void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) 
 /**************************************************************************************************************************************************/
 /* Set initial baryon diffusion current to be 0
 /**************************************************************************************************************************************************/
-void setbnmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+void setNbmuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
     
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
@@ -577,8 +577,6 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 	PRECISION t = hydro->initialProperTimePoint;
 
 	PRECISION e0 = initCond->initialEnergyDensity;
-    
-    int initializePiNavierStokes = hydro->initializePiNavierStokes;
 
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
@@ -599,34 +597,59 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 				q->piyn[s] = 0;
 				q->pinn[s] = pinn;
 #endif
-#ifdef PI
-                if (initializePiNavierStokes==1) {
+			}
+		}
+	}
+}
+
+void setPiNavierStokesInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    
+    PRECISION dx = (PRECISION)(lattice->latticeSpacingX);
+    PRECISION dz = (PRECISION)(lattice->latticeSpacingRapidity);
+    
+    PRECISION etabar = (PRECISION)(hydro->shearViscosityToEntropyDensity);
+    PRECISION t = hydro->initialProperTimePoint;
+    
+    PRECISION e0 = initCond->initialEnergyDensity;
+    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                PRECISION T = effectiveTemperature(e[s]);
+                if (T == 0) T = 1.e-3;
+
 #define A_1 -13.77
 #define A_2 27.55
 #define A_3 13.45
-
+                    
 #define LAMBDA_1 0.9
 #define LAMBDA_2 0.25
 #define LAMBDA_3 0.9
 #define LAMBDA_4 0.22
-
+                    
 #define SIGMA_1 0.025
 #define SIGMA_2 0.13
 #define SIGMA_3 0.0025
 #define SIGMA_4 0.022
-				PRECISION x = T/1.01355;
-				PRECISION zetabar = A_1*x*x + A_2*x - A_3;
-				if(x > 1.05)
-					zetabar = LAMBDA_1*exp(-(x-1)/SIGMA_1) + LAMBDA_2*exp(-(x-1)/SIGMA_2)+0.001;
-				else if(x < 0.995)
-					zetabar = LAMBDA_3*exp((x-1)/SIGMA_3)+ LAMBDA_4*exp((x-1)/SIGMA_4)+0.03;
-				q->Pi[s] = -zetabar*(e[s]+p[s])/T/t;
-                }
-                else q->Pi[s] = 0;
+                    PRECISION x = T/1.01355;
+                    PRECISION zetabar = A_1*x*x + A_2*x - A_3;
+                    if(x > 1.05)
+                        zetabar = LAMBDA_1*exp(-(x-1)/SIGMA_1) + LAMBDA_2*exp(-(x-1)/SIGMA_2)+0.001;
+                    else if(x < 0.995)
+                        zetabar = LAMBDA_3*exp((x-1)/SIGMA_3)+ LAMBDA_4*exp((x-1)/SIGMA_4)+0.03;
+#ifdef PI
+                    q->Pi[s] = -zetabar*(e[s]+p[s])/T/t;
 #endif
-			}
-		}
-	}
+            }
+        }
+    }
 }
 
 /**************************************************************************************************************************************************/
@@ -635,13 +658,12 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 	int initializePimunuNavierStokes = hydro->initializePimunuNavierStokes;
+    int initializePiNavierStokes = hydro->initializePiNavierStokes;
+
+#ifdef PIMUNU
 	if (initializePimunuNavierStokes==1) {
 		printf("Initialize \\pi^\\mu\\nu to its asymptotic Navier-Stokes value.\n");
-#ifdef PI
-		printf("Initialize \\Pi to its asymptotic Navier-Stokes value.\n");
-#endif
 		setPimunuNavierStokesInitialCondition(latticeParams, initCondParams, hydroParams);
-		return;
 	}
 	else {
 		printf("Initialize \\pi^\\mu\\nu to zero.\n");
@@ -653,7 +675,6 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 			for(int j = 2; j < ny+2; ++j) {
 				for(int k = 2; k < nz+2; ++k) {
 					int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-#ifdef PIMUNU
 			  		q->pitt[s] = 0;
 			  		q->pitx[s] = 0;
 			  		q->pity[s] = 0;
@@ -664,15 +685,36 @@ void setPimunuInitialCondition(void * latticeParams, void * initCondParams, void
 			  		q->piyy[s] = 0;
 			  		q->piyn[s] = 0;
 			  		q->pinn[s] = 0;
-#endif
-#ifdef PI
-			  		q->Pi[s] = 0;
-#endif
 				}
 			}
 		}
-		return;
 	}
+#endif
+    
+#ifdef PI
+    if (initializePiNavierStokes==1) {
+        printf("Initialize \\Pi to its asymptotic Navier-Stokes value.\n");
+        setPiNavierStokesInitialCondition(latticeParams, initCondParams, hydroParams);
+        return;
+    }
+    else {
+        printf("Initialize \\Pi to zero.\n");
+        struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+        int nx = lattice->numLatticePointsX;
+        int ny = lattice->numLatticePointsY;
+        int nz = lattice->numLatticePointsRapidity;
+        for(int i = 2; i < nx+2; ++i) {
+            for(int j = 2; j < ny+2; ++j) {
+                for(int k = 2; k < nz+2; ++k) {
+                    int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                    
+                    q->Pi[s] = 0;
+                }
+            }
+        }
+        return;
+    }
+#endif
 }
 
 /**************************************************************************************************************************************************/
@@ -1120,6 +1162,39 @@ void setConstantEnergyDensityInitialCondition(void * latticeParams, void * initC
     printf("Baryon density is initialized.\n");
 }
 
+/**************************************************************************************************************************************************/
+/* Bjorken expansion - Constant initial energy density distribution
+/**************************************************************************************************************************************************/
+void setBjorkenExpansionInitialCondition(void * latticeParams, void * initCondParams) {
+    struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    double initialEnergyDensity = initCond->initialEnergyDensity;
+    double initialBaryonDensity = initCond->initialBaryonDensity;//Lipei
+    
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    double ed = initialEnergyDensity;
+    double rhobd = initialBaryonDensity;
+    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+
+                e[s] = (PRECISION) ed + 1.e-3;
+                rhob[s] = (PRECISION) rhobd + 1.e-3;
+                p[s] = equilibriumPressure(e[s], rhob[s]);
+            }
+        }
+    }
+    
+    printf("Baryon density is initialized.\n");
+}
 
 /**************************************************************************************************************************************************/
 /* Continuous optical glauber Glauber initial energy density distribution
@@ -1242,7 +1317,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
 /* Initial conditions for the Gubser ideal hydro test
 /*		- set energy density, pressure, fluid velocity u^\mu, and \pi^\mu\ny
 /**************************************************************************************************************************************************/
-void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams) {
+void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams, const char *rootDirectory) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 
@@ -1256,6 +1331,7 @@ void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams)
 
 	double e0 = initCond->initialEnergyDensity;
 
+#ifndef NBMU
 	for(int i = 2; i < nx+2; ++i) {
 		double x = (i-2 - (nx-1)/2.)*dx;
 		for(int j = 2; j < ny+2; ++j) {
@@ -1277,6 +1353,32 @@ void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams)
 			}
 		}
 	}
+#else
+    double x,y,ed,u1,u2,rhod;
+    
+    FILE *file;
+    char fname[255];
+
+    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser_InitialProfile_ideal.dat");
+    file = fopen(fname, "r");
+
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&rhod,&u1,&u2);
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                e[s] = (PRECISION) ed;
+                p[s] = e[s]/3;
+                u->ux[s] = u1;
+                u->uy[s] = u2;
+                u->un[s] = 0;
+                u->ut[s] = sqrt(1 + u1*u1 + u2*u2);
+                rhob[s] = (PRECISION) rhod;
+            }
+        }
+    }
+#endif
 }
 
 /**************************************************************************************************************************************************/
@@ -1294,21 +1396,28 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 	double dy = lattice->latticeSpacingY;
 	double dz = lattice->latticeSpacingRapidity;
 
-	double x,y,ed,u1,u2,pitt,pitx,pity,pixx,pixy,piyy,pinn;
+	double x,y,ed,u1,u2,pitt,pitx,pity,pixx,pixy,piyy,pinn,rhod,nbn;
 
 	FILE *file;
 	char fname[255];
-	sprintf(fname, "%s/%s", rootDirectory, "/rhic/rhic-trunk/src/test/resources/gubser/viscous/gubserIC.dat");
+	//sprintf(fname, "%s/%s", rootDirectory, "/input/GubserInitialProfile.dat");
+    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser_InitialProfile_is.dat");
 	file = fopen(fname, "r");
+    
+    /*FILE *allsetfile;
+    char setname[255];
+    sprintf(setname, "%s.dat", "output/GubserInitialProfile.dat"); // All set.dat will be written in this file after recentering and rotation
+    allsetfile = fopen(setname, "w");*/
 
 	double pitn=0;
 	double pixn=0;
 	double piyn=0;
+    rhod = 0;
 
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
-			int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-		    		&x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn);
+			//int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn,&rhod,&nbn);
+            int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn);
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 
@@ -1330,9 +1439,27 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
         		q->piyn[s] = (PRECISION) piyn;
         		q->pinn[s] = (PRECISION) pinn;
 #endif
+                rhob[s] = (PRECISION) rhod;
+#ifdef VBMU
+                q->nbt[s] = 0;
+                q->nbx[s] = 0;
+                q->nby[s] = 0;
+                q->nbn[s] = nbn;
+#endif
+                
+                //fprintf(allsetfile,"%.2f\t%.2f\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n",x,y,ed,u1,u2,pixx,piyy,pixy,pitt,pitx,pity,pinn,rhod,nbn);
+                /*baryonden1 << setprecision(5) << setw(10) << x << setprecision(5)  << setw(10)  << y
+                << setprecision(6) << setw(18) << ed << setprecision(6) << setw(18) << u1 << setprecision(6) << setw(18) << u2
+                << setprecision(6) << setw(18) << pixx << setprecision(6) << setw(18) << piyy << setprecision(6) << setw(18) << pixy
+                << setprecision(6) << setw(18) << pitt << setprecision(6) << setw(18) << pitx << setprecision(6) << setw(18) << pity
+                << setprecision(6) << setw(18) << pinn
+                << setprecision(6) << setw(18) << rhod << setprecision(6) << setw(18) << nbn
+                << endl;//Lipei*/
 			}
 		}
 	}
+    
+    //fclose(allsetfile);//Lipei
 }
 
 
@@ -1818,7 +1945,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Constant energy density.\n");
 			setConstantEnergyDensityInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
@@ -1831,20 +1958,20 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Continous optical Glauber.\n");
 			setGlauberInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
 		case 3: {
 			printf("Ideal hydrodynamic Gubser flow test.\n");
-			setIdealGubserInitialCondition(latticeParams, initCondParams);
+			setIdealGubserInitialCondition(latticeParams, initCondParams, rootDirectory);
 			return;
 		}
 		case 4: {
 			printf("Monte carlo Glauber.\n");
 			setMCGlauberInitialCondition(latticeParams, initCondParams, hydroParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
@@ -1856,7 +1983,6 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 		case 6: {
 			printf("Implosion in a box test.\n");
 			setImplosionBoxInitialCondition(latticeParams, initCondParams);
-            setbnmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			return;
 		}
 		case 7: {
@@ -1897,6 +2023,14 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
         case 14:{
             printf("Test against MUSIC...\n");
             setMusicInitialCondition(latticeParams, rootDirectory);
+            return;
+        }
+        case 15:{
+            printf("Bjorken expansion...\n");
+            setBjorkenExpansionInitialCondition(latticeParams, initCondParams);
+            setFluidVelocityInitialCondition(latticeParams, hydroParams);
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
             return;
         }
 		default: {
