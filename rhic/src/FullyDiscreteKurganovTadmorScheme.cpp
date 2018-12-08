@@ -75,7 +75,7 @@ void eulerStepKernelSource(PRECISION t, const CONSERVED_VARIABLES * const __rest
 				Q[13] = currrentVars->pinn[s];
 #endif
 #ifdef PI
-				Q[14] = currrentVars->Pi[s];
+				Q[NUMBER_CONSERVED_VARIABLES_NO_BULK] = currrentVars->Pi[s];
 #endif
 #ifdef NBMU
                 Q[NUMBER_CONSERVED_VARIABLES] = currrentVars->Nbt[s];
@@ -125,7 +125,7 @@ void eulerStepKernelSource(PRECISION t, const CONSERVED_VARIABLES * const __rest
 				updatedVars->pinn[s] = result[13];
 #endif
 #ifdef PI
-				updatedVars->Pi[s] = result[14];
+				updatedVars->Pi[s] = result[NUMBER_CONSERVED_VARIABLES_NO_BULK];
 #endif
 #ifdef NBMU
                 updatedVars->Nbt[s] = result[NUMBER_CONSERVED_VARIABLES];
@@ -248,7 +248,7 @@ void eulerStepKernelX(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 				updatedVars->pinn[s] += result[13];
 #endif
 #ifdef PI
-				updatedVars->Pi[s] += result[14];
+				updatedVars->Pi[s] += result[NUMBER_CONSERVED_VARIABLES_NO_BULK];
 #endif
 #ifdef NBMU
                 updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];
@@ -371,7 +371,7 @@ void eulerStepKernelY(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 				updatedVars->pinn[s] += result[13];
 #endif
 #ifdef PI
-				updatedVars->Pi[s] += result[14];
+				updatedVars->Pi[s] += result[NUMBER_CONSERVED_VARIABLES_NO_BULK];
 #endif
 #ifdef NBMU
                 updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];
@@ -495,7 +495,7 @@ void eulerStepKernelZ(PRECISION t, const CONSERVED_VARIABLES * const __restrict_
 				updatedVars->pinn[s] += result[13];
 #endif
 #ifdef PI
-				updatedVars->Pi[s] += result[14];
+				updatedVars->Pi[s] += result[NUMBER_CONSERVED_VARIABLES_NO_BULK];
 #endif
 #ifdef NBMU
                 updatedVars->Nbt[s] += result[NUMBER_CONSERVED_VARIABLES];

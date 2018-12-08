@@ -16,19 +16,18 @@
 //Main switch//
 
 #define PIMUNU
-//#define PI
+#define PI
 
-//#define NBMU
-//#define VMU
+#define NBMU
+#define VMU
 
-#ifdef NBMU
 #define RootSolver_with_Baryon
 //#define EOS_with_baryon
-#endif
 
 // Slow modes only evolve in non-ideal case in the code
 //#define HydroPlus
 
+/**************************************************************************************************************************************************/
 /*********************************************************/
 //Conservation laws//
 
@@ -40,10 +39,8 @@
 #define NUMBER_BARYON_COMPONENTS 1
 #endif
 
-#define ALL_NUMBER_CONSERVATION_LAWS (NUMBER_CONSERVATION_LAWS+NUMBER_BARYON_COMPONENTS)
-
 /*********************************************************/
-//Pressures//
+//Dissipative components//
 
 #ifndef PI
 #define NUMBER_PI_COMPONENTS 0
@@ -57,21 +54,10 @@
 #define NUMBER_PROPAGATED_PIMUNU_COMPONENTS 10
 #endif
 
-/*********************************************************/
-//Dissipative currents//
-
 #ifndef VMU
 #define NUMBER_PROPAGATED_VMU_COMPONENTS 0
 #else
 #define NUMBER_PROPAGATED_VMU_COMPONENTS 4
-#endif
-
-#define NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
-
-#define ALL_NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_VMU_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
-
-#if ALL_NUMBER_DISSIPATIVE_CURRENTS==0
-#define IDEAL
 #endif
 
 /*********************************************************/
@@ -83,14 +69,39 @@
 #define NUMBER_SLOW_MODES 3
 #endif
 
+/**************************************************************************************************************************************************/
 /*********************************************************/
 //Conservation variables//
 
-#define NUMBER_CONSERVED_VARIABLES (NUMBER_CONSERVATION_LAWS+NUMBER_DISSIPATIVE_CURRENTS)//excluding baryon part
+// T^\tau\mu + N^\tau
+#define ALL_NUMBER_CONSERVATION_LAWS (NUMBER_CONSERVATION_LAWS+NUMBER_BARYON_COMPONENTS)
 
-#define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)//baryon part is defined seperately
+// \pi^\tau\mu + \Pi
+#define NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
 
-#define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)//with slow modes
+// \pi^\tau\mu + \Pi + V^\mu
+#define ALL_NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_VMU_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
+
+// T^\tau\mu + \pi^\tau\mu
+#define NUMBER_CONSERVED_VARIABLES_NO_BULK (NUMBER_CONSERVATION_LAWS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
+
+// T^\tau\mu + \pi^\tau\mu + \Pi
+#define NUMBER_CONSERVED_VARIABLES (NUMBER_CONSERVATION_LAWS+NUMBER_DISSIPATIVE_CURRENTS)
+
+// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu
+#define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)
+
+// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu + slow modes
+#define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)
+
+
+/**************************************************************************************************************************************************/
+/*********************************************************/
+//Ideal or IS hydro//
+
+#if ALL_NUMBER_DISSIPATIVE_CURRENTS==0
+#define IDEAL
+#endif
 
 /*********************************************************/
 //Precision control//

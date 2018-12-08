@@ -331,7 +331,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
 	PRECISION pitn = 0;
 #endif
 #ifdef PI
-	PRECISION Pi = q[14];
+	PRECISION Pi = q[NUMBER_CONSERVED_VARIABLES_NO_BULK];
 #else
 	PRECISION Pi = 0;
 #endif
@@ -673,7 +673,7 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 q_s[13] = q->pinn[s];
 #endif
 #ifdef PI
-                q_s[14] = q->Pi[s];
+                q_s[NUMBER_CONSERVED_VARIABLES_NO_BULK] = q->Pi[s];
 #endif
 #ifdef NBMU
                 q_s[NUMBER_CONSERVED_VARIABLES] = q->Nbt[s];

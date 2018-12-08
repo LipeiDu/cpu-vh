@@ -32,7 +32,7 @@
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 
-#define FREQ 10 //write output to file every FREQ timesteps
+#define FREQ 1 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -128,7 +128,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // allocate memory
   allocateHostMemory(nElements);
   // Read in the table of Equation of State
-#ifdef NBMU
+#ifdef EOS_with_baryon
   getEquationOfStateTable();//Lipei
   //testEOS();
 #endif

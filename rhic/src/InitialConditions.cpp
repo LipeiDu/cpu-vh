@@ -550,7 +550,7 @@ void setNbmuInitialCondition(void * latticeParams, void * initCondParams, void *
                 q->nbt[s] = 0;
                 q->nbx[s] = 0;
                 q->nby[s] = 0;
-                q->nbn[s] = 400.0;
+                q->nbn[s] = 10.0;
             }
         }
     }
