@@ -481,7 +481,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *un = u0 * v3;
     }
     else{
-        printf("Solving for u0.\n");
+        //printf("Solving for u0.\n");
         //if(ePrev <= 0.1)
         //    u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
         //else

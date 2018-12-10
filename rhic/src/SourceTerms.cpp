@@ -19,6 +19,7 @@
 #include "../include/HydroPlus.h"
 
 //#define USE_CARTESIAN_COORDINATES
+//#define MINMOD_FOR_U_AND_P
 
 //parameters for the analytic parameterization of the bulk viscosity \zeta/S
 #define A_1 -13.77
@@ -40,7 +41,7 @@
 
 //Transport coefficients
 const PRECISION delta_pipi = 1.33333;
-const PRECISION tau_pipi = 1.42857;
+const PRECISION tau_pipi = 0;//1.42857;
 const PRECISION delta_PiPi = 0.666667;
 const PRECISION lambda_piPi = 1.2;
 
@@ -338,7 +339,6 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	*piRHS = dPi / ut + Pi * dkvk;
 #endif
 #ifdef VMU
-    // contribution from Hydro+ will be zero when slow modes are turned off by defination of NablaPhiSum
     nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
     nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
     nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
@@ -677,13 +677,36 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 	PRECISION facY = 1/d_dy/2;
 	PRECISION facZ = 1/d_dz/2;
     
-	// dx of u^{\mu} components
-	PRECISION dxut = (*(utvec + s + 1) - *(utvec + s - 1)) * facX;
-	PRECISION dxux = (*(uxvec + s + 1) - *(uxvec + s - 1)) * facX;
-	PRECISION dxuy = (*(uyvec + s + 1) - *(uyvec + s - 1)) * facX;
-	PRECISION dxun = (*(unvec + s + 1) - *(unvec + s - 1)) * facX;
+    int stride = d_ncx * d_ncy;
     
-    /*PRECISION utxp1 = utvec[s+1];
+#ifndef MINMOD_FOR_U_AND_P
+    
+    // dx of u^{\mu} components
+    PRECISION dxut = (*(utvec + s + 1) - *(utvec + s - 1)) * facX;
+    PRECISION dxux = (*(uxvec + s + 1) - *(uxvec + s - 1)) * facX;
+    PRECISION dxuy = (*(uyvec + s + 1) - *(uyvec + s - 1)) * facX;
+    PRECISION dxun = (*(unvec + s + 1) - *(unvec + s - 1)) * facX;
+    
+    // dy of u^{\mu} components
+    PRECISION dyut = (*(utvec + s + d_ncx) - *(utvec + s - d_ncx)) * facY;
+    PRECISION dyux = (*(uxvec + s + d_ncx) - *(uxvec + s - d_ncx)) * facY;
+    PRECISION dyuy = (*(uyvec + s + d_ncx) - *(uyvec + s - d_ncx)) * facY;
+    PRECISION dyun = (*(unvec + s + d_ncx) - *(unvec + s - d_ncx)) * facY;
+    
+    // dn of u^{\mu} components
+    PRECISION dnut = (*(utvec + s + stride) - *(utvec + s - stride)) * facZ;
+    PRECISION dnux = (*(uxvec + s + stride) - *(uxvec + s - stride)) * facZ;
+    PRECISION dnuy = (*(uyvec + s + stride) - *(uyvec + s - stride)) * facZ;
+    PRECISION dnun = (*(unvec + s + stride) - *(unvec + s - stride)) * facZ;
+    
+    // pressure
+    PRECISION dxp = (*(pvec + s + 1) - *(pvec + s - 1)) * facX;
+    PRECISION dyp = (*(pvec + s + d_ncx) - *(pvec + s - d_ncx)) * facY;
+    PRECISION dnp = (*(pvec + s + stride) - *(pvec + s - stride)) * facZ;
+    
+#else
+    // dx of u^{\mu} components
+    PRECISION utxp1 = utvec[s+1];
     PRECISION utxm1 = utvec[s-1];
     PRECISION uxxp1 = uxvec[s+1];
     PRECISION uxxm1 = uxvec[s-1];
@@ -695,15 +718,10 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION dxut = approximateDerivative(utxm1,ut,utxp1) * facX * 2;
     PRECISION dxux = approximateDerivative(uxxm1,ux,uxxp1) * facX * 2;
     PRECISION dxuy = approximateDerivative(uyxm1,uy,uyxp1) * facX * 2;
-    PRECISION dxun = approximateDerivative(unxm1,un,unxp1) * facX * 2;*/
+    PRECISION dxun = approximateDerivative(unxm1,un,unxp1) * facX * 2;
     
 	// dy of u^{\mu} components
-	PRECISION dyut = (*(utvec + s + d_ncx) - *(utvec + s - d_ncx)) * facY;
-	PRECISION dyux = (*(uxvec + s + d_ncx) - *(uxvec + s - d_ncx)) * facY;
-	PRECISION dyuy = (*(uyvec + s + d_ncx) - *(uyvec + s - d_ncx)) * facY;
-	PRECISION dyun = (*(unvec + s + d_ncx) - *(unvec + s - d_ncx)) * facY;
-    
-    /*PRECISION utyp1 = utvec[s+d_ncx];
+    PRECISION utyp1 = utvec[s+d_ncx];
     PRECISION utym1 = utvec[s-d_ncx];
     PRECISION uxyp1 = uxvec[s+d_ncx];
     PRECISION uxym1 = uxvec[s-d_ncx];
@@ -715,16 +733,10 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION dyut = approximateDerivative(utym1,ut,utyp1) * facY * 2;
     PRECISION dyux = approximateDerivative(uxym1,ux,uxyp1) * facY * 2;
     PRECISION dyuy = approximateDerivative(uyym1,uy,uyyp1) * facY * 2;
-    PRECISION dyun = approximateDerivative(unym1,un,unyp1) * facY * 2;*/
+    PRECISION dyun = approximateDerivative(unym1,un,unyp1) * facY * 2;
     
 	// dn of u^{\mu} components
-	int stride = d_ncx * d_ncy;
-	PRECISION dnut = (*(utvec + s + stride) - *(utvec + s - stride)) * facZ;
-	PRECISION dnux = (*(uxvec + s + stride) - *(uxvec + s - stride)) * facZ;
-	PRECISION dnuy = (*(uyvec + s + stride) - *(uyvec + s - stride)) * facZ;
-	PRECISION dnun = (*(unvec + s + stride) - *(unvec + s - stride)) * facZ;
-    
-    /*PRECISION utnp1 = utvec[s+stride];
+    PRECISION utnp1 = utvec[s+stride];
     PRECISION utnm1 = utvec[s-stride];
     PRECISION uxnp1 = uxvec[s+stride];
     PRECISION uxnm1 = uxvec[s-stride];
@@ -736,14 +748,10 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION dnut = approximateDerivative(utnm1,ut,utnp1) * facZ * 2;
     PRECISION dnux = approximateDerivative(uxnm1,ux,uxnp1) * facZ * 2;
     PRECISION dnuy = approximateDerivative(uynm1,uy,uynp1) * facZ * 2;
-    PRECISION dnun = approximateDerivative(unnm1,un,unnp1) * facZ * 2;*/
+    PRECISION dnun = approximateDerivative(unnm1,un,unnp1) * facZ * 2;
     
 	// pressure
-    PRECISION dxp = (*(pvec + s + 1) - *(pvec + s - 1)) * facX;
-	PRECISION dyp = (*(pvec + s + d_ncx) - *(pvec + s - d_ncx)) * facY;
-	PRECISION dnp = (*(pvec + s + stride) - *(pvec + s - stride)) * facZ;
-    
-    /*PRECISION pc = pvec[s];
+    PRECISION pc = pvec[s];
     PRECISION pxp1 = pvec[s+1];
     PRECISION pxm1 = pvec[s-1];
     PRECISION pyp1 = pvec[s+d_ncx];
@@ -753,8 +761,8 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     
     PRECISION dxp = approximateDerivative(pxm1,pc,pxp1) * facX * 2;
     PRECISION dyp = approximateDerivative(pym1,pc,pyp1) * facY * 2;
-    PRECISION dnp = approximateDerivative(pnm1,pc,pnp1) * facZ * 2;*/
-    
+    PRECISION dnp = approximateDerivative(pnm1,pc,pnp1) * facZ * 2;
+#endif
     
     //=========================================================
     //Calculate the gradient of chemical potential to temperature ratio
@@ -786,17 +794,11 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
      
      PRECISION dtmub, dxmub, dymub, dnmub;
      
-     if(rhobs<0.02){
      dtmub = (mubs - mubps ) / d_dt;
      dxmub = approximateDerivative(mubxm1,mubs,mubxp1) * facX * 2;
      dymub = approximateDerivative(mubym1,mubs,mubyp1) * facY * 2;
      dnmub = approximateDerivative(mubnm1,mubs,mubnp1) * facZ * 2;
-     }else{
-     dtmub = (mubs - mubps ) / d_dt;
-     dxmub = (mubxm2 - 8*mubxm2 + mubs + 8*mubxp1 - mubxp2) * facX/6;
-     dymub = (mubym2 - 8*mubym2 + mubs + 8*mubyp1 - mubyp2) * facY/6;
-     dnmub = (mubnm2 - 8*mubnm2 + mubs + 8*mubnp1 - mubnp2) * facZ/6;
-     }*/
+     */
     
     PRECISION ukdk_alphaB = ut * dtalphaB + ux * dxalphaB + uy * dyalphaB + un * dnalphaB;
     

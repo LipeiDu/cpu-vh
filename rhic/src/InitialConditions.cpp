@@ -1396,28 +1396,21 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 	double dy = lattice->latticeSpacingY;
 	double dz = lattice->latticeSpacingRapidity;
 
-	double x,y,ed,u1,u2,pitt,pitx,pity,pixx,pixy,piyy,pinn,rhod,nbn;
+	double x,y,ed,u1,u2,pitt,pitx,pity,pixx,pixy,piyy,pinn,rhod,nb;
 
 	FILE *file;
 	char fname[255];
-	//sprintf(fname, "%s/%s", rootDirectory, "/input/GubserInitialProfile.dat");
-    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser_InitialProfile_is.dat");
+    sprintf(fname, "%s/%s", rootDirectory, "/input/IS_Gubser_InitialProfile_Baryon.dat");
 	file = fopen(fname, "r");
-    
-    /*FILE *allsetfile;
-    char setname[255];
-    sprintf(setname, "%s.dat", "output/GubserInitialProfile.dat"); // All set.dat will be written in this file after recentering and rotation
-    allsetfile = fopen(setname, "w");*/
 
 	double pitn=0;
 	double pixn=0;
 	double piyn=0;
-    rhod = 0;
 
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
-			//int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn,&rhod,&nbn);
-            int status = fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn);
+            fscanf(file,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n", &x,&y,&ed,&u1,&u2,&pixx,&piyy,&pixy,&pitt,&pitx,&pity,&pinn,&rhod,&nb);
+            
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
 
@@ -1427,6 +1420,10 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 				u->uy[s] = u2;
 				u->un[s] = 0;
 				u->ut[s] = sqrt(1 + u1*u1 + u2*u2);
+                up->ux[s] = u->ux[s];
+                up->uy[s] = u->uy[s];
+                up->un[s] = u->un[s];
+                up->ut[s] = u->ut[s];
 #ifdef PIMUNU
         		q->pitt[s] = (PRECISION) pitt;
         		q->pitx[s] = (PRECISION) pitx;
@@ -1440,26 +1437,15 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
         		q->pinn[s] = (PRECISION) pinn;
 #endif
                 rhob[s] = (PRECISION) rhod;
-#ifdef VBMU
+#ifdef VMU
                 q->nbt[s] = 0;
                 q->nbx[s] = 0;
                 q->nby[s] = 0;
-                q->nbn[s] = nbn;
+                q->nbn[s] = nb;
 #endif
-                
-                //fprintf(allsetfile,"%.2f\t%.2f\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\t%.8e\n",x,y,ed,u1,u2,pixx,piyy,pixy,pitt,pitx,pity,pinn,rhod,nbn);
-                /*baryonden1 << setprecision(5) << setw(10) << x << setprecision(5)  << setw(10)  << y
-                << setprecision(6) << setw(18) << ed << setprecision(6) << setw(18) << u1 << setprecision(6) << setw(18) << u2
-                << setprecision(6) << setw(18) << pixx << setprecision(6) << setw(18) << piyy << setprecision(6) << setw(18) << pixy
-                << setprecision(6) << setw(18) << pitt << setprecision(6) << setw(18) << pitx << setprecision(6) << setw(18) << pity
-                << setprecision(6) << setw(18) << pinn
-                << setprecision(6) << setw(18) << rhod << setprecision(6) << setw(18) << nbn
-                << endl;//Lipei*/
 			}
 		}
 	}
-    
-    //fclose(allsetfile);//Lipei
 }
 
 

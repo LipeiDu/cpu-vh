@@ -75,6 +75,9 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 //if(x==0&&y==0)
                 //fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,e[s],q->pinn[s],q->Pi[s],rhob[s],q->nbn[s],T[s],p[s]);
                 
+                //if(x==0&&y==0)
+                    //fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,e[s],q->pinn[s],p[s]);
+                
                 //double tt=Ttt(e[s],p[s],u->ut[s],q->pitt[s]);
                 //double tx=Ttx(e[s],p[s],u->ut[s],u->ux[s],q->pitx[s]);
                 //double ty=Tty(e[s],p[s],u->ut[s],u->uy[s],q->pity[s]);
