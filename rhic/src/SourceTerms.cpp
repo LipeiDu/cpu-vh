@@ -308,13 +308,13 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     //* for the slow modes from Hydro+, by Lipei
     //*********************************************************/
     
-    PRECISION gammaQ = 0;
+    PRECISION Teq = effectiveTemperature(e, rhob);
+    printf("T=%f,\tTeq=%f\n",T,Teq);
+    
     PRECISION utInv = 1.0/ut;
     
     PRECISION corrL = xi(e, rhob);
     PRECISION corrL2 = corrL * corrL;
-    
-    //PRECISION entropy = equilibriumEntropy(e, rhob, p, T, alphaB);
     
     PRECISION gammaPhi = relaxationCoefficientPhi(rhob, seq, T, corrL2);
 #endif
@@ -347,7 +347,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
-        gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Qvec[n]);
+        PRECISION gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Qvec[n]);
         phiQRHS[n] = - utInv * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
     }
 #endif

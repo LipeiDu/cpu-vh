@@ -15,17 +15,17 @@
 /*********************************************************/
 //Main switch//
 
-#define PIMUNU
-#define PI
+//#define PIMUNU
+//#define PI
 
 #define NBMU
-#define VMU
+//#define VMU
 
 #define RootSolver_with_Baryon
 //#define EOS_with_baryon
 
 // Slow modes only evolve in non-ideal case in the code
-//#define HydroPlus
+#define HydroPlus
 
 /**************************************************************************************************************************************************/
 /*********************************************************/

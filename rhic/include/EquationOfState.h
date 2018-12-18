@@ -10,7 +10,7 @@
 
 #include "../include/DynamicalVariables.h"
 
-//#define CONFORMAL_EOS
+#define CONFORMAL_EOS
 //#define POLYTROPIC_EOS
 
 // ideal gas of massless quarks and gluons
@@ -20,19 +20,22 @@
 
 void getEquationOfStateTable();//Lipei
 
+void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __restrict__ PrimaryVariables);
+
 PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB);
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
 PRECISION equilibriumPressure(PRECISION e);
-
-PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);
 
 PRECISION effectiveTemperature(PRECISION e, PRECISION rhob);
 PRECISION effectiveTemperature(PRECISION e);
 
 PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob);
 
+PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);
+
 PRECISION dPdRhob(PRECISION e, PRECISION rhob);
+PRECISION dPdE(PRECISION e, PRECISION rhob);
 
 PRECISION equilibriumEnergyDensity(PRECISION T);
 

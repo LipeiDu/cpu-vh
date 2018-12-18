@@ -216,27 +216,112 @@ PRECISION primaryVariablesEOS(PRECISION e, PRECISION rhob, const PRECISION * con
     }
 }
 
+void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __restrict__ PrimaryVariables){
+    
+    PRECISION e0 = e*HBARC;
+    PRECISION rhob0 = rhob;
+    
+    if((0<=e0) && (e0<0.0036))
+    {
+        if((0<=rhob0) && (rhob0<=0.00498)){//zone 1
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 0.00499, 0.0, 0.0003, 500, 0.00001, 0, 0, EOState->alphab);
+        }
+    }
+    else if((0.0036<=e0) && (e0<0.015))
+    {
+        if((0<=rhob0) && (rhob0<=0.0149)){//zone 2
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 0.0036, 0.0006, 300, 0.00005, 6500, 12, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 0.01495, 0.0036, 0.0006, 300, 0.00005, 6500, 0, EOState->alphab);
+        }
+    }
+    else if((0.015<=e0) && (e0<0.045))
+    {
+        if((0<=rhob0) && (rhob0<=0.0445)){//zone 3
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 0.015, 0.001, 180, 0.00025, 12500, 3, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 0.04475, 0.015, 0.001, 180, 0.00025, 12500, 0, EOState->alphab);
+        }
+    }
+    else if((0.045<=e0) && (e0<0.455))
+    {
+        if((0<=rhob0) && (rhob0<=0.496)){//zone 4
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 0.045, 0.01, 250, 0.002, 18080, 4, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 0.498, 0.045, 0.01, 250, 0.002, 18080, 0, EOState->alphab);
+        }
+    }
+    else if((0.455<=e0) && (e0<20.355))
+    {
+        if((0<=rhob0) && (rhob0<=3.48)){//zone 5
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 0.455, 0.1, 350, 0.01, 28580, 7, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 3.49, 0.455, 0.1, 350, 0.01, 28580, 0, EOState->alphab);
+        }
+    }
+    else if((20.355<=e0)&(e0<219.355))
+    {
+        if((0<=rhob0) && (rhob0<=12.4)){//zone 6
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 20.355, 1, 250, 0.05, 98580, 1, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 12.45, 20.355, 1, 250, 0.05, 98580, 0, EOState->alphab);
+        }
+    }
+    else
+    {
+        if((0<=rhob0) && (rhob0<=39.6)){//zone 7
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, rhob0, 219.355, 10, 200, 0.2, 148580, 1, EOState->alphab);
+        }
+        else{
+            PrimaryVariables[0] = InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, 0, EOState->Pressure)/HBARC;
+            PrimaryVariables[1] = InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, 0, EOState->Temperature)/HBARC;
+            PrimaryVariables[2] = InferredPrimaryVariable(e0, 39.8, 219.355, 10, 200, 0.2, 148580, 0, EOState->alphab);
+        }
+    }
+}
+
 
 /**************************************************************************************************************************************************/
 /* 2D Equation of State
 /**************************************************************************************************************************************************/
 
-
-//****************************************************************************\
-//* Parameterization based on the Equation of state from the Wuppertal-Budapest collaboration
-//* Tref 1.01355
-//* h0 0.1396
-//* h1 (-0.1800)
-//* h2 0.0350
-//* alpha 0.01
-//* nf = 2+1+1
-//* f0 5.59
-//* f1 7.34
-//* f2 (-5.60)
-//* g1 1.42
-//* g2 0.5
-//****************************************************************************/
-
+PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB){
+    return (e + p) / T - alphaB * rhob;
+}
 
 PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB){
     PRECISION T0 = T*HBARC*1000;
@@ -261,6 +346,15 @@ PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB){
     }
 }
 
+PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){
+#ifndef EOS_with_baryon
+    return 0.0;
+#else
+    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->alphab)*HBARC;
+    else return -primaryVariablesEOS(e, fabs(rhob), EOState->alphab)*HBARC;
+#endif
+}
+
 PRECISION dPdRhob(PRECISION e, PRECISION rhob){
 #ifndef EOS_with_baryon
     return 0.0;
@@ -274,16 +368,7 @@ PRECISION dPdRhob(PRECISION e, PRECISION rhob){
 #endif
 }
 
-PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){
-#ifndef EOS_with_baryon
-    return 0.0;
-#else
-    if(rhob>=0) return primaryVariablesEOS(e, rhob, EOState->alphab)*HBARC;
-    else return -primaryVariablesEOS(e, fabs(rhob), EOState->alphab)*HBARC;
-#endif
-}
-
-PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
+PRECISION dPdE(PRECISION e, PRECISION rhob) {
 #ifndef EOS_with_baryon
 #ifndef CONFORMAL_EOS
     // Speed of sound from the Wuppertal-Budapest collaboration
@@ -452,12 +537,66 @@ PRECISION effectiveTemperature(PRECISION e, PRECISION rhob) {
 #endif
 }
 
-PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB){
-    return (e + p) / T - alphaB * rhob;
+PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
+#ifndef EOS_with_baryon
+#ifndef CONFORMAL_EOS
+    // Speed of sound from the Wuppertal-Budapest collaboration
+    double e1 = (double) e;
+    double e2 = e * e1;
+    double e3 = e2 * e1;
+    double e4 = e3 * e1;
+    double e5 = e4 * e1;
+    double e6 = e5 * e1;
+    double e7 = e6 * e1;
+    double e8 = e7 * e1;
+    double e9 = e8 * e1;
+    double e10 = e9 * e1;
+    double e11 = e10 * e1;
+    double e12 = e11 * e1;
+    double e13 = e12 * e1;
+    return (5.191934309650155e-32 + 4.123605749683891e-23 * e
+            + 3.1955868410879504e-16 * e2 + 1.4170364808063119e-10 * e3
+            + 6.087136671592452e-6 * e4 + 0.02969737949090831 * e5
+            + 15.382615282179595 * e6 + 460.6487249985994 * e7
+            + 1612.4245252438795 * e8 + 275.0492627924299 * e9
+            + 58.60283714484669 * e10 + 6.504847576502024 * e11
+            + 0.03009027913262399 * e12 + 8.189430244031285e-6 * e13)
+    / (1.4637868900982493e-30 + 6.716598285341542e-22 * e
+       + 3.5477700458515908e-15 * e2 + 1.1225580509306008e-9 * e3
+       + 0.00003551782901018317 * e4 + 0.13653226327408863 * e5
+       + 60.85769171450653 * e6 + 1800.5461219450308 * e7
+       + 15190.225535036281 * e8 + 590.2572000057821 * e9
+       + 293.99144775704605 * e10 + 21.461303090563028 * e11
+       + 0.09301685073435291 * e12 + 0.000024810902623582917 * e13);
+#else
+    return 1/3;
+#endif
+#else
+    PRECISION p = equilibriumPressure(e, rhob);
+    PRECISION dp_drhob = dPdRhob(e, rhob);
+    PRECISION dp_de = dPdE(e, rhob);
+    return dp_de + rhob / (e + p) * dp_drhob;
+#endif
 }
+
 /**************************************************************************************************************************************************/
 /* 1D Equation of State
 /**************************************************************************************************************************************************/
+
+//****************************************************************************\
+//* Parameterization based on the Equation of state from the Wuppertal-Budapest collaboration
+//* Tref 1.01355
+//* h0 0.1396
+//* h1 (-0.1800)
+//* h2 0.0350
+//* alpha 0.01
+//* nf = 2+1+1
+//* f0 5.59
+//* f1 7.34
+//* f2 (-5.60)
+//* g1 1.42
+//* g2 0.5
+//****************************************************************************/
 
 PRECISION equilibriumPressure(PRECISION e) {
 #ifndef CONFORMAL_EOS
@@ -541,7 +680,6 @@ PRECISION effectiveTemperature(PRECISION e) {
     return powf(e/EOS_FACTOR, 0.25);
 #endif
 }
-
 
 PRECISION equilibriumEnergyDensity(PRECISION T) {
 #ifndef CONFORMAL_EOS

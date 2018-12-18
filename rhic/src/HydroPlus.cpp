@@ -19,7 +19,8 @@
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
-#define dQvec 3.0 // difference between Q vectors of slow modes
+#define dQvec 10.0 // difference between Q vectors of slow modes
+#define Q0 0.0
 
 /**************************************************************************************************************************************************/
 /* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
@@ -31,13 +32,13 @@
 #define xi02 1.0 // correlation length squared
 #define sigmae 50.0
 #define sigman 10.0
-#define ec 250.0
-#define rhobc 40.0
+#define ec 30.0
+#define rhobc 30.0
 #define Tc 200.0 // to be fixed
 
 // heat conductivity
 PRECISION lambdaT(PRECISION T){
-    return Cr * Tc * Tc;
+    return Cr * T * T;
 }
 
 // heat capacity density
@@ -131,11 +132,11 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     int nz = lattice->numLatticePointsRapidity;
     
 #ifdef HydroPlus
-    printf("Hydro+ is on...\n");
+    printf("Hydro+ is on, number of slow modes is %d, Q0 is %f, dQ is %f...\n",NUMBER_SLOW_MODES, Q0, dQvec);
     
     // initialization of Q vectors
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
-        Qvec[n] = 0.0 + n * dQvec;
+        Qvec[n] = Q0 + n * dQvec;
     }
 
     // initialization of slow mdoes at/out of equilibrium
@@ -155,6 +156,8 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                     
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
                     q->phiQ[n][s] = equiPhiQ;
+                    
+                    //printf("Initialization: equiPhiQ = %f\n",equiPhiQ);
                 }
             }
         }
@@ -168,20 +171,19 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 
 // note: the integrands of alpha and beta only work for f2 defined above.
 // this function takes e/p/rhob/T/alphaB and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
-void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn)
+void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn, PRECISION sIn)
 {
 
     PRECISION corrL = xi(eIn, rhobIn); // correlation length
     PRECISION corrL2 = corrL * corrL;
     
-    PRECISION s = equilibriumEntropy(eIn, rhobIn, pIn, TIn, alphaBIn);
-    PRECISION heatC = Cp(s, rhobIn, corrL2); // heat capacity
+    PRECISION heatC = Cp(sIn, rhobIn, corrL2); // heat capacity
     
     // for testing
     PRECISION dlnXi_de = dlnXide(eIn, rhobIn);
     PRECISION dlnXi_drhob = dlnXidrhob(eIn, rhobIn);
-    PRECISION dlnPhi0_de = dlnPhi0de(TIn, s, dlnXi_de);
-    PRECISION dlnPhi0_drhob = dlnPhi0drhob(alphaBIn, rhobIn, s, dlnXi_drhob);
+    PRECISION dlnPhi0_de = dlnPhi0de(TIn, sIn, dlnXi_de);
+    PRECISION dlnPhi0_drhob = dlnPhi0drhob(alphaBIn, rhobIn, sIn, dlnXi_drhob);
     
     PRECISION entropy = 0.0;
     PRECISION alpha = 0.0;
@@ -197,6 +199,7 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
         PRECISION phiRatio = PhiQ[n] / (equiPhiQ[n] + 1e-15);
         PRECISION phiRatioLog = log(phiRatio);
         PRECISION phiRatioOne = phiRatio - 1;
+        //printf("PhiQ[n]=%f\t equiPhiQ[n]=%f\t phiRatio=%f\t phiRatioLog=%f\n",PhiQ[n],equiPhiQ[n],phiRatio,phiRatioLog);
 
         // (Q*xi)f2(Q*xi)
         PRECISION Q = Qvec[n] + 0.5 * dQvec;
@@ -229,10 +232,12 @@ void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISIO
     PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
     
-    // variables(+) with contribution from slow modes
-    *T = 1 / (1/TIn + deltaBeta);
-    *alphaB = alphaBIn + deltaAlphaB;
+    //printf("deltaS=%f,\t deltaAlphaB=%f,\t deltaBeta=%f.\n",deltaS,deltaAlphaB,deltaBeta);
     
-    PRECISION deltaP = (*T) * (deltaS - (eIn + pIn) * deltaBeta + rhobIn * deltaAlphaB);
-    *p = pIn + deltaP;
+    // variables(+) with contribution from slow modes
+    PRECISION T = 1 / (1/TIn + deltaBeta);
+    
+    PRECISION deltaP = T * (deltaS - (eIn + pIn) * deltaBeta + rhobIn * deltaAlphaB);
+    *pPlus = pIn;// + deltaP;
+    //printf("deltaP=%f\n",deltaP);
 }

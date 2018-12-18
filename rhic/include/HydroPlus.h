@@ -25,6 +25,6 @@ PRECISION relaxationCoefficientPhiQ(PRECISION gammaPhi, PRECISION corrL2, PRECIS
 
 void setInitialConditionSlowModes(void * latticeParams, void * hydroParams);
 
-void getPrimaryVariablesFromSlowModes(PRECISION * const __restrict__ p, PRECISION * const __restrict__ T, PRECISION * const __restrict__ alphaB, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn);
+void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn, PRECISION sIn);
 
 #endif /* HydroPlus_h */

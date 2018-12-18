@@ -37,10 +37,10 @@ void flux(const PRECISION * const __restrict__ data, PRECISION * const __restric
 	}
 
 	// left and right extrapolated values of the primary variables
-	PRECISION eR,pR,utR,uxR,uyR,unR,rhobR,TR,muBR,equiPhiQR[NUMBER_SLOW_MODES];
-	getInferredVariables(t,qR,ePrev,&eR,&pR,utPrev,&utR,&uxR,&uyR,&unR,rhobPrev,&rhobR,&TR,&muBR,equiPhiQR);
-	PRECISION eL,pL,utL,uxL,uyL,unL,rhobL,TL,muBL,equiPhiQL[NUMBER_SLOW_MODES];
-	getInferredVariables(t,qL,ePrev,&eL,&pL,utPrev,&utL,&uxL,&uyL,&unL,rhobPrev,&rhobL,&TL,&muBL,equiPhiQL);
+	PRECISION eR,pR,utR,uxR,uyR,unR,rhobR,TR,alphaBR,sR,equiPhiQR[NUMBER_SLOW_MODES];
+	getInferredVariables(t,qR,ePrev,&eR,&pR,utPrev,&utR,&uxR,&uyR,&unR,rhobPrev,&rhobR,&TR,&alphaBR,&sR,equiPhiQR);
+	PRECISION eL,pL,utL,uxL,uyL,unL,rhobL,TL,alphaBL,sL,equiPhiQL[NUMBER_SLOW_MODES];
+	getInferredVariables(t,qL,ePrev,&eL,&pL,utPrev,&utL,&uxL,&uyL,&unL,rhobPrev,&rhobL,&TL,&alphaBL,&sL,equiPhiQL);
 
 	PRECISION a,qR_n,qL_n,FqR,FqL,res;
 	a = localPropagationSpeed(utR,uxR,uyR,unR,utL,uxL,uyL,unL,spectralRadius);

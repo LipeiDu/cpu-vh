@@ -1359,7 +1359,7 @@ void setIdealGubserInitialCondition(void * latticeParams, void * initCondParams,
     FILE *file;
     char fname[255];
 
-    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser_InitialProfile_ideal.dat");
+    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser-test/Gubser_InitialProfile_ideal.dat");
     file = fopen(fname, "r");
 
     for(int i = 2; i < nx+2; ++i) {
@@ -1400,7 +1400,7 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 
 	FILE *file;
 	char fname[255];
-    sprintf(fname, "%s/%s", rootDirectory, "/input/IS_Gubser_InitialProfile_Baryon.dat");
+    sprintf(fname, "%s/%s", rootDirectory, "/input/Gubser-test/Gubser_InitialProfile_IS_Baryon.dat");
 	file = fopen(fname, "r");
 
 	double pitn=0;
