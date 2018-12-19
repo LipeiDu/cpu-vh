@@ -308,8 +308,8 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     //* for the slow modes from Hydro+, by Lipei
     //*********************************************************/
     
-    PRECISION Teq = effectiveTemperature(e, rhob);
-    printf("T=%f,\tTeq=%f\n",T,Teq);
+    //PRECISION Teq = effectiveTemperature(e, rhob);
+    //printf("T=%f,\tTeq=%f\n",T,Teq);
     
     PRECISION utInv = 1.0/ut;
     
@@ -856,7 +856,7 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 	//=========================================================
 	// Dissipative components source terms
 	//=========================================================
-#ifndef IDEAL
+//#ifndef IDEAL
 	PRECISION pimunuRHS[NUMBER_PROPAGATED_PIMUNU_COMPONENTS];
     PRECISION piRHS;
     PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];
@@ -876,5 +876,5 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 #ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[ALL_NUMBER_CONSERVED_VARIABLES+n] = phiQRHS[n];// for slow modes
 #endif
-#endif
+//#endif
 }

@@ -212,9 +212,17 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
         rhob0 = N0 * sqrt(1 - vPrev * vPrev);
         
         // without contributions from the slow modes
-        peq = equilibriumPressure(e0, rhob0);
-        Teq = effectiveTemperature(e0, rhob0);
-        alphaBeq = chemicalPotentialOverT(e0, rhob0);
+        //peq = equilibriumPressure(e0, rhob0);
+        //Teq = effectiveTemperature(e0, rhob0);
+        //alphaBeq = chemicalPotentialOverT(e0, rhob0);
+        
+        PRECISION PrimaryVariables[3];
+        
+        getPrimaryVariablesCombo(e0, rhob0, PrimaryVariables);
+        
+        peq = PrimaryVariables[0];
+        Teq = PrimaryVariables[1];
+        alphaBeq = PrimaryVariables[2];
         Seq = equilibriumEntropy(e0, rhob0, peq, Teq, alphaBeq);
         
         //printf("peq=%f\t Teq=%f\t alphaBeq=%f.\n",peq,Teq,alphaBeq);
