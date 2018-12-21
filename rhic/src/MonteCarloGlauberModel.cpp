@@ -8,6 +8,7 @@
 #include "../include/GlauberModel.h"
 #include "../include/MonteCarloGlauberModel.h"
 #include "../include/InitialConditionParameters.h"
+#include <time.h>
 
 #include <gsl/gsl_integration.h>
 
@@ -32,21 +33,30 @@ void sampleWoodsSaxon(int A, double * const __restrict__ x, double * const __res
 	}
 }
 
-int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double * const __restrict__ y, double snn, int * const __restrict__ n1 , int * const __restrict__ n2, double * const __restrict__ x1p, double * const __restrict__ y1p, double * const __restrict__ x2p, double * const __restrict__ y2p//n1&n2&x1p&y1p&x2p&y2p by Lipei
-                          ) {
+int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double * const __restrict__ y, double snn, int * const __restrict__ n1 , int * const __restrict__ n2, double * const __restrict__ x1p, double * const __restrict__ y1p, double * const __restrict__ x2p, double * const __restrict__ y2p) {
 	double x1[A], y1[A], x2[A], y2[A];
 	int l1[A], l2[A];
+                              
+    // sample nucleons
 	sampleWoodsSaxon(A,x1,y1);
 	sampleWoodsSaxon(A,x2,y2);
+                              
+    // impact parameter
 	for (int i=0; i<A; i++) {
 		x1[i] -= b/2;
 		x2[i] += b/2;
 	}
-	double dn = sqrt(0.1*snn/M_PI);
+                              
+    // label of participant of every nucleon
 	for(int i = 0; i < A; ++i) {
 		l1[i] = 0;
 		l2[i] = 0;
 	}
+                              
+    // nucleon-nucleon collisions
+    // fermiToMilliBarns = 0.1;
+    double dn = sqrt(0.1*snn/M_PI);
+                              
 	for(int i = 0; i < A; ++i) {
 		for (int j = 0; j < A; ++j) {
 			double dist = pow(x1[i]-x2[j],2);
@@ -60,8 +70,8 @@ int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double
 	}
                               
 	int n = 0;
-    *n1 = 0;//Lipei
-    *n2 = 0;//Lipei
+    *n1 = 0;// number of participants in nuclear 1
+    *n2 = 0;// number of participants in nuclear 2
                               
 	for(int i = 0; i < A; ++i) {
 		if (l1[i] > 0) {
@@ -69,52 +79,49 @@ int numberWoundedNucleons(int A, double b, double * const __restrict__ x, double
 			y[n] = y1[i];
 			n++;
 
-            x1p[*n1] = x1[i];//Lipei
-            y1p[*n1] = y1[i];//Lipei
-            (*n1)++;//Lipei
+            x1p[*n1] = x1[i];
+            y1p[*n1] = y1[i];
+            (*n1)++;
 		}
 		if (l2[i] > 0) {
 			x[n] = x2[i];
 			y[n] = y2[i];
 			n++;
 
-            x2p[*n2] = x2[i];//Lipei
-            y2p[*n2] = y2[i];//Lipei
-            (*n2)++;//Lipei
+            x2p[*n2] = x2[i];
+            y2p[*n2] = y2[i];
+            (*n2)++;
 		}
 	}
 	return n;
 }
 
-void 
-monteCarloGlauberEnergyDensityTransverseProfile(double * const __restrict__ energyDensityTransverse, 
-int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB, int * const __restrict__ n1, int * const __restrict__ n2//Ta&Tb, n1&n2 by Lipei
+void monteCarloGlauberEnergyDensityTransverseProfile(double * const __restrict__ energyDensityTransverse, int nx, int ny, double dx, double dy, void * initCondParams, double * const __restrict__ TA, double * const __restrict__ TB, int * const __restrict__ n1, int * const __restrict__ n2//Ta&Tb, n1&n2 by Lipei
 ) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
 	int    NA = initCond->numberOfNucleonsPerNuclei;
 	double b = initCond->impactParameter;
-	double e0 = initCond->initialEnergyDensity;
 	double snn = initCond->scatteringCrossSectionNN;
-	double etaFlat = initCond->rapidityMean;
-	double etaVariance = initCond->rapidityVariance;
-	double SIG0 = 0.46;
 
 	double xp[2*NA], yp[2*NA];
-    double x1p[NA], y1p[NA], x2p[NA], y2p[NA];//Lipei
+    double x1p[NA], y1p[NA], x2p[NA], y2p[NA];
 
-    srand(1328398221);
-	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn,n1,n2,x1p,y1p,x2p,y2p);//n1&n2&x1p&y1p&x2p&y2p by Lipei
+    //srand(1328398221);
+    srand (time(NULL));
+	int nNucleons = numberWoundedNucleons(NA,b,xp,yp,snn,n1,n2,x1p,y1p,x2p,y2p);
 	printf("Found %d wounded nucleons, %d from A and %d from B.\n", nNucleons, *n1, *n2);
     
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
       	energyDensityTransverse[i + nx*j] = 0;
-        TA[i + nx*j] = 0;//Lipei
-        TB[i + nx*j] = 0;//Lipei
+        TA[i + nx*j] = 0;
+        TB[i + nx*j] = 0;
       }
 	}
     
-    double norm = 1/(2*3.1415926*SIG0*SIG0);//Lipei
+    double SIG0 = 0.46;
+    double SIG02 = SIG0*SIG0;
+    double norm = 1/(2*M_PI*SIG02);
     
 	for(int i = 0; i < nx; ++i) {
    	for(int j = 0; j < ny; ++j) {
@@ -122,19 +129,19 @@ int nx, int ny, double dx, double dy, void * initCondParams, double * const __re
             double x = (i - ((double)nx-1.)/2.)*dx - xp[n];
             double y = (j - ((double)ny-1.)/2.)*dy - yp[n];
             // assumes gaussion bump in density
-            energyDensityTransverse[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);
+            energyDensityTransverse[i + nx*j] += norm * exp(-x*x/2/SIG02-y*y/2/SIG02);
         }
         
-        //To initialize the baryon density in 3D, the thickness function of A&B are needed seperately; by Lipei
+        //To initialize the baryon density in 3D, the thickness function of A&B are needed seperately;
         for (int n = 0; n < *n1; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x1p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y1p[n];
-            TA[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
+            TA[i + nx*j] += norm * exp(-x*x/2/SIG02-y*y/2/SIG02);
         }
         for (int n = 0; n < *n2; ++n) {
             double x = (i - ((double)nx-1.)/2.)*dx - x2p[n];
             double y = (j - ((double)ny-1.)/2.)*dy - y2p[n];
-            TB[i + nx*j] += norm * exp(-x*x/2/SIG0/SIG0-y*y/2/SIG0/SIG0);//Lipei
+            TB[i + nx*j] += norm * exp(-x*x/2/SIG02-y*y/2/SIG02);
         }
 	  }
 	}

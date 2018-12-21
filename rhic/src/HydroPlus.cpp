@@ -50,7 +50,7 @@ PRECISION Cp(PRECISION s, PRECISION rhob, PRECISION corrL2){
 PRECISION xi(PRECISION e, PRECISION rhob){
     PRECISION deltaE = e - ec;
     PRECISION deltaRhob = rhob - rhobc;
-    return xi0 * exp(- deltaE * deltaE/(2*sigmae*sigmae) - deltaRhob * deltaRhob/(2*sigman*sigman)); // to be fixed
+    return xi0 * exp(- deltaE * deltaE/(2*sigmae*sigmae) - deltaRhob * deltaRhob/(2*sigman*sigman)) + xi0; // to be fixed
 }
 
 // derivative of log(xi) with respect to energy
@@ -239,5 +239,5 @@ void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PR
     
     PRECISION deltaP = T * (deltaS - (eIn + pIn) * deltaBeta + rhobIn * deltaAlphaB);
     *pPlus = pIn;// + deltaP;
-    //printf("deltaP=%f\n",deltaP);
+    //printf("deltaP=%f\t p+=%f\n",deltaP,pIn+deltaP);
 }

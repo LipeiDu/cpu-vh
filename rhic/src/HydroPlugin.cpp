@@ -32,7 +32,7 @@
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 
-#define FREQ 50 //write output to file every FREQ timesteps
+#define FREQ 1 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -45,37 +45,37 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   //output(p, t, outputDir, "p", latticeParams);
-  output(u->ux, t, outputDir, "ux", latticeParams);
+  //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
-  output(u->ut, t, outputDir, "ut", latticeParams);
-  output(q->ttt, t, outputDir, "ttt", latticeParams);
-  output(q->ttx, t, outputDir, "ttx", latticeParams);
-  output(q->tty, t, outputDir, "tty", latticeParams);
-  output(q->ttn, t, outputDir, "ttn", latticeParams);
+  //output(u->ut, t, outputDir, "ut", latticeParams);
+  //output(q->ttt, t, outputDir, "ttt", latticeParams);
+  //output(q->ttx, t, outputDir, "ttx", latticeParams);
+  //output(q->tty, t, outputDir, "tty", latticeParams);
+  //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
-  output(q->pitx, t, outputDir, "pitx", latticeParams);
-  output(q->pixx, t, outputDir, "pixx", latticeParams);
-  output(q->pixy, t, outputDir, "pixy", latticeParams);
-  output(q->pixn, t, outputDir, "pixn", latticeParams);
-  output(q->piyy, t, outputDir, "piyy", latticeParams);
-  output(q->piyn, t, outputDir, "piyn", latticeParams);
-  output(q->pinn, t, outputDir, "pinn", latticeParams);
+  //output(q->pitx, t, outputDir, "pitx", latticeParams);
+  //output(q->pixx, t, outputDir, "pixx", latticeParams);
+  //output(q->pixy, t, outputDir, "pixy", latticeParams);
+  //output(q->pixn, t, outputDir, "pixn", latticeParams);
+  //output(q->piyy, t, outputDir, "piyy", latticeParams);
+  //output(q->piyn, t, outputDir, "piyn", latticeParams);
+  //output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
   #ifdef PI
-  output(q->Pi, t, outputDir, "Pi", latticeParams);
+  //output(q->Pi, t, outputDir, "Pi", latticeParams);
   #endif
   //output(T, t, outputDir, "T", latticeParams);
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
-  //output(alphaB, t, outputDir, "alphaB", latticeParams);
+  output(alphaB, t, outputDir, "alphaB", latticeParams);
   //output(q->Nbt, t, outputDir, "Nbt", latticeParams);
   #endif
   #ifdef VMU
   //output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  output(q->nbn, t, outputDir, "nbn", latticeParams);
+  //output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
   #ifdef HydroPlus
   //output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);

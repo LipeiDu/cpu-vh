@@ -22,9 +22,8 @@
 //#define VMU
 
 #define RootSolver_with_Baryon
-//#define EOS_with_baryon
+#define EOS_with_baryon
 
-// Slow modes only evolve in non-ideal case in the code
 #define HydroPlus
 
 /**************************************************************************************************************************************************/
