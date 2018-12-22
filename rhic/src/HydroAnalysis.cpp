@@ -72,6 +72,9 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
                 x = (i-2 - (nx-1)/2.)*dx;
                 s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 
+                if(x==0.0&&y==0.0&&t==1.5)
+                    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",z,e[s],rhob[s],seq[s],alphaB[s],T[s]);
+                
                 //if(x==0&&y==0)
                 //fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,e[s],q->pinn[s],q->Pi[s],rhob[s],q->nbn[s],T[s],p[s]);
                 

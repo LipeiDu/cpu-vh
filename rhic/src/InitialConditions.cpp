@@ -1250,7 +1250,7 @@ void setGlauberInitialCondition(void * latticeParams, void * initCondParams) {
 /**************************************************************************************************************************************************/
 /* Monte carlo Glauber initial energy density distribution
 /**************************************************************************************************************************************************/
-void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams, const char *rootDirectory) {
 	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
@@ -1270,12 +1270,12 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
     
     double t0 = hydro->initialProperTimePoint;
 
+#ifndef Avg_MCGlauber
     double eT[nx*ny], eL[nz];
     double rhoLa[nz], rhoLb[nz];
     double Ta[nx*ny], Tb[nx*ny];
     int n1, n2;
     
-#ifndef Avg_MCGlauber
     monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, &n1, &n2);
     longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);
@@ -1317,9 +1317,83 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
     baryonden2.close();*/
     //printf("Baryon density is initialized.\n");
 #else
-    int nev = 10000;
+    double eT[201*201], eL[nz];
+    double rhoLa[nz], rhoLb[nz];
+    
+    FILE *file;
+    char fname[255];
+    
+    sprintf(fname, "%s/%s", rootDirectory, "/input/avgMCGlauberAu.dat");
+    file = fopen(fname, "r");
+    
+    double x, y, z, ed;
+    
+    for(int i = 2; i < 201+2; ++i) {
+        for(int j = 2; j < 201+2; ++j) {
+            fscanf(file,"%lf\t%lf\t%lf\t%lf\n", &x,&y,&z,&ed);
+            eT[i-2+(j-2)*201] = (PRECISION) ed;
+        }
+    }
+
+    longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
+    longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);
+    
+    /*double es = 1.0 / t0 * (eL[50-2] * eT[100-2 + (100-2)*nx] + 1.e-5);
+    double rhobs = 1 / t0 * (0.332452 * (rhoLa[50-2] + rhoLb[50-2]) * eT[100-2+(100-2)*nx] + 1.e-5);
+    double seqs = 3.15 / t0 * (eL[50-2] * eT[100-2 + (100-2)*nx] + 1.e-5);
+    printf("es=%f\t rhobs=%f\t seqs=%f\n",es,rhobs,seqs);
+    printf("eTs=%f\t eLs=%f\t rhobLs=%f\n",eT[100-2 + (100-2)*nx],eL[50-2],(rhoLa[50-2] + rhoLb[50-2]));
+    
+    PRECISION PrimaryVariables[3];
+    getPrimaryVariablesCombo(es, rhobs, PrimaryVariables);
+    
+    double peq = PrimaryVariables[0];
+    double Teq = PrimaryVariables[1];
+    double alphaBeq = PrimaryVariables[2];
+    double Seq = equilibriumEntropy(es, rhobs, peq, Teq, alphaBeq);
+
+    printf("Seq=%f \n",Seq);*/
+    
+    /*PRECISION PrimaryVariables[3];
+    
+    for(int i = 0; i < 100; ++i){
+        
+        e0 = es * (3.05+i*0.01);
+        getPrimaryVariablesCombo(e0, rhobs, PrimaryVariables);
+        
+        double peq = PrimaryVariables[0];
+        double Teq = PrimaryVariables[1];
+        double alphaBeq = PrimaryVariables[2];
+        double Seq = equilibriumEntropy(e0, rhobs, peq, Teq, alphaBeq);
+        double ratio = fabs(seqs - Seq);
+        printf("i=%d\t e0=%f\t Seq=%f \n",i,e0,Seq);
+        
+        if(ratio<0.1) {printf("i=%d",i);exit(1);}
+    }*/
+    
+    
+    for(int i = 2; i < nx+2; ++i) {
+        for(int j = 2; j < ny+2; ++j) {
+            for(int k = 2; k < nz+2; ++k) {
+                int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                e[s] = (double) e0 / t0 * (eL[k-2] * eT[i-2 + (j-2)*nx] + 1.e-5);
+                rhob[s] = (double) 1 / t0 * (0.332452 * (rhoLa[k-2] + rhoLb[k-2]) * eT[i-2+(j-2)*nx] + 1.e-5);// normalization factor 0.33
+                p[s] = equilibriumPressure(e[s], rhob[s]);
+            }
+        }
+    }
+    
+    
+    /*double Ta[nx*ny], Tb[nx*ny];
+    int n1, n2;
+    
+    int nev = 1000;
     double fac = 1/ (double) nev;
     for(int n = 0; n < nev; ++n) {
+        
+        printf("nev=%d\n",n);
+        
         monteCarloGlauberEnergyDensityTransverseProfile(eT, nx, ny, dx, dy, initCondParams, Ta, Tb, &n1, &n2);
         
         for(int i = 2; i < nx+2; ++i) {
@@ -1327,8 +1401,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
                 for(int k = 2; k < nz+2; ++k) {
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     
-                    e[s] += (double) fac * e0 / t0 * (eT[i-2 + (j-2)*nx] + 1.e-5);
-                    //rhob[s] += (double) fac * rhob0 / t0 * (eT[i-2+(j-2)*nx] + 1.e-5);
+                    e[s] += (double) fac * (eT[i-2 + (j-2)*nx] + 1.e-5);
                 }
             }
         }
@@ -1350,7 +1423,7 @@ void setMCGlauberInitialCondition(void * latticeParams, void * initCondParams, v
     
     avgic.close();
     
-    exit(1);
+    exit(1);*/
 #endif
 }
 
@@ -1999,7 +2072,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 		}
 		case 4: {
 			printf("Monte carlo Glauber.\n");
-			setMCGlauberInitialCondition(latticeParams, initCondParams, hydroParams);
+			setMCGlauberInitialCondition(latticeParams, initCondParams, hydroParams, rootDirectory);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
             setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
