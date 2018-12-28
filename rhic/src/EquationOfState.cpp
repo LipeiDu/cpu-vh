@@ -33,7 +33,8 @@ void getEquationOfStateTable(){
     FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob, *filesigmab;
     PRECISION energy;
     PRECISION baryon;
-    
+
+#ifdef VMU
     // baryon conductivity
     filesigmab = fopen ("eos/kappaB.dat","r");
     if(filesigmab==NULL){
@@ -48,6 +49,7 @@ void getEquationOfStateTable(){
         }
     }
     fclose(filesigmab);
+#endif
     
     // temperature table
     eosfilet = fopen ("eos/eos_t.dat","r");
@@ -111,6 +113,30 @@ void getEquationOfStateTable(){
     
     printf("Equation of State table is read in.\n");
 
+}
+
+// Read in the table of correlation length
+void getCorrelationLengthTable(){
+    
+    FILE *filexi;
+    PRECISION x, y;
+    
+    filexi = fopen ("input/xivsmuT.dat","r");
+    if(filexi==NULL){
+        printf("xivsmuT.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(filexi,0L,SEEK_SET);
+        for(int i = 0; i < 6966; ++i){
+            fscanf(filexi,"%lf %lf %lf", & x, & y, & xieq[i]);
+        }
+    }
+    fclose(filexi);
+
+    printf("Correlation length table is read in.\n");
+    
 }
 
 int columnIndex(int i, int j, int nrhob){
@@ -393,30 +419,50 @@ void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __r
 /**************************************************************************************************************************************************/
 
 PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB){
-    return (e + p) / T - alphaB * rhob;
+    PRECISION s = (e + p) / T - alphaB * rhob;
+    if(s<=0.0) s = 1.e-5;
+    return s;
 }
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB){
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION muB){
     PRECISION T0 = T*HBARC*1000;
-    PRECISION alphaB0 = fabs(alphaB*HBARC*1000);
+    PRECISION muB0 = fabs(muB*HBARC*1000);
+#ifdef VMU
     if((100<=T0)&&(T0<=450)){
-        if((0<=alphaB0)&&(alphaB0<=400))
-            return InferredPrimaryVariable(alphaB0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=muB0)&&(muB0<=400))
+            return InferredPrimaryVariable(muB0, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return InferredPrimaryVariable(400, T0-100, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
     }else if(T0<100)
     {
-        if((0<=alphaB0)&&(alphaB0<=400))
-            return InferredPrimaryVariable(alphaB0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=muB0)&&(muB0<=400))
+            return InferredPrimaryVariable(muB0, 0, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return 0.0543361/HBARC/1000;
     }else
     {
-        if((0<=alphaB0)&&(alphaB0<=400))
-            return InferredPrimaryVariable(alphaB0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
+        if((0<=muB0)&&(muB0<=400))
+            return InferredPrimaryVariable(muB0, 350, 0, 5, 71, 5, 0, 0, EOState->sigmaB)/HBARC/1000;
         else
             return 22.5093/HBARC/1000;
     }
+#else
+    return 0.0;
+#endif
+}
+
+PRECISION correlationLength(PRECISION T, PRECISION muB){
+    PRECISION T0 = T*HBARC;
+    PRECISION muB0 = muB*HBARC;
+    
+    if((0.12<=T0)&&(T0<=0.2)){
+        if((0.28<=muB0)&&(muB0<=0.45)){
+            return InferredPrimaryVariable(muB0, T0-0.12, 0.28, 0.002, 81, 0.001, 0, 0, xieq);
+        }
+        else
+            return 1.0;
+    }else
+        return 1.0;
 }
 
 PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob){

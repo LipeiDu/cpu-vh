@@ -36,6 +36,8 @@ PRECISION *Qvec; // Q vectors of slow modes
 
 SLOW_MODES *eqPhiQ; // Slow modes at equilibrium
 
+PRECISION *xieq; // correlation length
+
 
 /**************************************************************************************************************************************************/
 /* column compact index
@@ -218,12 +220,15 @@ void allocateHostMemory(int len) {
     EOState->Temperature   = (PRECISION *)calloc(188580, bytes);
     EOState->alphab      = (PRECISION *)calloc(188580, bytes);
     EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);
+#ifdef VMU
     EOState->sigmaB = (PRECISION *)calloc(5751, bytes);
+#endif
     
     //=======================================================================
     // Slow modes at equilibrium
     //=======================================================================
     
+#ifdef HydroPlus
     Qvec = (PRECISION *)calloc(NUMBER_SLOW_MODES, bytes);
     
     eqPhiQ  = (SLOW_MODES *)calloc(1, sizeof(SLOW_MODES));
@@ -231,7 +236,10 @@ void allocateHostMemory(int len) {
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
         eqPhiQ->phiQ[n]  = (PRECISION *)calloc(len, bytes);
     }
-    
+#endif
+#ifdef CRITICAL
+    xieq = (PRECISION *)calloc(6966, bytes);
+#endif
 }
 
 
@@ -511,7 +519,9 @@ void freeHostMemory() {
     free(EOState->Temperature);
     free(EOState->alphab);
     free(EOState->dpdrhob);
+#ifdef VMU
     free(EOState->sigmaB);
+#endif
 
     free(rhob);
     free(alphaB);

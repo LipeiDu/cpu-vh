@@ -45,6 +45,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
 {
   output(e, t, outputDir, "e", latticeParams);
   //output(p, t, outputDir, "p", latticeParams);
+  output(seq, t, outputDir, "seq", latticeParams);
   //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
@@ -134,6 +135,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 #ifdef EOS_with_baryon
   getEquationOfStateTable();//Lipei
   //testEOS();
+#endif
+#ifdef CRITICAL
+  getCorrelationLengthTable();
 #endif
 
   //************************************************************************************\
@@ -248,7 +252,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
-      //outputAnalysis(t, outputDir, latticeParams);
+      outputAnalysis(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
       //printf("\nReached freezeout temperature at the center.\n");

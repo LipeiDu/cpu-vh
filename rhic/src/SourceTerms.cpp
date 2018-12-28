@@ -64,7 +64,7 @@ inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 /* baryon diffusion coefficient of the medium from kinetic theory
 /**************************************************************************************************************************************************/
 
-inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p){
+PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p){
     PRECISION HyCotangent = 1/tanh(alphaB);
     if(isnan(HyCotangent))
         printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub_over_T=%4e,\t T=%4e. \n",e,rhob, alphaB, T);
@@ -73,6 +73,12 @@ inline PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISI
     /*return Cb * rhob / (alphaB * T);*/
 }
 
+PRECISION criticalBaryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
+    PRECISION fac = rhob*T/(e+p);
+    PRECISION corrL = correlationLength(T, T*alphaB);
+    //printf("T=%f\t alphaB=%f\t corrL=%f",T,alphaB,corrL);
+    return fac * fac * T * seq * corrL / rhob / (1.2 * M_PI);
+}
 
 /**************************************************************************************************************************************************/
 /* calculate source terms for dissipative compnents, e.g. shear, bulk and baryon diffusion etc.
@@ -86,6 +92,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION taupiInv = T / 5  / d_etabar; //d_etabar=shearViscosityToEntropyDensity
 	PRECISION beta_pi = (e + p) / 5;
 
+    //printf("kappab=%f\n",criticalBaryonDiffusionCoefficient(T, rhob, alphaB, e, p, seq));
 	//*********************************************************\
 	//* Temperature dependent bulk transport coefficients
 	//*********************************************************/

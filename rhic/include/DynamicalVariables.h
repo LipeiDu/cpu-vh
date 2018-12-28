@@ -19,13 +19,13 @@
 //#define PI
 
 #define NBMU
-//#define VMU
+#define VMU
 
 #define RootSolver_with_Baryon
 #define EOS_with_baryon
 
-#define HydroPlus
-
+//#define HydroPlus
+#define CRITICAL
 /**************************************************************************************************************************************************/
 /*********************************************************/
 //Conservation laws//
@@ -65,7 +65,7 @@
 #ifndef HydroPlus
 #define NUMBER_SLOW_MODES 0
 #else
-#define NUMBER_SLOW_MODES 3
+#define NUMBER_SLOW_MODES 0
 #endif
 
 /**************************************************************************************************************************************************/
@@ -166,7 +166,9 @@ typedef struct
     PRECISION *Temperature;
     PRECISION *alphab;
     PRECISION *dpdrhob;
+#ifdef VMU
     PRECISION *sigmaB;
+#endif
 } EQUATION_OF_STATE;
 
 // slow modes
@@ -192,6 +194,7 @@ typedef struct
 
 extern SLOW_MODES *eqPhiQ;  // Slow modes at equilibrium: updated, previous, intermediate values
 extern PRECISION *Qvec; // Q vectors of slow modes
+extern PRECISION *xieq; // correlation length
 
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;

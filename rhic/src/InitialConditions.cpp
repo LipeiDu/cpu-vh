@@ -31,6 +31,7 @@
 #include "../include/EquationOfState.h"
 
 #include "../include/HydroPlus.h"
+#include "../include/SourceTerms.h"
 
 #define THETA_FUNCTION(X) ((double)X < (double)0 ? (double)0 : (double)1)
 
@@ -1126,8 +1127,9 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
 /**************************************************************************************************************************************************/
 /* Constant initial energy density distribution
 /**************************************************************************************************************************************************/
-void setConstantDensityInitialCondition(void * latticeParams, void * initCondParams) {
+void setConstantDensityInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
+    struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
 	double initialEnergyDensity = initCond->initialEnergyDensity;
     double initialBaryonDensity = initCond->initialBaryonDensity;
 
@@ -1138,6 +1140,7 @@ void setConstantDensityInitialCondition(void * latticeParams, void * initCondPar
     double dx = lattice->latticeSpacingX;
     double dy = lattice->latticeSpacingY;
     double dz = lattice->latticeSpacingRapidity;
+    double t0 = hydro->initialProperTimePoint;
 
     double eL[nz];
     longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
@@ -1147,21 +1150,40 @@ void setConstantDensityInitialCondition(void * latticeParams, void * initCondPar
     
     /*double T0 = 4.5;
      double ed = equilibriumEnergyDensity(T0);*/
-    double ed = initialEnergyDensity;
-    double rhobd = initialBaryonDensity;
+    double e0 = initialEnergyDensity;
+    double rhob0 = initialBaryonDensity;
+    double eT = 4.5;
+    
+    char rhobb[] = "output/kappachun.dat";
+    ofstream baryonden1(rhobb);
+    char rhobc[] = "output/kappabrazil.dat";
+    ofstream baryonden2(rhobc);
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 
-                e[s] = (PRECISION) ed * eL[k-2] + 1.e-5;
-                rhob[s] = (PRECISION) rhobd * (rhoLa[k-2] + rhoLb[k-2]) + 1.e-5; //Lipei
+                e[s] = (PRECISION) e0 / t0 * (eL[k-2] * eT + 1.e-5);
+                rhob[s] = (PRECISION) 1 / t0 * (0.332452 * (rhoLa[k-2] + rhoLb[k-2]) * eT + 1.e-5);// normalization factor 0.33
                 p[s] = equilibriumPressure(e[s], rhob[s]);
+                
+                double T = effectiveTemperature(e[s], rhob[s]);
+                double alphaB = chemicalPotentialOverT(e[s], rhob[s]);
+                double seq = equilibriumEntropy(e[s], rhob[s], p[s], T, alphaB);
+                
+                double kappa1 = baryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s]);
+                 double kappa2 = criticalBaryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s], seq);
+                
+                baryonden1 << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
+                << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << kappa1 << endl;
+                 baryonden2 << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
+                 << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << kappa2 << endl;
 			}
 		}
 	}
-    
+    baryonden1.close();
+    baryonden2.close();
     //printf("Baryon density is initialized.\n");
 }
 
@@ -2046,7 +2068,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 	switch (initialConditionType) {
 		case 0: {
 			printf("Constant energy density.\n");
-			setConstantDensityInitialCondition(latticeParams, initCondParams);
+			setConstantDensityInitialCondition(latticeParams, initCondParams, hydroParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
             setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);

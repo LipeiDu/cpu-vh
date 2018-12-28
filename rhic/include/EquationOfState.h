@@ -20,9 +20,13 @@
 
 void getEquationOfStateTable();//Lipei
 
+void getCorrelationLengthTable();
+
 void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __restrict__ PrimaryVariables);
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION alphaB);
+PRECISION baryonDiffusionConstant(PRECISION T, PRECISION muB);
+
+PRECISION correlationLength(PRECISION T, PRECISION muB);
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
 PRECISION equilibriumPressure(PRECISION e);
