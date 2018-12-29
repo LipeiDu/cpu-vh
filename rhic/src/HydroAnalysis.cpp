@@ -59,21 +59,50 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     double exy = 0;
     double eypx = 0;*/
     
-    PRECISION phiQ;
+    //PRECISION phiQ;
     
     //k=(nz+3)/2;
     //j=(ny+3)/2;
     //i=(nx+3)/2;
-    for(k = 2; k < nz+2; ++k) {
-        z = (k-2 - (nz-1)/2.)*dz;
+    for(i = 2; i < nx+2; ++i) {
         for(j = 2; j < ny+2; ++j) {
-            y = (j-2 - (ny-1)/2.)*dy;
-            for(i = 2; i < nx+2; ++i) {
-                x = (i-2 - (nx-1)/2.)*dx;
+            
+            PRECISION mub1,t1,mub2,t2,mub3,t3,mub4,t4;
+            x = (i-2 - (nx-1)/2.) * dx;
+            y = (j-2 - (ny-1)/2.) * dy;
+            
+            if(x==0&&y==0){
+                
+            for(k = 2; k < nz+2; ++k) {
+                
+                z = (k-2 - (nz-1)/2.) * dz;
+                
                 s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 
-                if(x==0.0&&y==0.0&&t==1.5)
-                    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",z,e[s],rhob[s],seq[s],alphaB[s],T[s]);
+                if(z==0.5){
+                    t1 = T[s];
+                    mub1 = t1*alphaB[s];
+                }
+                if(z==1.0){
+                    t2 = T[s];
+                    mub2 = t2*alphaB[s];
+                }
+                if(z==1.5){
+                    t3 = T[s];
+                    mub3 = t3*alphaB[s];
+                }
+                if(z==1.7){
+                    t4 = T[s];
+                    mub4 = t4*alphaB[s];
+                }
+                
+                
+                
+                
+                    
+                
+                //if(x==0.0&&y==0.0&&t==1.5)
+                //    fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",z,e[s],rhob[s],seq[s],alphaB[s],T[s]);
                 
                 //if(x==0&&y==0)
                 //fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,e[s],q->pinn[s],q->Pi[s],rhob[s],q->nbn[s],T[s],p[s]);
@@ -129,6 +158,10 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
 
                 getPrimaryVariablesFromSlowModes(&p, &T, &alphaB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, alphaBIn);*/
             }
+                fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,mub1,t1,mub2,t2,mub3,t3,mub4,t4);
+            }
+            
+            
         }
     }
     
@@ -139,8 +172,8 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\n",t,v2t,becc,eecc);*/
     
     //fprintf(fp, "%.3f\t%.8f\n",t,phiQ);
-    if(t>20)
-    exit(0);
+    //if(t>20)
+    //exit(0);
     
     fclose(fp);
 }

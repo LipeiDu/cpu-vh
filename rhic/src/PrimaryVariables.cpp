@@ -16,7 +16,7 @@
 
 #define MAX_ITERS 100
 
-//#define Method_Newton
+#define Method_Newton
 
 /**************************************************************************************************************************************************/
 /* calculate v, u^tau or energy density, Newton method

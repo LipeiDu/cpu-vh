@@ -37,7 +37,7 @@
 #define SIGMA_4 0.022
 
 //Transport coefficients of the baryon evolution; Lipei
-#define Cb 4.0
+#define Cb 0.4
 
 //Transport coefficients
 const PRECISION delta_pipi = 1.33333;
@@ -73,11 +73,18 @@ PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alph
     /*return Cb * rhob / (alphaB * T);*/
 }
 
-PRECISION criticalBaryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
+PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
+    PRECISION fac = rhob*T/(e+p);
+    PRECISION mub = (alphaB * T);
+    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub);
+}
+
+PRECISION criticalBaryonDiffusionCoefficientPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
     PRECISION fac = rhob*T/(e+p);
     PRECISION corrL = correlationLength(T, T*alphaB);
     //printf("T=%f\t alphaB=%f\t corrL=%f",T,alphaB,corrL);
-    return fac * fac * T * seq * corrL / rhob / (1.2 * M_PI);
+    //return fac * fac * T * seq * corrL / rhob / (1.2 * M_PI);
+    return fac * fac * T * seq / rhob / (1.2 * M_PI);
 }
 
 /**************************************************************************************************************************************************/

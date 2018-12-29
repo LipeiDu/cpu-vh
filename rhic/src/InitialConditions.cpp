@@ -550,10 +550,10 @@ void setNbmuInitialCondition(void * latticeParams, void * initCondParams, void *
         for(int j = 2; j < ny+2; ++j) {
             for(int k = 2; k < nz+2; ++k) {
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                q->nbt[s] = 0;
-                q->nbx[s] = 0;
-                q->nby[s] = 0;
-                q->nbn[s] = 10.0;
+                q->nbt[s] = 0.0;
+                q->nbx[s] = 0.0;
+                q->nby[s] = 0.0;
+                q->nbn[s] = 0.0;
             }
         }
     }
@@ -1128,36 +1128,33 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
 /* Constant initial energy density distribution
 /**************************************************************************************************************************************************/
 void setConstantDensityInitialCondition(void * latticeParams, void * initCondParams, void * hydroParams) {
+    
 	struct InitialConditionParameters * initCond = (struct InitialConditionParameters *) initCondParams;
     struct HydroParameters * hydro = (struct HydroParameters *) hydroParams;
-	double initialEnergyDensity = initCond->initialEnergyDensity;
-    double initialBaryonDensity = initCond->initialBaryonDensity;
-
-	struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+	
 	int nx = lattice->numLatticePointsX;
 	int ny = lattice->numLatticePointsY;
 	int nz = lattice->numLatticePointsRapidity;
     double dx = lattice->latticeSpacingX;
     double dy = lattice->latticeSpacingY;
     double dz = lattice->latticeSpacingRapidity;
+    
     double t0 = hydro->initialProperTimePoint;
+    
+    double e0 = initCond->initialEnergyDensity;
+    double rhob0 = initCond->initialBaryonDensity;
 
     double eL[nz];
-    longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
-    
     double rhoLa[nz], rhoLb[nz];
+    
+    longitudinalEnergyDensityDistribution(eL, latticeParams, initCondParams);
     longitudinalBaryonDensityDistribution(rhoLa, rhoLb, latticeParams, initCondParams);
+
+    double eT = 5.5;
     
-    /*double T0 = 4.5;
-     double ed = equilibriumEnergyDensity(T0);*/
-    double e0 = initialEnergyDensity;
-    double rhob0 = initialBaryonDensity;
-    double eT = 4.5;
-    
-    char rhobb[] = "output/kappachun.dat";
-    ofstream baryonden1(rhobb);
-    char rhobc[] = "output/kappabrazil.dat";
-    ofstream baryonden2(rhobc);
+    char rhobb[] = "output/kappaB.dat";
+    ofstream baryonden(rhobb);
     
 	for(int i = 2; i < nx+2; ++i) {
 		for(int j = 2; j < ny+2; ++j) {
@@ -1168,23 +1165,30 @@ void setConstantDensityInitialCondition(void * latticeParams, void * initCondPar
                 rhob[s] = (PRECISION) 1 / t0 * (0.332452 * (rhoLa[k-2] + rhoLb[k-2]) * eT + 1.e-5);// normalization factor 0.33
                 p[s] = equilibriumPressure(e[s], rhob[s]);
                 
+#ifdef VMU
                 double T = effectiveTemperature(e[s], rhob[s]);
                 double alphaB = chemicalPotentialOverT(e[s], rhob[s]);
                 double seq = equilibriumEntropy(e[s], rhob[s], p[s], T, alphaB);
                 
-                double kappa1 = baryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s]);
-                 double kappa2 = criticalBaryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s], seq);
+                double kappaKinetic = baryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s]);
+                double kappaHolography = baryonDiffusionConstant(T, alphaB*T)*T;
+                double kappaAdscft = criticalBaryonDiffusionCoefficientAdscft(T, rhob[s], alphaB, e[s], p[s], seq);
+                double kappaPlus = criticalBaryonDiffusionCoefficientPlus(T, rhob[s], alphaB, e[s], p[s], seq);
                 
-                baryonden1 << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
-                << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << kappa1 << endl;
-                 baryonden2 << setprecision(5) << setw(10) << (i-1 - (nx-1)/2) * dx <<setprecision(5)  << setw(10)  << (j-1 - (ny-1)/2) * dy
-                 << setprecision(5) << setw(10) << (k-1 - (nz-1)/2) * dz << setprecision(6) << setw(18) << kappa2 << endl;
+                baryonden
+                << setprecision(5) << setw(10) << (i-2 - (nx-1)/2.0) * dx
+                << setprecision(5) << setw(10) << (j-2 - (ny-1)/2.0) * dy
+                << setprecision(5) << setw(10) << (k-2 - (nz-1)/2.0) * dz
+                << setprecision(6) << setw(18) << kappaKinetic
+                << setprecision(6) << setw(18) << kappaHolography
+                << setprecision(6) << setw(18) << kappaAdscft
+                << setprecision(6) << setw(18) << kappaPlus
+                << endl;
+#endif
 			}
 		}
 	}
-    baryonden1.close();
-    baryonden2.close();
-    //printf("Baryon density is initialized.\n");
+    baryonden.close();
 }
 
 /**************************************************************************************************************************************************/
@@ -2070,7 +2074,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Constant energy density.\n");
 			setConstantDensityInitialCondition(latticeParams, initCondParams, hydroParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
@@ -2083,7 +2087,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Continous optical Glauber.\n");
 			setGlauberInitialCondition(latticeParams, initCondParams);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
@@ -2096,7 +2100,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
 			printf("Monte carlo Glauber.\n");
 			setMCGlauberInitialCondition(latticeParams, initCondParams, hydroParams, rootDirectory);
 			setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);
 			setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
 			return;
 		}
@@ -2154,7 +2158,7 @@ void setInitialConditions(void * latticeParams, void * initCondParams, void * hy
             printf("Bjorken expansion...\n");
             setBjorkenExpansionInitialCondition(latticeParams, initCondParams);
             setFluidVelocityInitialCondition(latticeParams, hydroParams);
-            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);//Lipei
+            setNbmuInitialCondition(latticeParams, initCondParams, hydroParams);
             setPimunuInitialCondition(latticeParams, initCondParams, hydroParams);
             return;
         }

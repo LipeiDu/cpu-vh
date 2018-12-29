@@ -32,7 +32,7 @@
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 
-#define FREQ 1 //write output to file every FREQ timesteps
+#define FREQ 50 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
 #define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
@@ -66,7 +66,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #ifdef PI
   //output(q->Pi, t, outputDir, "Pi", latticeParams);
   #endif
-  //output(T, t, outputDir, "T", latticeParams);
+  output(T, t, outputDir, "T", latticeParams);
   #ifdef NBMU
   output(rhob, t, outputDir, "rhob", latticeParams);
   output(alphaB, t, outputDir, "alphaB", latticeParams);
@@ -122,7 +122,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   const double hbarc = 0.197326938;
   const double freezeoutTemperature = freezeoutTemperatureGeV/hbarc;
   //const double freezeoutEnergyDensity = e0*pow(freezeoutTemperature,4);
-  const double freezeoutEnergyDensity = equilibriumEnergyDensity(freezeoutTemperature);
+  const double freezeoutEnergyDensity = 0.4/hbarc;//equilibriumEnergyDensity(freezeoutTemperature);
   //const double freezeoutEnergyDensity = 1.8;//Lipei
     
   printf("Grid size = %d x %d x %d\n", nx, ny, nz);
@@ -246,13 +246,16 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // evolve in time
   for (int n = 1; n <= nt+1; ++n)
   {
+      
+      outputAnalysis(t, outputDir, latticeParams);
+      
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
     {
       printf("n = %d:%d (t = %.3f),\t (e, p) = (%.3f, %.3f) [fm^-4],\t (rhob = %.3f ),\t (T = %.3f [GeV]),\n",
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
-      outputAnalysis(t, outputDir, latticeParams);
+      //outputAnalysis(t, outputDir, latticeParams);
       // end hydrodynamic simulation if the temperature is below the freezeout temperature
       //if(e[sctr] < freezeoutEnergyDensity) {
       //printf("\nReached freezeout temperature at the center.\n");

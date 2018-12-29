@@ -19,7 +19,7 @@
 //#define PI
 
 #define NBMU
-#define VMU
+//#define VMU
 
 #define RootSolver_with_Baryon
 #define EOS_with_baryon
@@ -65,7 +65,7 @@
 #ifndef HydroPlus
 #define NUMBER_SLOW_MODES 0
 #else
-#define NUMBER_SLOW_MODES 0
+#define NUMBER_SLOW_MODES 3
 #endif
 
 /**************************************************************************************************************************************************/
