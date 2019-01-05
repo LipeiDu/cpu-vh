@@ -19,7 +19,7 @@
 //#define PI
 
 #define NBMU
-//#define VMU
+#define VMU
 
 #define RootSolver_with_Baryon
 #define EOS_with_baryon

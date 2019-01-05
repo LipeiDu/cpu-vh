@@ -73,10 +73,11 @@ PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alph
     /*return Cb * rhob / (alphaB * T);*/
 }
 
-PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
+PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq, PRECISION corrL){
     PRECISION fac = rhob*T/(e+p);
     PRECISION mub = (alphaB * T);
-    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub);
+    
+    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub) * corrL;
 }
 
 PRECISION criticalBaryonDiffusionCoefficientPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
@@ -285,11 +286,15 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     //*********************************************************\
     //* for the diffusion current of baryon, by Lipei
     //*********************************************************/
+    PRECISION corrL = 1.0;
+#ifdef CRITICAL
+    corrL = correlationLength(T, T*alphaB);
+#endif
     
-    PRECISION kappaB = 0;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//baryonDiffusionConstant(T, alphaB*T)*T;
-    PRECISION tau_n = Cb/T;
-    PRECISION delta_nn = tau_n;
-    PRECISION lambda_nn = 0.60 * tau_n;
+    PRECISION kappaB = criticalBaryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq, corrL);//baryonDiffusionConstant(T, alphaB*T)*T;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//0;///
+    PRECISION tau_n = Cb/T * pow(corrL,3);
+    PRECISION delta_nn = 0;//tau_n;
+    PRECISION lambda_nn = 0;//0.60 * tau_n;
     
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
     PRECISION NBI1t = ut * facNBI1;

@@ -1170,7 +1170,7 @@ void setConstantDensityInitialCondition(void * latticeParams, void * initCondPar
                 double alphaB = chemicalPotentialOverT(e[s], rhob[s]);
                 double seq = equilibriumEntropy(e[s], rhob[s], p[s], T, alphaB);
                 
-                double kappaKinetic = baryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s]);
+                /*double kappaKinetic = baryonDiffusionCoefficient(T, rhob[s], alphaB, e[s], p[s]);
                 double kappaHolography = baryonDiffusionConstant(T, alphaB*T)*T;
                 double kappaAdscft = criticalBaryonDiffusionCoefficientAdscft(T, rhob[s], alphaB, e[s], p[s], seq);
                 double kappaPlus = criticalBaryonDiffusionCoefficientPlus(T, rhob[s], alphaB, e[s], p[s], seq);
@@ -1183,7 +1183,7 @@ void setConstantDensityInitialCondition(void * latticeParams, void * initCondPar
                 << setprecision(6) << setw(18) << kappaHolography
                 << setprecision(6) << setw(18) << kappaAdscft
                 << setprecision(6) << setw(18) << kappaPlus
-                << endl;
+                << endl;*/
 #endif
 			}
 		}
