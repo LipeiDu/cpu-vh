@@ -9,9 +9,9 @@
 #include <ctime>
 #include <iostream>
 #include <vector>
+
 //for cornelius and writing freezeout file
 #include <fstream>
-//#include "cornelius-c++-1.3/cornelius.h"
 #include "FreezeOut.cpp"
 #include "Memory.cpp"
 
@@ -35,7 +35,6 @@
 #define FREQ 50 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps
 #define FOTEST 0 //if true, freezeout surface file is written with proper times rounded (down) to step size
-#define FOFORMAT 0 // 0 : write f.o. surface to ASCII file ;  1 : write to binary file
 #define JET 0 // 0 to turn off jet evolution, 1 to turn it on
 
 /**************************************************************************************************************************************************/
@@ -131,7 +130,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
   // allocate memory
   allocateHostMemory(nElements);
-  // Read in the table of Equation of State
+  // Read in the table of Equation of State with baryon
 #ifdef EOS_with_baryon
   getEquationOfStateTable();//Lipei
   //testEOS();
@@ -143,7 +142,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   //************************************************************************************\
   //* Jet stuff
   //************************************************************************************/
+  
   /*jetParton parton;
+
   if (JET)
   {
     //declare a jet parton instance
@@ -190,8 +191,6 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     printf("simulation is not in 3+1D or 2+1D; freezeout finder will not work!\n");
   }
 
-  //Cornelius cor;
-  //cor.init(dim, freezeoutEnergyDensity, lattice_spacing);
     
   std::vector<FO_Element> fo_surf;
 
@@ -200,7 +199,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
   //make an array to store all the hydrodynamic variables for FOFREQ time steps
   //to be written to file once the freezeout surface is determined by the critical energy density
-  int n_hydro_vars = 16; //u0, u1, u2, u3, e, pi00, pi01, pi02, pi03, pi11, pi12, pi13, pi22, pi23, pi33, Pi, the temperature and pressure are calclated with EoS
+  int n_hydro_vars = 21; //u0, u1, u2, u3, e, pi00, pi01, pi02, pi03, pi11, pi12, pi13, pi22, pi23, pi33, Pi, rhob, nb0, nb1, nb2, nb3; T, P and muB are calclated with EoS
   double *****hydrodynamic_evoution;
   hydrodynamic_evoution = calloc5dArray(hydrodynamic_evoution, n_hydro_vars, FOFREQ+1, nx, ny, nz);
 
@@ -213,8 +212,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
   //open the freezeout surface file
   ofstream freezeoutSurfaceFile;
-  if (FOFORMAT == 0) freezeoutSurfaceFile.open("output/surface.dat");
-  else freezeoutSurfaceFile.open("output/surface.dat", ios::binary);
+  freezeoutSurfaceFile.open("output/surface.dat");
 
   //************************************************************************************\
   //* Fluid dynamics initialization
@@ -249,7 +247,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   for (int n = 1; n <= nt+1; ++n)
   {
       
-      outputAnalysis(t, outputDir, latticeParams);
+    outputAnalysis(t, outputDir, latticeParams);
       
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
@@ -258,11 +256,6 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       //outputAnalysis(t, outputDir, latticeParams);
-      // end hydrodynamic simulation if the temperature is below the freezeout temperature
-      //if(e[sctr] < freezeoutEnergyDensity) {
-      //printf("\nReached freezeout temperature at the center.\n");
-      //break;
-      //}
     }
 
     //************************************************************************************\
@@ -286,8 +279,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     int start;
     if (n <= FOFREQ) start = 2;
     else start = 0;
+
     if (nFO == FOFREQ - 1) //call the freezeout finder should this be put before the values are set?
-        callFOFinder(dim, start, nx, ny, nz, n, t0, dt, t, dx, dy, dz, lattice_spacing, freezeoutEnergyDensity, hyperCube4D, hyperCube3D, energy_density_evoution, hydrodynamic_evoution, freezeoutSurfaceFile, fo_surf);
+        callFOFinder(dim, start, nx, ny, nz, n, t0, dt, t, dx, dy, dz, lattice_spacing, freezeoutEnergyDensity, hyperCube4D, hyperCube3D, energy_density_evoution, hydrodynamic_evoution, freezeoutSurfaceFile, fo_surf, FOFREQ);
     
     //if all cells are below freezeout temperature end hydro
     accumulator1 = 0;
@@ -308,22 +302,21 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
 
 
     //****************JET STUFF************/
-    //if (JET)
-    //{
+    /*if (JET)
+    {
       //get the local fluid velocity and energy density/temperature and evolve jet momentum
-    //  parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e, rhob);
+      parton.energyLoss(nx, ny, nz, dt, dx, dy, dz, u->ut, u->ux, u->uy, u->un, e, rhob);
       //evolve the jet parton position
-   //   parton.updatePosition(dt);
-
+      parton.updatePosition(dt);
       //set hydro source terms
-    //  setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
-    //}
+      setDynamicalSources(latticeParams, initCondParams, parton.dp_dtau, parton.position);
+    }*/
     //****************JET STUFF************/
 
     // Read in source terms from particles
     if(initialConditionType==13){
-          if(n<=numberOfSourceFiles) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
-          else noSource(latticeParams, initCondParams);
+          if(n <= numberOfSourceFiles) readInSource(n, latticeParams, initCondParams, hydroParams, rootDirectory);
+          else if(n == numberOfSourceFiles + 1) noSource(latticeParams, initCondParams);
     }
 
     rungeKutta2(t, dt, q, Q, latticeParams, hydroParams);
