@@ -1,4 +1,12 @@
 #include "../include/DynamicalVariables.h"
+#include "../rhic/include/EquationOfState.h"
+#include "../rhic/include/FreezeOut.h"
+#include "cornelius-c++-1.3/cornelius.cpp"
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+
+//#define FOFREQ 10
 
 //return a 4 dimensional linear interpolation inside the hypercube, given the values
 //on the corners (a0000 through a1111) and edge lengths x0 through x3
@@ -187,3 +195,145 @@ double interpolateVariable3D(double *****hydrodynamic_evoution, int ivar, int it
     hydrodynamic_evoution[ivar][it+1][ix+1][iy][0], hydrodynamic_evoution[ivar][it+1][ix][iy+1][0], hydrodynamic_evoution[ivar][it][ix+1][iy+1][0], hydrodynamic_evoution[ivar][it+1][ix+1][iy+1][0]);
     return result;
 }
+
+void callFOFinder(int dim, int start, int nx, int ny, int nz, int n, double t0, double dt, double t, double dx, double dy, double dz, double *lattice_spacing, double freezeoutEnergyDensity, double ****hyperCube4D, double ***hyperCube3D, double ****energy_density_evoution, double *****hydrodynamic_evoution, std::ofstream& freezeoutSurfaceFile, std::vector<FO_Element>& fo_surf)
+{
+
+  int FOFREQ = 10;
+    
+  Cornelius cor;
+  cor.init(dim, freezeoutEnergyDensity, lattice_spacing);
+    
+  //besides writing centroid and normal to file, write all the hydro variables
+  int dimZ;
+  if (dim == 4) dimZ = nz-1; //enter the loop over iz, and avoid problems at boundary
+  else if (dim == 3) dimZ = 1; //we need to enter the 'loop' over iz rather than skipping it
+  for (int it = start; it < FOFREQ; it++) //note* avoiding boundary problems (reading outside array)
+  {
+    for (int ix = 0; ix < nx-1; ix++)
+    {
+      for (int iy = 0; iy < ny-1; iy++)
+      {
+        for (int iz = 0; iz < dimZ; iz++)
+        {
+          //write the values of energy density to all corners of the hyperCube
+          if (dim == 4) writeEnergyDensityToHypercube4D(hyperCube4D, energy_density_evoution, it, ix, iy, iz);
+          else if (dim == 3) writeEnergyDensityToHypercube3D(hyperCube3D, energy_density_evoution, it, ix, iy);
+
+          //use cornelius to find the centroid and normal vector of each hyperCube
+          if (dim == 4) cor.find_surface_4d(hyperCube4D);
+          else if (dim == 3) cor.find_surface_3d(hyperCube3D);
+          //write centroid and normal of each surface element to file
+          for (int i = 0; i < cor.get_Nelements(); i++)
+          {
+            double temp = 0.0; //temporary variable
+            double cell_tau;
+            if (n <= FOFREQ)
+                cell_tau = t0 + ( (double)(n - FOFREQ + (it-1) ) )* dt; //check if this is the correct time!
+            else
+                cell_tau = t0 + ((double)(n - FOFREQ + it)) * dt; //check if this is the correct time!
+              
+            double cell_x = (double)ix * dx  - (((double)(nx-1)) / 2.0 * dx);
+            double cell_y = (double)iy * dy  - (((double)(ny-1)) / 2.0 * dy);
+            double cell_z = (double)iz * dz  - (((double)(nz-1)) / 2.0 * dz);
+
+            double tau_frac = cor.get_centroid_elem(i,0) / lattice_spacing[0];
+            double x_frac = cor.get_centroid_elem(i,1) / lattice_spacing[1];
+            double y_frac = cor.get_centroid_elem(i,2) / lattice_spacing[2];
+            double z_frac;
+            if (dim == 4) z_frac = cor.get_centroid_elem(i,3) / lattice_spacing[3];
+            else z_frac = 0.0;
+
+              //first write the contravariant position vector
+              freezeoutSurfaceFile << cor.get_centroid_elem(i,0) + cell_tau << " ";
+              freezeoutSurfaceFile << cor.get_centroid_elem(i,1) + cell_x << " ";
+              freezeoutSurfaceFile << cor.get_centroid_elem(i,2) + cell_y << " ";
+              if (dim == 4) freezeoutSurfaceFile << cor.get_centroid_elem(i,3) + cell_z << " ";
+              else freezeoutSurfaceFile << cell_z << " ";
+              //then the contravariant surface normal element; note jacobian factors of tau for milne coordinates
+              freezeoutSurfaceFile << t * cor.get_normal_elem(i,0) << " ";
+              freezeoutSurfaceFile << t * cor.get_normal_elem(i,1) << " ";
+              freezeoutSurfaceFile << t * cor.get_normal_elem(i,2) << " ";
+              if (dim == 4) freezeoutSurfaceFile << t * cor.get_normal_elem(i,3) << " ";
+              else freezeoutSurfaceFile << 0.0 << " ";
+              //write all the necessary hydro dynamic variables by first performing linear interpolation from values at
+              //corners of hypercube
+
+              if (dim == 4) // for 3+1D
+              {
+                //first write the contravariant flow velocity
+                for (int ivar = 0; ivar < dim; ivar++)
+                {
+                  temp = interpolateVariable4D(hydrodynamic_evoution, ivar, it, ix, iy, iz, tau_frac, x_frac, y_frac, z_frac);
+                  freezeoutSurfaceFile << temp << " ";
+                }
+                //write the energy density
+                temp = interpolateVariable4D(hydrodynamic_evoution, 4, it, ix, iy, iz, tau_frac, x_frac, y_frac, z_frac);
+                freezeoutSurfaceFile << temp << " "; //note : iSpectra reads in file in fm^x units e.g. energy density should be written in fm^-4
+                //the temperature !this needs to be checked
+                freezeoutSurfaceFile << effectiveTemperature(temp) << " ";
+                //the thermal pressure
+                freezeoutSurfaceFile << equilibriumPressure(temp) << " ";
+                //write ten components of pi_(mu,nu) shear viscous tensor
+                for (int ivar = 5; ivar < 15; ivar++)
+                {
+                  temp = interpolateVariable4D(hydrodynamic_evoution, ivar, it, ix, iy, iz, tau_frac, x_frac, y_frac, z_frac);
+                  freezeoutSurfaceFile << temp << " ";
+                }
+                //write the bulk pressure Pi, and start a new line
+                temp = interpolateVariable4D(hydrodynamic_evoution, 15, it, ix, iy, iz, tau_frac, x_frac, y_frac, z_frac);
+                freezeoutSurfaceFile << temp << endl;
+              }
+
+              else //for 2+1D
+              {
+                //first write the contravariant flow velocity
+                for (int ivar = 0; ivar < 4; ivar++)
+                {
+                  temp = interpolateVariable3D(hydrodynamic_evoution, ivar, it, ix, iy, tau_frac, x_frac, y_frac);
+                  freezeoutSurfaceFile << temp << " ";
+                }
+                //write the energy density
+                temp = interpolateVariable3D(hydrodynamic_evoution, 4, it, ix, iy, tau_frac, x_frac, y_frac);
+                freezeoutSurfaceFile << temp << " "; //note units of fm^-4 appropriate for iSpectra reading
+                //the temperature !this needs to be checked
+                freezeoutSurfaceFile << effectiveTemperature(temp) << " ";
+                //the thermal pressure
+                freezeoutSurfaceFile << equilibriumPressure(temp) << " ";
+                //write ten components of pi_(mu,nu) shear viscous tensor
+                for (int ivar = 5; ivar < 15; ivar++)
+                {
+                  temp = interpolateVariable3D(hydrodynamic_evoution, ivar, it, ix, iy, tau_frac, x_frac, y_frac);
+                  freezeoutSurfaceFile << temp << " ";
+                }
+                //write the bulk pressure Pi, and start a new line
+                temp = interpolateVariable3D(hydrodynamic_evoution, 15, it, ix, iy, tau_frac, x_frac, y_frac);
+                freezeoutSurfaceFile << temp << endl;
+              }
+          }
+        }
+      }
+    }
+  }
+}
+
+//returns the number of cells with T > T_c
+int checkForCellsAboveTc(int nx, int ny, int nz, double freezeoutEnergyDensity, PRECISION *e)
+{
+ int accumulator = 0;
+
+ for (int ix = 2; ix < nx+2; ix++)
+{
+  for (int iy = 2; iy < ny+2; iy++)
+  {
+    for (int iz = 2; iz < nz+2; iz++)
+    {
+      int s = columnMajorLinearIndex(ix, iy, iz, nx+4, ny+4);
+      if (e[s] > freezeoutEnergyDensity) accumulator += 1;
+    }
+  }
+}
+
+ return accumulator;
+}
+
