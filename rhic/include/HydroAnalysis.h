@@ -8,6 +8,6 @@
 #ifndef HydroAnalysis_h
 #define HydroAnalysis_h
 
-void outputAnalysis(double t, const char *outputDir, void * latticeParams);
+void outputAnalysis(double t, FILE *outputDir, void * latticeParams);
 
 #endif /* HydroAnalysis_h */

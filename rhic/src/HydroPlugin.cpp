@@ -243,11 +243,16 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   int accumulator1 = 0;
   int accumulator2 = 0;
     
+  FILE *fp;
+  char fname[255];
+  sprintf(fname, "%s/AnalysisData.dat", outputDir);
+  fp=fopen(fname, "w");
+    
   // evolve in time
   for (int n = 1; n <= nt+1; ++n)
   {
       
-    outputAnalysis(t, outputDir, latticeParams);
+    outputAnalysis(t, fp, latticeParams);
       
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
@@ -331,7 +336,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
     t = t0 + n * dt;
   }
   printf("Average time/step: %.3f ms\n",totalTime/((double)nsteps));
-
+    
+  fclose(fp);
   freezeoutSurfaceFile.close();
   //************************************************************************************\
   //* Deallocate host memory

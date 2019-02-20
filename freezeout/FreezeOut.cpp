@@ -235,6 +235,11 @@ void callFOFinder(int dim, int start, int nx, int ny, int nz, int n, double t0, 
     {
       for (int iy = 0; iy < ny-1; iy++)
       {
+          
+          double xx = (ix - (nx-1)/2.) * dx;
+          double yy = (iy - (ny-1)/2.) * dy;
+          if(xx==0&&yy==0){
+          
         for (int iz = 0; iz < dimZ; iz++)
         {
           //write the values of energy density to all corners of the hyperCube
@@ -363,6 +368,8 @@ void callFOFinder(int dim, int start, int nx, int ny, int nz, int n, double t0, 
             }
           }
         }
+              
+          }
       }
     }
   }

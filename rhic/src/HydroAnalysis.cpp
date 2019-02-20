@@ -26,12 +26,12 @@ using namespace std;//Lipei
 #include "../include/HydroPlus.h"
 
 #define HBARC 0.197326938
-void outputAnalysis(double t, const char *outputDir, void * latticeParams)
+void outputAnalysis(double t, FILE *outputDir, void * latticeParams)
 {
-    FILE *fp;
+    /*FILE *fp;
     char fname[255];
     sprintf(fname, "%s/AnalysisData.dat", outputDir);
-    fp=fopen(fname, "a+");
+    fp=fopen(fname, "a+");*/
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     int nx = lattice->numLatticePointsX;
@@ -164,7 +164,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
 
                 getPrimaryVariablesFromSlowModes(&p, &T, &alphaB, equiPhiQ, PhiQ, eIn, rhobIn, pIn, TIn, alphaBIn);*/
             }
-                fprintf(fp, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,mub0,t0,mub1,t1,mub2,t2,mub3,t3,mub4,t4);
+                fprintf(outputDir, "%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,mub0,t0,mub1,t1,mub2,t2,mub3,t3,mub4,t4);
             }
             
             
@@ -181,7 +181,7 @@ void outputAnalysis(double t, const char *outputDir, void * latticeParams)
     //if(t>20)
     //exit(0);
     
-    fclose(fp);
+    //fclose(fp);
 }
 
 // To test the interpolatin function to see it reproduce the EOS table
