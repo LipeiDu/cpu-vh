@@ -238,7 +238,7 @@ void allocateHostMemory(int len) {
     }
 #endif
 #ifdef CRITICAL
-    xieq = (PRECISION *)calloc(6966, bytes);
+    xieq = (PRECISION *)calloc(9396, bytes);
 #endif
 }
 
@@ -555,6 +555,7 @@ void freeHostMemory() {
     }
     
     free(eqPhiQ);
+    free(xieq);
 
 	free(q->ttt);
 	free(q->ttx);

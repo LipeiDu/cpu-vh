@@ -203,7 +203,7 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
     PRECISION vAbsoluteError = 10.0;
     PRECISION vRelativeError = 10.0;
     
-    PRECISION e0, rhob0, pPlus, peq, Teq, alphaBeq, Seq, v0, equiPhiQ0[NUMBER_SLOW_MODES];
+    PRECISION e0, rhob0, pPlus, peq, Teq, alphaBeq, muBeq, Seq, v0, equiPhiQ0[NUMBER_SLOW_MODES];
     
     for(int j = 0; j < MAX_ITERS; ++j)
     {
@@ -223,6 +223,7 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
         peq = PrimaryVariables[0];
         Teq = PrimaryVariables[1];
         alphaBeq = PrimaryVariables[2];
+        muBeq = Teq * alphaBeq;
         Seq = equilibriumEntropy(e0, rhob0, peq, Teq, alphaBeq);
         
         //printf("peq=%f\t Teq=%f\t alphaBeq=%f.\n",peq,Teq,alphaBeq);
@@ -230,7 +231,7 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
         // include contributions from slow modes into p, T and alphaB
         for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
         {
-            equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Seq, Qvec[n]);
+            equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Teq, muBeq, Seq, Qvec[n]);
             //printf("equiPhiQ0[%d]=%f\n",n,equiPhiQ0[n]);
         }
         
@@ -276,7 +277,7 @@ void InferredVariablesUtauIterationHydroPlus(PRECISION * const __restrict__ e, P
     PRECISION utAbsoluteError = 1.0;
     PRECISION utRelativeError = 1.0;
     
-    PRECISION e0, rhob0, pPlus, peq, Teq, alphaBeq, Seq, ut0, equiPhiQ0[NUMBER_SLOW_MODES];
+    PRECISION e0, rhob0, pPlus, peq, Teq, alphaBeq, muBeq, Seq, ut0, equiPhiQ0[NUMBER_SLOW_MODES];
     
     for(int j = 0; j < MAX_ITERS; ++j)
     {
@@ -294,13 +295,13 @@ void InferredVariablesUtauIterationHydroPlus(PRECISION * const __restrict__ e, P
         peq = PrimaryVariables[0];
         Teq = PrimaryVariables[1];
         alphaBeq = PrimaryVariables[2];
-        
+        muBeq = Teq * alphaBeq;
         Seq = equilibriumEntropy(e0, rhob0, peq, Teq, alphaBeq);
         
         // include contributions from slow modes into p, T and alphaB
         for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
         {
-            equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Seq, Qvec[n]);
+            equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Teq, muBeq, Seq, Qvec[n]);
         }
         
         getPressurePlusFromSlowModes(&pPlus, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq, Seq);

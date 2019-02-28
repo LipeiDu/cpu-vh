@@ -37,7 +37,7 @@
 #define SIGMA_4 0.022
 
 //Transport coefficients of the baryon evolution; Lipei
-#define Cb 0.4
+#define Cb 4.0
 
 //Transport coefficients
 const PRECISION delta_pipi = 1.33333;
@@ -291,10 +291,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     corrL = correlationLength(T, T*alphaB);
 #endif
     
-    PRECISION kappaB = criticalBaryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq, corrL);//baryonDiffusionConstant(T, alphaB*T)*T;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//0;///
+    PRECISION kappaB = 0;//criticalBaryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq, corrL);//baryonDiffusionConstant(T, alphaB*T)*T;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//0;///
     PRECISION tau_n = Cb/T * pow(corrL,3);
-    PRECISION delta_nn = 0;//tau_n;
-    PRECISION lambda_nn = 0;//0.60 * tau_n;
+    PRECISION delta_nn = tau_n;
+    PRECISION lambda_nn = 0.60 * tau_n;
     
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
     PRECISION NBI1t = ut * facNBI1;
@@ -332,7 +332,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     
     PRECISION utInv = 1.0/ut;
     
-    PRECISION corrL = xi(e, rhob);
+    //PRECISION corrL = xi(T, T*alphaB);
     PRECISION corrL2 = corrL * corrL;
     
     PRECISION gammaPhi = relaxationCoefficientPhi(rhob, seq, T, corrL2);

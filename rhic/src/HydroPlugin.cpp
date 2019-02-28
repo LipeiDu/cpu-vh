@@ -48,7 +48,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
-  //output(u->ut, t, outputDir, "ut", latticeParams);
+  output(u->ut, t, outputDir, "ut", latticeParams);
   //output(q->ttt, t, outputDir, "ttt", latticeParams);
   //output(q->ttx, t, outputDir, "ttx", latticeParams);
   //output(q->tty, t, outputDir, "tty", latticeParams);
@@ -60,7 +60,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
   //output(q->piyn, t, outputDir, "piyn", latticeParams);
-  //output(q->pinn, t, outputDir, "pinn", latticeParams);
+  output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
   #ifdef PI
   //output(q->Pi, t, outputDir, "Pi", latticeParams);
@@ -75,7 +75,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->nbt, t, outputDir, "nbtau", latticeParams);
   //output(q->nbx, t, outputDir, "nbx", latticeParams);
   //output(q->nby, t, outputDir, "nby", latticeParams);
-  //output(q->nbn, t, outputDir, "nbn", latticeParams);
+  output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
   #ifdef HydroPlus
   //output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);
@@ -131,13 +131,10 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // allocate memory
   allocateHostMemory(nElements);
   // Read in the table of Equation of State with baryon
-#ifdef EOS_with_baryon
-  getEquationOfStateTable();//Lipei
+  getEquationOfStateTable();
   //testEOS();
-#endif
-#ifdef CRITICAL
+  // read in the parameterized correlation length xi(T, muB)
   getCorrelationLengthTable();
-#endif
 
   //************************************************************************************\
   //* Jet stuff

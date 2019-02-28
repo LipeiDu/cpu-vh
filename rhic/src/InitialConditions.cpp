@@ -585,7 +585,7 @@ void setPimunuNavierStokesInitialCondition(void * latticeParams, void * initCond
 		for(int j = 2; j < ny+2; ++j) {
 			for(int k = 2; k < nz+2; ++k) {
 				int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-				PRECISION T = effectiveTemperature(e[s]);
+				PRECISION T = effectiveTemperatureWB(e[s]);
 				if (T == 0) T = 1.e-3;
 				PRECISION pinn = -4.0/(3*t*t*t)*etabar*(e[s]+p[s])/T;
 #ifdef PIMUNU
@@ -625,7 +625,7 @@ void setPiNavierStokesInitialCondition(void * latticeParams, void * initCondPara
         for(int j = 2; j < ny+2; ++j) {
             for(int k = 2; k < nz+2; ++k) {
                 int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
-                PRECISION T = effectiveTemperature(e[s]);
+                PRECISION T = effectiveTemperatureWB(e[s]);
                 if (T == 0) T = 1.e-3;
 
 #define A_1 -13.77
@@ -1075,7 +1075,7 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
                             up->ux[is] = u->ux[is];
                             up->uy[is] = u->uy[is];
                             up->un[is] = u->un[is];
-                            p[is] = equilibriumPressure(e[is]);
+                            p[is] = equilibriumPressureWB(e[is]);
                         }
                     }
                 }

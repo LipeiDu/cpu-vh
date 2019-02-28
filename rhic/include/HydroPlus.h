@@ -15,16 +15,24 @@
 #include "../include/InitialConditionParameters.h"
 #include "../include/HydroParameters.h"
 
-PRECISION xi(PRECISION e, PRECISION rhob);
+PRECISION xi(PRECISION T, PRECISION muB);
 
-PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION s, PRECISION Q);
+PRECISION correlationLength(PRECISION T, PRECISION muB);
+
+PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION T, PRECISION muB, PRECISION s, PRECISION Q);
 
 PRECISION relaxationCoefficientPhi(PRECISION rhob, PRECISION s, PRECISION T, PRECISION corrL2);
 
 PRECISION relaxationCoefficientPhiQ(PRECISION gammaPhi, PRECISION corrL2, PRECISION Q);
 
+PRECISION dLnxidE(PRECISION e0, PRECISION rhob0);
+
+PRECISION dLnxidN(PRECISION e0, PRECISION rhob0);
+
+void getCorrelationLengthTable();
+
 void setInitialConditionSlowModes(void * latticeParams, void * hydroParams);
 
-void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION eIn, PRECISION rhobIn, PRECISION pIn, PRECISION TIn, PRECISION alphaBIn, PRECISION sIn);
+void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB, PRECISION s);
 
 #endif /* HydroPlus_h */

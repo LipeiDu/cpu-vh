@@ -9,5 +9,6 @@
 #define HydroAnalysis_h
 
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams);
+void testEOS();
 
 #endif /* HydroAnalysis_h */
