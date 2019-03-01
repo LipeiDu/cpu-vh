@@ -10,14 +10,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cmath>
-#include <iostream>//Lipei
-#include <istream>//Lipei
-#include <fstream>//Lipei
-#include <stdio.h>//Lipei
-#include <cassert>//Lipei
-#include <string>//Lipei
-#include <iomanip>//by Lipei
-using namespace std;//Lipei
+#include <iostream>
+#include <istream>
+#include <fstream>
+#include <stdio.h>
+#include <cassert>
+#include <string>
+#include <iomanip>
 
 #include "../include/InitialConditions.h"
 #include "../include/DynamicalVariables.h"
@@ -27,23 +26,19 @@ using namespace std;//Lipei
 #include "../include/EquationOfState.h"
 #include "../include/HydroPlus.h"
 
+using namespace std;
+
 #define dQvec 10.0 // difference between Q vectors of slow modes
 #define Q0 0.0
 #define HBARC 0.197326938
 
-/**************************************************************************************************************************************************/
-/* Conductivity, heat capacity, correlation length and relaxation coefficients of different slow modes, and their derivatives
-/**************************************************************************************************************************************************/
-
-// for testing
-#define Cr 1.0 // LambdaT = Cr * T^2
 #define xi0 1.0
 #define xi02 1.0 // correlation length squared
-#define sigmae 50.0
-#define sigman 10.0
-#define ec 30.0
-#define rhobc 30.0
-#define Tc 200.0 // to be fixed
+#define Cr 1.0 // LambdaT = Cr * T^2
+
+/**************************************************************************************************************************************************/
+/* Conductivity, heat capacity, and some derivatives
+/**************************************************************************************************************************************************/
 
 // heat conductivity
 PRECISION lambdaT(PRECISION T){
@@ -53,26 +48,6 @@ PRECISION lambdaT(PRECISION T){
 // heat capacity density
 PRECISION Cp(PRECISION s, PRECISION rhob, PRECISION corrL2){
     return (s * s / rhob) * (corrL2 / xi02);
-}
-
-// correlation length
-PRECISION xi(PRECISION T, PRECISION muB){
-    //PRECISION deltaE = e - ec;
-    //PRECISION deltaRhob = rhob - rhobc;
-    //return xi0 * exp(- deltaE * deltaE/(2*sigmae*sigmae) - deltaRhob * deltaRhob/(2*sigman*sigman)) + xi0; // to be fixed
-    return correlationLength(T, muB);
-}
-
-// derivative of log(xi) with respect to energy
-PRECISION dlnXide(PRECISION e, PRECISION rhob){
-    return dLnxidE(e, rhob);
-    //return -((e - ec)/(sigmae*sigmae)); // to be fixed
-}
-
-// derivative of log(xi) with respect to baryon density
-PRECISION dlnXidrhob(PRECISION e, PRECISION rhob){
-    return dLnxidN(e, rhob);
-    //return -((rhob - rhobc)/(sigman*sigman)); // to be fixed
 }
 
 // derivative of log(phi0) with respect to energy
@@ -127,7 +102,7 @@ PRECISION equilibriumPhi0(PRECISION rhob, PRECISION s, PRECISION corrL2)
 // slow modes with nonzero Q
 PRECISION equilibriumPhiQ(PRECISION e, PRECISION rhob, PRECISION T, PRECISION muB, PRECISION s, PRECISION Q)
 {
-    PRECISION corrL = xi(T, muB);
+    PRECISION corrL = correlationLength(T, muB);
     PRECISION corrL2 = corrL * corrL;
     PRECISION qL = Q * corrL;
     
@@ -189,7 +164,7 @@ void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PR
 {
 
     PRECISION muB = alphaB * T;
-    PRECISION corrL = xi(T, muB); // correlation length
+    PRECISION corrL = correlationLength(T, muB); // correlation length
     PRECISION corrL2 = corrL * corrL;
     
     PRECISION heatC = Cp(s, rhob, corrL2); // heat capacity
@@ -261,7 +236,7 @@ void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PR
 /* dlnxide, dlnxidn, correlation length table
 /**************************************************************************************************************************************************/
 
-PRECISION dLnxidE(PRECISION e0, PRECISION rhob0){
+PRECISION dlnXide(PRECISION e0, PRECISION rhob0){
     PRECISION ep, em, xip, xim, Tp, Tm, muBp, muBm;
     PRECISION delta_e = 0.02;
     
@@ -290,7 +265,7 @@ PRECISION dLnxidE(PRECISION e0, PRECISION rhob0){
     }
 }
 
-PRECISION dLnxidN(PRECISION e0, PRECISION rhob0){
+PRECISION dlnXidrhob(PRECISION e0, PRECISION rhob0){
     PRECISION np, nm, xip, xim, Tp, Tm, muBp, muBm;
     PRECISION delta_n = 0.005;
     
@@ -322,7 +297,6 @@ PRECISION dLnxidN(PRECISION e0, PRECISION rhob0){
 
 // Read in the table of correlation length
 void getCorrelationLengthTable(){
-
 #ifdef CRITICAL
     // correlation length table
     FILE *filexi;
@@ -341,89 +315,12 @@ void getCorrelationLengthTable(){
         }
     }
     fclose(filexi);
-    
-    // make derivatives of correlation length tables
-    FILE *filedxi;
-    filedxi = fopen ("input/dxi.dat","w");
-
-    float de = 0.02;
-    float dn = 0.005;
-    
-    for(int i = 0; i < 301; ++i) {
-        for(int j = 0; j < 81; ++j) {
-            
-            x = i * de;
-            y = j * dn;
-
-            float dlogxide = dLnxidE(x,y);
-            float dlogxidn = dLnxidN(x,y);
-            
-            //if(dlogxide<0.0||dlogxidn<0.0) printf("e=%f,\t rhob=%f,\t dlogxide=%f,\t dlogxidn=%f\n",x,y,dlogxide,dlogxidn);
-            
-            fprintf(filedxi, "%.3f\t%.3f\t%.3f\t%.3f\n",x,y,dlogxide,dlogxidn);
-        }
-    }
-    
-    fclose(filedxi);
-    
-    // read derivative table
-    /*filedxi = fopen ("input/dxi.dat","r");
-    if(filedxi==NULL){
-        printf("dxi.dat was not opened...\n");
-        exit(-1);
-    }
-    else
-    {
-        fseek(filedxi,0L,SEEK_SET);
-        for(int i = 0; i < 163081; ++i){
-            fscanf(filedxi,"%lf %lf %lf", & x, & y, & dlnxide[i], & dlnxidn[i]);
-        }
-    }
-    
-    fclose(filedxi);
-
-    printf("Correlation length tables are read in.\n");
-    
-    // correlation length as a function of (e, rhob)*/
-//#ifdef CRITICAL_D
-    char xitable[] = "output/xitable_enb.dat";
-    ofstream xifile(xitable);
-    for(int i = 0; i < 900; ++i) {
-        for(int j = 0; j < 180; ++j) {
-            
-            float e = i * 0.02;
-            float rhob = j * 0.005;
-            
-            PRECISION PrimaryVariables[3];
-            
-            getPrimaryVariablesCombo(e, rhob, PrimaryVariables);
-            
-            //float peq = //PrimaryVariables[0];
-            float Teq = PrimaryVariables[1];//effectiveTemperature(e, rhob);//
-            float alphaBeq = PrimaryVariables[2];//chemicalPotentialOverT(e, rhob);//
-            float muB = alphaBeq*Teq;
-            
-            float xi = correlationLength(Teq, muB);
-            float logxi = log(xi);
-            
-            if(logxi<0.0) printf("Teq=%f,\t muB=%f,\t xi=%f,\t lnxi=%f\n",Teq,muB,xi,logxi);
-            
-            xifile
-            << setprecision(5) << setw(10) << e//*HBARC
-            << setprecision(5) << setw(10) << rhob
-            << setprecision(6) << setw(18) << Teq*HBARC
-            << setprecision(6) << setw(18) << muB*HBARC
-            << setprecision(6) << setw(18) << logxi
-            << endl;
-        }
-    }
-    xifile.close();
-//#endif
-    
 #endif
 }
 
+// bilinear interpolation of correlation length table
 PRECISION correlationLength(PRECISION T, PRECISION muB){
+#ifdef CRITICAL
     PRECISION T0 = T*HBARC;
     PRECISION muB0 = muB*HBARC;
     
@@ -435,4 +332,7 @@ PRECISION correlationLength(PRECISION T, PRECISION muB){
             return 1.0;
     }else
         return 1.0;
+#else
+    return 1.0;
+#endif
 }

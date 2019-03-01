@@ -1576,7 +1576,7 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
         		q->piyn[s] = (PRECISION) piyn;
         		q->pinn[s] = (PRECISION) pinn;
 #endif
-                rhob[s] = (PRECISION) rhod;
+                rhob[s] = (PRECISION) 0.01*rhod;
 #ifdef VMU
                 q->nbt[s] = 0;
                 q->nbx[s] = 0;

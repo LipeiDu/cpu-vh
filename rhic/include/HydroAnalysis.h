@@ -10,5 +10,6 @@
 
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams);
 void testEOS();
+void testHydroPlus();
 
 #endif /* HydroAnalysis_h */

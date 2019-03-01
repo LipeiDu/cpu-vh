@@ -135,6 +135,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   //testEOS();
   // read in the parameterized correlation length xi(T, muB)
   getCorrelationLengthTable();
+  testHydroPlus();
 
   //************************************************************************************\
   //* Jet stuff

@@ -15,7 +15,6 @@
 #include "../include/InitialConditionParameters.h"
 #include "../include/HydroParameters.h"
 
-PRECISION xi(PRECISION T, PRECISION muB);
 
 PRECISION correlationLength(PRECISION T, PRECISION muB);
 
@@ -25,9 +24,9 @@ PRECISION relaxationCoefficientPhi(PRECISION rhob, PRECISION s, PRECISION T, PRE
 
 PRECISION relaxationCoefficientPhiQ(PRECISION gammaPhi, PRECISION corrL2, PRECISION Q);
 
-PRECISION dLnxidE(PRECISION e0, PRECISION rhob0);
+PRECISION dlnXidrhob(PRECISION e0, PRECISION rhob0);
 
-PRECISION dLnxidN(PRECISION e0, PRECISION rhob0);
+PRECISION dlnXide(PRECISION e0, PRECISION rhob0);
 
 void getCorrelationLengthTable();
 

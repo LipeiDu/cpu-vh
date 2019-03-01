@@ -282,14 +282,13 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************/
 	PRECISION dPi = -beta_Pi*theta - Pi*tauPiInv - delta_PiPi*Pi*theta + lambda_Pipi*ps;
 #endif
+
+    PRECISION corrL = correlationLength(T, T*alphaB);
+
 #ifdef VMU
     //*********************************************************\
     //* for the diffusion current of baryon, by Lipei
     //*********************************************************/
-    PRECISION corrL = 1.0;
-#ifdef CRITICAL
-    corrL = correlationLength(T, T*alphaB);
-#endif
     
     PRECISION kappaB = 0;//criticalBaryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq, corrL);//baryonDiffusionConstant(T, alphaB*T)*T;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//0;///
     PRECISION tau_n = Cb/T * pow(corrL,3);

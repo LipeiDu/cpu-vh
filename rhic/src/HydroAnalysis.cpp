@@ -249,3 +249,85 @@ void testEOS(){
  }
  }*/
 
+void testHydroPlus()
+{
+//#ifdef CRITICAL
+    // make derivatives of correlation length tables
+    FILE *filedxi;
+    filedxi = fopen ("output/dxi.dat","w");
+    
+    float de = 0.02;
+    float dn = 0.005;
+    
+    for(int i = 0; i < 301; ++i) {
+        for(int j = 0; j < 81; ++j) {
+            
+            float x = i * de;
+            float y = j * dn;
+            
+            float dlogxide = dlnXide(x,y);
+            float dlogxidn = dlnXidrhob(x,y);
+            
+            //if(dlogxide<0.0||dlogxidn<0.0) printf("e=%f,\t rhob=%f,\t dlogxide=%f,\t dlogxidn=%f\n",x,y,dlogxide,dlogxidn);
+            
+            fprintf(filedxi, "%.3f\t%.3f\t%.3f\t%.3f\n",x,y,dlogxide,dlogxidn);
+        }
+    }
+    
+    fclose(filedxi);
+    
+    // read derivative table
+    /*filedxi = fopen ("input/dxi.dat","r");
+     if(filedxi==NULL){
+     printf("dxi.dat was not opened...\n");
+     exit(-1);
+     }
+     else
+     {
+     fseek(filedxi,0L,SEEK_SET);
+     for(int i = 0; i < 163081; ++i){
+     fscanf(filedxi,"%lf %lf %lf", & x, & y, & dlnxide[i], & dlnxidn[i]);
+     }
+     }
+     
+     fclose(filedxi);
+     
+     printf("Correlation length tables are read in.\n");
+     
+     // correlation length as a function of (e, rhob)*/
+    //#ifdef CRITICAL_D
+    char xitable[] = "output/xitable_enb.dat";
+    ofstream xifile(xitable);
+    for(int i = 0; i < 900; ++i) {
+        for(int j = 0; j < 180; ++j) {
+            
+            float e = i * 0.02;
+            float rhob = j * 0.005;
+            
+            PRECISION PrimaryVariables[3];
+            
+            getPrimaryVariablesCombo(e, rhob, PrimaryVariables);
+            
+            //float peq = //PrimaryVariables[0];
+            float Teq = PrimaryVariables[1];//effectiveTemperature(e, rhob);//
+            float alphaBeq = PrimaryVariables[2];//chemicalPotentialOverT(e, rhob);//
+            float muB = alphaBeq*Teq;
+            
+            float xi = correlationLength(Teq, muB);
+            float logxi = log(xi);
+            
+            if(logxi<0.0) printf("Teq=%f,\t muB=%f,\t xi=%f,\t lnxi=%f\n",Teq,muB,xi,logxi);
+            
+            xifile
+            << setprecision(5) << setw(10) << e//*HBARC
+            << setprecision(5) << setw(10) << rhob
+            << setprecision(6) << setw(18) << Teq*HBARC
+            << setprecision(6) << setw(18) << muB*HBARC
+            << setprecision(6) << setw(18) << logxi
+            << endl;
+        }
+    }
+    xifile.close();
+    //#endif
+//#endif
+}
