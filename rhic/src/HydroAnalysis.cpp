@@ -26,6 +26,56 @@ using namespace std;//Lipei
 #include "../include/HydroPlus.h"
 
 #define HBARC 0.197326938
+
+void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
+    
+    FILE *fp;
+    char fname[255];
+    sprintf(fname, "%s/gammaQ_%.3f.dat", pathToOutDir, t);
+    fp=fopen(fname, "w");
+    
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    int nx = lattice->numLatticePointsX;
+    int ny = lattice->numLatticePointsY;
+    int nz = lattice->numLatticePointsRapidity;
+    double dx = lattice->latticeSpacingX;
+    double dy = lattice->latticeSpacingY;
+    double dz = lattice->latticeSpacingRapidity;
+    
+    double x,y,z;
+    
+    int i,j,k;
+    int s;
+    
+    double Q = 10.0;
+    
+    for(k = 2; k < nz+2; ++k) {
+        z = (k-2 - (nz-1)/2.)*dz;
+        for(j = 2; j < ny+2; ++j) {
+            y = (j-2 - (ny-1)/2.)*dy;
+            for(i = 2; i < nx+2; ++i) {
+                x = (i-2 - (nx-1)/2.)*dx;
+                s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
+                
+                double Ts = T[s];
+                double alphaBs = alphaB[s];
+                double seqs = seq[s];
+                double rhobs = rhob[s];
+                
+                double corrL = correlationLength(Ts, Ts*alphaBs);
+                double corrL2 = corrL * corrL;
+                
+                double gammaPhi = relaxationCoefficientPhi(rhobs, seqs, Ts, corrL2);
+                double gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Q);
+                
+                fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,gammaQ);
+            }
+        }
+    }
+    
+    fclose(fp);
+}
+
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams)
 {
     /*FILE *fp;
@@ -189,7 +239,7 @@ void testEOS(){
     
     //char EOStable[] = "output/sigmaB_test.dat";
     //ofstream eos_table(EOStable);
-    char EOStable1[] = "output/EOS_t_test5.dat";
+    char EOStable1[] = "output/EOS_t_cpuvh.dat";
     ofstream eos_table1(EOStable1);
     //char EOStable2[] = "output/eos_dpdrhob_test5.dat";
     //ofstream eos_table2(EOStable2);

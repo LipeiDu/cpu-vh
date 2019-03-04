@@ -11,5 +11,6 @@
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams);
 void testEOS();
 void testHydroPlus();
+void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams);
 
 #endif /* HydroAnalysis_h */

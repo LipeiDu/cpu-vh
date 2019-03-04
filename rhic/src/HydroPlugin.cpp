@@ -45,7 +45,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   output(e, t, outputDir, "e", latticeParams);
   //output(p, t, outputDir, "p", latticeParams);
   output(seq, t, outputDir, "seq", latticeParams);
-  //output(u->ux, t, outputDir, "ux", latticeParams);
+  output(u->ux, t, outputDir, "ux", latticeParams);
   //output(u->uy, t, outputDir, "uy", latticeParams);
   //output(u->un, t, outputDir, "un", latticeParams);
   output(u->ut, t, outputDir, "ut", latticeParams);
@@ -55,7 +55,7 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   //output(q->pitx, t, outputDir, "pitx", latticeParams);
-  //output(q->pixx, t, outputDir, "pixx", latticeParams);
+  output(q->pixx, t, outputDir, "pixx", latticeParams);
   //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
   //output(q->piyy, t, outputDir, "piyy", latticeParams);
@@ -78,9 +78,11 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   output(q->nbn, t, outputDir, "nbn", latticeParams);
   #endif
   #ifdef HydroPlus
-  //output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);
+  output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);
+  output(q->phiQ[1], t, outputDir, "phiQ1", latticeParams);
   //output(q->phiQ[2], t, outputDir, "phiQ2", latticeParams);
-  //output(eqPhiQ->phiQ[0], t, outputDir, "eqPhiQ0", latticeParams);
+  output(eqPhiQ->phiQ[0], t, outputDir, "eqPhiQ0", latticeParams);
+  output(eqPhiQ->phiQ[1], t, outputDir, "eqPhiQ1", latticeParams);
   //output(eqPhiQ->phiQ[2], t, outputDir, "eqPhiQ2", latticeParams);
   #endif
 }
@@ -259,6 +261,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       //outputAnalysis(t, outputDir, latticeParams);
+      outputGammaQ(t, outputDir, latticeParams);
     }
 
     //************************************************************************************\
