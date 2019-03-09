@@ -135,6 +135,9 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   // Read in the table of Equation of State with baryon
   getEquationOfStateTable();
   //testEOS();
+  // baryon diffusion coefficients table
+  getBaryonDiffusionCoeffTable();
+  testBaryCoeff();
   // read in the parameterized correlation length xi(T, muB)
   getCorrelationLengthTable();
   testHydroPlus();

@@ -35,34 +35,9 @@ void getEquationOfStateTable(){
     
     printf("The EOS with baryon density is used...\n");
     
-    FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob, *filesigmab;
+    FILE *eosfilet, *eosfilep, *eosfilembt, *eosfileprhob;
     PRECISION energy;
     PRECISION baryon;
-    
-    /******************************************************************/
-    /* SigmaB table from PRL 115 (2015) 202301
-    /******************************************************************/
-
-#ifdef VMU
-    // baryon conductivity
-    filesigmab = fopen ("eos/sigmaB.dat","r");
-    if(filesigmab==NULL){
-        printf("The EOS file sigmaB.dat was not opened...\n");
-        exit(-1);
-    }
-    else
-    {
-        fseek(filesigmab,0L,SEEK_SET);
-        for(int i = 0; i < 5751; ++i){
-            fscanf(filesigmab,"%lf %lf %lf", & energy, & baryon, & EOState->sigmaB[i]);
-        }
-    }
-    fclose(filesigmab);
-#endif
-    
-    /******************************************************************/
-    /* EoS from PRC 98 (2018) 034916, Conformal EoS see e.g. 1204.6710
-    /******************************************************************/
     
     // temperature table
 #ifndef CONFORMAL_EOS
@@ -139,6 +114,81 @@ void getEquationOfStateTable(){
 #endif
     
     printf("Equation of State table is read in.\n");
+#endif
+}
+
+/**************************************************************************************************************************************************/
+/* Baryon diffusion coefficients
+/**************************************************************************************************************************************************/
+
+// Baryon diffusion table from PRL 115 (2015) 202301
+void getBaryonDiffusionCoeffTable(){
+#ifdef VMU
+    FILE *filebarycoeff;
+    PRECISION temp;
+    PRECISION chem;
+    PRECISION chiB;
+    
+    // in the table: T [MeV] , muB [MeV] , chi2B / T^2 , sigmaB / T , T * DB
+    filebarycoeff = fopen ("input/BaryonDiffData.dat","r");
+    if(filebarycoeff==NULL){
+        printf("The file BaryonDiffData.dat was not opened...\n");
+        exit(-1);
+    }
+    else
+    {
+        fseek(filebarycoeff,0L,SEEK_SET);
+        for(int i = 0; i < 128721; ++i){
+            fscanf(filebarycoeff,"%lf %lf %lf %lf %lf", & temp, & chem, & chiB, & BaryDiffCoeff->sigmaB[i], & BaryDiffCoeff->DB[i]);
+        }
+    }
+    fclose(filebarycoeff);
+    
+    printf("Baryon diffusion coefficients table is read in.\n");
+#endif
+}
+
+void baryonDiffusionCoeff(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff){
+    
+    PRECISION T0 = T*HBARC*1000; // MeV
+    PRECISION muB0 = fabs(muB*HBARC*1000); // MeV
+    
+    PRECISION sigmaBT, DBT; // sigmaB/T and D_B*T
+    
+    diffusionCoeff[0] = 0.0;
+    diffusionCoeff[1] = 0.0;
+    
+#ifdef VMU
+    if((100<=T0)&&(T0<419)){
+        if((0<=muB0)&&(muB0<400)){
+            sigmaBT = InferredPrimaryVariable(T0, muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->sigmaB);
+            DBT = InferredPrimaryVariable(T0, muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->DB);
+        }else{
+            sigmaBT = InferredPrimaryVariable(T0, 400., 100., 1., 401, 1., 0, BaryDiffCoeff->sigmaB);
+            DBT = InferredPrimaryVariable(T0, 400., 100., 1., 401, 1., 0, BaryDiffCoeff->DB);
+        }
+    }else if(T0<100)
+    {
+        if((0<=muB0)&&(muB0<400)){
+            sigmaBT = InferredPrimaryVariable(100., muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->sigmaB);
+            DBT = InferredPrimaryVariable(100., muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->DB);
+        }else{ // using values at T=100 and muB=400
+            sigmaBT = 0.0005433609062953698;
+            DBT = 0.034289064162551376;
+        }
+    }else
+    {
+        if((0<=muB0)&&(muB0<400)){
+            sigmaBT = InferredPrimaryVariable(419., muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->sigmaB);
+            DBT = InferredPrimaryVariable(419., muB0, 100., 1., 401, 1., 0, BaryDiffCoeff->DB);
+        }else{ // using values at T=420 and muB=400
+            sigmaBT = 0.049794598243803105;
+            DBT = 0.1547150351237801;
+        }
+    }
+
+    diffusionCoeff[0] = sigmaBT * T * T; // kappaB in [fm^-2]
+    diffusionCoeff[1] = DBT / T; // DB in [fm]
 #endif
 }
 
@@ -318,33 +368,6 @@ PRECISION primaryVariablesConformalEOS(PRECISION e, PRECISION rhob, const PRECIS
 /* 2. with rhob: (1) conformal (2) PRC 98 (2018) 034916
 /**************************************************************************************************************************************************/
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION muB){
-    PRECISION T0 = T*HBARC*1000;
-    PRECISION muB0 = fabs(muB*HBARC*1000);
-#ifdef VMU
-    if((100<=T0)&&(T0<=450)){
-        if((0<=muB0)&&(muB0<=400))
-            return InferredPrimaryVariable(muB0, T0-100, 0, 5, 71, 5, 0, EOState->sigmaB)/HBARC/1000;
-        else
-            return InferredPrimaryVariable(400, T0-100, 0, 5, 71, 5, 0, EOState->sigmaB)/HBARC/1000;
-    }else if(T0<100)
-    {
-        if((0<=muB0)&&(muB0<=400))
-            return InferredPrimaryVariable(muB0, 0, 0, 5, 71, 5, 0, EOState->sigmaB)/HBARC/1000;
-        else
-            return 0.0543361/HBARC/1000;
-    }else
-    {
-        if((0<=muB0)&&(muB0<=400))
-            return InferredPrimaryVariable(muB0, 350, 0, 5, 71, 5, 0, EOState->sigmaB)/HBARC/1000;
-        else
-            return 22.5093/HBARC/1000;
-    }
-#else
-    return 0.0;
-#endif
-}
-
 PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB){
     PRECISION s = (e + p) / T - alphaB * rhob;
     if(s<0.0){
@@ -471,6 +494,21 @@ PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob) {
     return 1/3;
 #endif
 #endif
+}
+
+PRECISION dPdT(PRECISION e, PRECISION rhob) {
+    PRECISION ep = 1.1 * e;
+    PRECISION em = 0.9 * e;
+    
+    PRECISION pPrimaryVariables[3], mPrimaryVariables[3];
+    
+    getPrimaryVariablesCombo(ep, rhob, pPrimaryVariables);
+    getPrimaryVariablesCombo(em, rhob, mPrimaryVariables);
+    
+    PRECISION dp = pPrimaryVariables[0] - mPrimaryVariables[0];
+    PRECISION dT = pPrimaryVariables[1] - mPrimaryVariables[1];
+    
+    return dp/dT;
 }
 
 // a function returns temperature, pressure and chemical potential over temperature altogether

@@ -10,6 +10,7 @@
 
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams);
 void testEOS();
+void testBaryCoeff();
 void testHydroPlus();
 void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams);
 

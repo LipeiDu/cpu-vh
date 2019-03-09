@@ -30,6 +30,8 @@ PRECISION *T, *Tp, *TS;
 
 EQUATION_OF_STATE *EOState;
 
+BARYON_DIFFUSION_COEFF *BaryDiffCoeff;
+
 DYNAMICAL_SOURCE *Source;
 
 PRECISION *Qvec; // Q vectors of slow modes
@@ -220,8 +222,13 @@ void allocateHostMemory(int len) {
     EOState->Temperature   = (PRECISION *)calloc(188580, bytes);
     EOState->alphab      = (PRECISION *)calloc(188580, bytes);
     EOState->dpdrhob       = (PRECISION *)calloc(188580, bytes);
+    
+    // baryon diffusion coefficients
 #ifdef VMU
-    EOState->sigmaB = (PRECISION *)calloc(5751, bytes);
+    BaryDiffCoeff = (BARYON_DIFFUSION_COEFF *)calloc(1, sizeof(BARYON_DIFFUSION_COEFF));
+    //BaryDiffCoeff->sigmaB = (PRECISION *)calloc(5751, bytes);
+    BaryDiffCoeff->sigmaB = (PRECISION *)calloc(128721, bytes);
+    BaryDiffCoeff->DB = (PRECISION *)calloc(128721, bytes);
 #endif
     
     //=======================================================================
@@ -520,7 +527,8 @@ void freeHostMemory() {
     free(EOState->alphab);
     free(EOState->dpdrhob);
 #ifdef VMU
-    free(EOState->sigmaB);
+    free(BaryDiffCoeff->sigmaB);
+    free(BaryDiffCoeff->DB);
 #endif
 
     free(rhob);

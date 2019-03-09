@@ -24,7 +24,7 @@
 #define RootSolver_with_Baryon
 #define EOS_with_baryon
 
-#define HydroPlus
+//#define HydroPlus
 //#define CRITICAL
 /**************************************************************************************************************************************************/
 /*********************************************************/
@@ -166,10 +166,14 @@ typedef struct
     PRECISION *Temperature;
     PRECISION *alphab;
     PRECISION *dpdrhob;
-#ifdef VMU
-    PRECISION *sigmaB;
-#endif
 } EQUATION_OF_STATE;
+
+// baryon diffusion coefficients
+typedef struct
+{
+    PRECISION *DB;
+    PRECISION *sigmaB;
+} BARYON_DIFFUSION_COEFF;
 
 // slow modes
 typedef struct
@@ -206,6 +210,8 @@ extern PRECISION *T, *Tp, *TS;
 extern DYNAMICAL_SOURCE *Source;
 
 extern EQUATION_OF_STATE *EOState;
+
+extern BARYON_DIFFUSION_COEFF *BaryDiffCoeff;
 
 /**************************************************************************************************************************************************/
 /* initialization and update energy momentum tensor, net baryon current and slow modes

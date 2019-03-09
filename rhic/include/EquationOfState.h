@@ -17,15 +17,19 @@
 #define EOS_FACTOR 13.8997 // Nc=3, Nf=2.5
 
 
-void getEquationOfStateTable();//Lipei
+void getEquationOfStateTable();
 
 void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __restrict__ PrimaryVariables);
 
 PRECISION InferredPrimaryVariable(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable);
 
-// EoS with baryon
+// baryon diffusion coefficients
 
-PRECISION baryonDiffusionConstant(PRECISION T, PRECISION muB);
+void getBaryonDiffusionCoeffTable();
+
+void baryonDiffusionCoeff(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff);
+
+// EoS with baryon
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
 
@@ -38,6 +42,8 @@ PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);
 PRECISION dPdRhob(PRECISION e, PRECISION rhob);
 
 PRECISION dPdE(PRECISION e, PRECISION rhob);
+
+PRECISION dPdT(PRECISION e, PRECISION rhob);
 
 PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB);
 
