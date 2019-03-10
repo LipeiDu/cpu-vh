@@ -26,6 +26,7 @@
 
 //#define HydroPlus
 //#define CRITICAL
+
 /**************************************************************************************************************************************************/
 /*********************************************************/
 //Conservation laws//
@@ -72,26 +73,19 @@
 /*********************************************************/
 //Conservation variables//
 
-// T^\tau\mu + N^\tau
-#define ALL_NUMBER_CONSERVATION_LAWS (NUMBER_CONSERVATION_LAWS+NUMBER_BARYON_COMPONENTS)
+#define ALL_NUMBER_CONSERVATION_LAWS (NUMBER_CONSERVATION_LAWS+NUMBER_BARYON_COMPONENTS)// T^\tau\mu + N^\tau
 
-// \pi^\tau\mu + \Pi
-#define NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
+#define NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)// \pi^\tau\mu + \Pi
 
-// \pi^\tau\mu + \Pi + V^\mu
-#define ALL_NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_VMU_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
+#define ALL_NUMBER_DISSIPATIVE_CURRENTS (NUMBER_PI_COMPONENTS+NUMBER_PROPAGATED_VMU_COMPONENTS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)// \pi^\tau\mu + \Pi + V^\mu
 
-// T^\tau\mu + \pi^\tau\mu
-#define NUMBER_CONSERVED_VARIABLES_NO_BULK (NUMBER_CONSERVATION_LAWS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)
+#define NUMBER_CONSERVED_VARIABLES_NO_BULK (NUMBER_CONSERVATION_LAWS+NUMBER_PROPAGATED_PIMUNU_COMPONENTS)// T^\tau\mu + \pi^\tau\mu
 
-// T^\tau\mu + \pi^\tau\mu + \Pi
-#define NUMBER_CONSERVED_VARIABLES (NUMBER_CONSERVATION_LAWS+NUMBER_DISSIPATIVE_CURRENTS)
+#define NUMBER_CONSERVED_VARIABLES (NUMBER_CONSERVATION_LAWS+NUMBER_DISSIPATIVE_CURRENTS)// T^\tau\mu + \pi^\tau\mu + \Pi
 
-// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu
-#define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)
+#define ALL_NUMBER_CONSERVED_VARIABLES (ALL_NUMBER_CONSERVATION_LAWS+ALL_NUMBER_DISSIPATIVE_CURRENTS)// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu
 
-// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu + slow modes
-#define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)
+#define NUMBER_ALL_EVOLVING_VARIABLES (ALL_NUMBER_CONSERVED_VARIABLES+NUMBER_SLOW_MODES)// T^\tau\mu + N^\tau + \pi^\tau\mu + \Pi + V^\mu + slow modes
 
 
 /**************************************************************************************************************************************************/
@@ -203,7 +197,8 @@ extern PRECISION *xieq; // correlation length
 extern CONSERVED_VARIABLES *q,*Q,*qS;
 extern FLUID_VELOCITY *u,*up,*uS;
 
-extern PRECISION *e, *p, *rhob, *seq;
+extern PRECISION *e, *p, *seq;
+extern PRECISION *rhob, *rhobp, *rhobS;
 extern PRECISION *alphaB, *alphaBp, *alphaBS;
 extern PRECISION *T, *Tp, *TS;
 

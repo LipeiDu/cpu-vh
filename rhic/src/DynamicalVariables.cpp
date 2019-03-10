@@ -22,7 +22,9 @@ CONSERVED_VARIABLES *q, *Q, *qS;
 
 FLUID_VELOCITY *u, *up, *uS;
 
-PRECISION *e, *p, *rhob, *seq;
+PRECISION *e, *p, *seq;
+
+PRECISION *rhob, *rhobp, *rhobS;
 
 PRECISION *alphaB, *alphaBp, *alphaBS;
 
@@ -64,8 +66,11 @@ void allocateHostMemory(int len) {
     // energy density, pressure, baryon density, entropy density
 	e = (PRECISION *)calloc(len, bytes);
 	p = (PRECISION *)calloc(len, bytes);
-    rhob = (PRECISION *)calloc(len, bytes);
     seq = (PRECISION *)calloc(len, bytes);
+    
+    rhob = (PRECISION *)calloc(len, bytes);
+    rhobp = (PRECISION *)calloc(len, bytes);
+    rhobS = (PRECISION *)calloc(len, bytes);
     
     // baryon chemical potential
     alphaB = (PRECISION *)calloc(len, bytes);
@@ -306,6 +311,8 @@ void setConservedVariables(double t, void * latticeParams) {
 				q->ttn[s] = Ttn(e_s, p_s+Pi_s, ut_s, un_s, pitn_s);
 
                 PRECISION rhob_s = rhob[s];
+                rhobp[s] = rhob[s];
+                
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
                 //if (T[s] < 1.e-7) T[s] = 1.e-7;
@@ -532,6 +539,8 @@ void freeHostMemory() {
 #endif
 
     free(rhob);
+    free(rhobp);
+    free(rhobS);
     free(alphaB);
     free(alphaBp);
     free(alphaBS);
