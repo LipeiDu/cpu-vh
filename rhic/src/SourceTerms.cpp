@@ -15,78 +15,11 @@
 #include "../include/EquationOfState.h" // for bulk terms
 #include "../include/DynamicalSources.h"
 #include "../include/FluxLimiter.h"
-
+#include "../include/TransportCoefficients.h"
 #include "../include/HydroPlus.h"
 
 //#define USE_CARTESIAN_COORDINATES
 //#define MINMOD_FOR_U_AND_P
-
-//parameters for the analytic parameterization of the bulk viscosity \zeta/S
-#define A_1 -13.77
-#define A_2 27.55
-#define A_3 13.45
-
-#define LAMBDA_1 0.9
-#define LAMBDA_2 0.25
-#define LAMBDA_3 0.9
-#define LAMBDA_4 0.22
-
-#define SIGMA_1 0.025
-#define SIGMA_2 0.13
-#define SIGMA_3 0.0025
-#define SIGMA_4 0.022
-
-//Transport coefficients of the baryon evolution; Lipei
-#define Cb 4.0
-
-//Transport coefficients
-const PRECISION delta_pipi = 1.33333;
-const PRECISION tau_pipi = 0;//1.42857;
-const PRECISION delta_PiPi = 0.666667;
-const PRECISION lambda_piPi = 1.2;
-
-
-/**************************************************************************************************************************************************/
-/* bulk viscosity as a function of temperature
-/**************************************************************************************************************************************************/
-
-inline PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
-	PRECISION x = T/1.01355;
-	if(x > 1.05)
-		return LAMBDA_1*exp(-(x-1)/SIGMA_1) + LAMBDA_2*exp(-(x-1)/SIGMA_2)+0.001;
-	else if(x < 0.995)
-		return LAMBDA_3*exp((x-1)/SIGMA_3)+ LAMBDA_4*exp((x-1)/SIGMA_4)+0.03;
-	else
-		return A_1*x*x + A_2*x - A_3;
-}
-
-/**************************************************************************************************************************************************/
-/* baryon diffusion coefficient of the medium from kinetic theory
-/**************************************************************************************************************************************************/
-
-PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p){
-    PRECISION HyCotangent = 1/tanh(alphaB);
-    if(isnan(HyCotangent))
-        printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub_over_T=%4e,\t T=%4e. \n",e,rhob, alphaB, T);
-    
-    return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
-    /*return Cb * rhob / (alphaB * T);*/
-}
-
-PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq, PRECISION corrL){
-    PRECISION fac = rhob*T/(e+p);
-    PRECISION mub = (alphaB * T);
-    
-    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub) * corrL;
-}
-
-PRECISION criticalBaryonDiffusionCoefficientPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
-    PRECISION fac = rhob*T/(e+p);
-    PRECISION corrL = correlationLength(T, T*alphaB);
-    //printf("T=%f\t alphaB=%f\t corrL=%f",T,alphaB,corrL);
-    //return fac * fac * T * seq * corrL / rhob / (1.2 * M_PI);
-    return fac * fac * T * seq / rhob / (1.2 * M_PI);
-}
 
 /**************************************************************************************************************************************************/
 /* calculate source terms for dissipative compnents, e.g. shear, bulk and baryon diffusion etc.

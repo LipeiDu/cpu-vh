@@ -31,6 +31,7 @@
 #include "../include/DynamicalSources.h"
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
+#include "../include/TransportCoefficients.h"
 
 #define FREQ 50 //write output to file every FREQ timesteps
 #define FOFREQ 10 //call freezeout surface finder every FOFREQ timesteps

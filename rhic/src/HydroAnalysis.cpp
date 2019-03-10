@@ -24,6 +24,7 @@ using namespace std;//Lipei
 #include "../include/EquationOfState.h"
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
+#include "../include/TransportCoefficients.h"
 
 #define HBARC 0.197326938
 

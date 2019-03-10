@@ -23,12 +23,6 @@ void getPrimaryVariablesCombo(PRECISION e, PRECISION rhob, PRECISION * const __r
 
 PRECISION InferredPrimaryVariable(PRECISION e, PRECISION rhob, PRECISION e_start, PRECISION d_e, int nrhob, PRECISION d_rhob, int index_start, const PRECISION * const __restrict__ EOS_Variable);
 
-// baryon diffusion coefficients
-
-void getBaryonDiffusionCoeffTable();
-
-void baryonDiffusionCoeff(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff);
-
 // EoS with baryon
 
 PRECISION equilibriumPressure(PRECISION e, PRECISION rhob);
@@ -39,13 +33,13 @@ PRECISION chemicalPotentialOverT(PRECISION e, PRECISION rhob);
 
 PRECISION speedOfSoundSquared(PRECISION e, PRECISION rhob);
 
+PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB);
+
 PRECISION dPdRhob(PRECISION e, PRECISION rhob);
 
 PRECISION dPdE(PRECISION e, PRECISION rhob);
 
 PRECISION dPdT(PRECISION e, PRECISION rhob);
-
-PRECISION equilibriumEntropy(PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB);
 
 // Wuppertal-Budapest EoS without baryon
 
