@@ -48,37 +48,36 @@ PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
 /* baryon diffusion coefficient of the medium from kinetic theory
 /**************************************************************************************************************************************************/
 
-PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p){
+// G. S. Denicol, C. Gale, S. Jeon, A. Monnai, B. Schenke, and C. Shen, (2018), arXiv:1804.10557 [nucl-th].
+PRECISION baryonDiffusionCoefficientKinetic(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p){
     PRECISION HyCotangent = 1/tanh(alphaB);
-    if(isnan(HyCotangent))
-        printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub_over_T=%4e,\t T=%4e. \n",e,rhob, alphaB, T);
+    if(isnan(HyCotangent)) printf("kappaB is nan. e=%4e,\t rhob=%4e,\t mub_over_T=%4e,\t T=%4e. \n",e,rhob, alphaB, T);
     
-    return Cb/T * rhob * (0.3333333*HyCotangent - rhob*T/(e+p));
-    /*return Cb * rhob / (alphaB * T);*/
+    return Cb/T * rhob * (0.3333333 * HyCotangent - rhob*T/(e+p)); /*return Cb * rhob / (alphaB * T);*/
 }
 
-PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq, PRECISION corrL){
+// D. T. Son and A. O. Starinets, JHEP 03, 052 (2006).
+PRECISION baryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
     PRECISION fac = rhob*T/(e+p);
     PRECISION mub = (alphaB * T);
     
-    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub) * corrL;
+    return fac * fac * T * seq * 2.0 * M_PI / (mub * mub);
 }
 
-PRECISION criticalBaryonDiffusionCoefficientPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
+// M. Stephanov and Y. Yin, Phys. Rev., D98(3):036006, 2018.
+PRECISION baryonDiffusionCoefficientHydroPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq){
     PRECISION fac = rhob*T/(e+p);
-    PRECISION corrL = correlationLength(T, T*alphaB);
-    //printf("T=%f\t alphaB=%f\t corrL=%f",T,alphaB,corrL);
-    //return fac * fac * T * seq * corrL / rhob / (1.2 * M_PI);
+    
     return fac * fac * T * seq / rhob / (1.2 * M_PI);
 }
 
 
 /**************************************************************************************************************************************************/
 /* Baryon diffusion coefficients
- /**************************************************************************************************************************************************/
+/**************************************************************************************************************************************************/
 
 // Baryon diffusion table from PRL 115 (2015) 202301
-void getBaryonDiffusionCoeffTable(){
+void getBaryonDiffusionCoefficientTable(){
 #ifdef VMU
     FILE *filebarycoeff;
     PRECISION temp;
@@ -104,7 +103,7 @@ void getBaryonDiffusionCoeffTable(){
 #endif
 }
 
-void baryonDiffusionCoeff(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff){
+void baryonDiffusionCoefficient(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff){
     
     PRECISION T0 = T*HBARC*1000; // MeV
     PRECISION muB0 = fabs(muB*HBARC*1000); // MeV

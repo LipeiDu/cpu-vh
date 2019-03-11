@@ -57,9 +57,9 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #ifdef PIMUNU
   //output(q->pitx, t, outputDir, "pitx", latticeParams);
   output(q->pixx, t, outputDir, "pixx", latticeParams);
-  //output(q->pixy, t, outputDir, "pixy", latticeParams);
+  output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
-  //output(q->piyy, t, outputDir, "piyy", latticeParams);
+  output(q->piyy, t, outputDir, "piyy", latticeParams);
   //output(q->piyn, t, outputDir, "piyn", latticeParams);
   output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
@@ -137,7 +137,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   getEquationOfStateTable();
   //testEOS();
   // baryon diffusion coefficients table
-  getBaryonDiffusionCoeffTable();
+  getBaryonDiffusionCoefficientTable();
   testBaryCoeff();
   // read in the parameterized correlation length xi(T, muB)
   getCorrelationLengthTable();

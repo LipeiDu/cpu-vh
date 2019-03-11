@@ -291,7 +291,7 @@ void testBaryCoeff(){
             PRECISION Ttest = (50.0 + i * 7.0)*0.001/HBARC;
             PRECISION muBtest = (1.0 + j * 7.0)*0.001/HBARC;
             
-            baryonDiffusionCoeff(Ttest, muBtest, diffusionCoeff);
+            baryonDiffusionCoefficient(Ttest, muBtest, diffusionCoeff);
 
             eos_table1
             << setprecision(6) << setw(18) << Ttest*1000*HBARC << setprecision(6) << setw(18) << muBtest*1000*HBARC

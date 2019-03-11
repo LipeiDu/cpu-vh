@@ -32,8 +32,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************/
 	PRECISION taupiInv = T / 5  / d_etabar; //d_etabar=shearViscosityToEntropyDensity
 	PRECISION beta_pi = (e + p) / 5;
-
-    //printf("kappab=%f\n",criticalBaryonDiffusionCoefficient(T, rhob, alphaB, e, p, seq));
+    
 	//*********************************************************\
 	//* Temperature dependent bulk transport coefficients
 	//*********************************************************/
@@ -216,18 +215,57 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	PRECISION dPi = -beta_Pi*theta - Pi*tauPiInv - delta_PiPi*Pi*theta + lambda_Pipi*ps;
 #endif
 
-    PRECISION corrL = correlationLength(T, T*alphaB);
+    // correlation length returns 1.0 if CRITICAL is not defined.
+    PRECISION muB = T * alphaB;
+    PRECISION corrL = correlationLength(T, muB);
 
 #ifdef VMU
     //*********************************************************\
     //* for the diffusion current of baryon, by Lipei
     //*********************************************************/
     
-    PRECISION kappaB = 0;//criticalBaryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq, corrL);//baryonDiffusionConstant(T, alphaB*T)*T;//baryonDiffusionCoefficient(T, rhob, alphaB, e, p);//0;///
-    PRECISION tau_n = Cb/T * pow(corrL,3);
+    // relaxation time
+    PRECISION tau_n = Cb/T;
+
+    // baryon diffusion coefficients
+    PRECISION kappaB = 0.0;
+    PRECISION DB = 0.0;
+    
+    PRECISION diffusionCoeff[2];
+    baryonDiffusionCoefficient(T, muB, diffusionCoeff);
+    
+    kappaB = diffusionCoeff[0];
+    DB = diffusionCoeff[1];
+    
+    // critical scaling
+#ifdef CRITICAL
+    tau_n = Cb/T * corrL;
+    kappaB = diffusionCoeff[0] * corrL;
+    DB = diffusionCoeff[1] / corrL;
+#endif
+    
+    // other transport coefficients
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
     
+    // kappaB * gradient of muB/T term
+    PRECISION NBI0t = kappaB * Nablat_alphaB;
+    PRECISION NBI0x = kappaB * Nablax_alphaB;
+    PRECISION NBI0y = kappaB * Nablay_alphaB;
+    PRECISION NBI0n = kappaB * Nablan_alphaB;
+#ifdef CRITICAL
+    PRECISION TInv = 1 / T;
+    PRECISION facG1 = kappaB / rhob * TInv;
+    PRECISION facG2 = dPdT(e, rhob) - (e + p) * TInv;
+    PRECISION facG = facG1 * facG2;
+    
+    NBI0t = DB * Nablat_rhob + facG *  Nablat_T;
+    NBI0x = DB * Nablax_rhob + facG *  Nablax_T;
+    NBI0y = DB * Nablay_rhob + facG *  Nablay_T;
+    NBI0n = DB * Nablan_rhob + facG *  Nablan_T;
+#endif
+    
+    // other souce terms
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
     PRECISION NBI1t = ut * facNBI1;
     PRECISION NBI1x = ux * facNBI1;
@@ -253,20 +291,14 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     
     PRECISION GBt   = -t * un/ut * nbn;
     PRECISION GBn   = -1/t * (nbn + un/ut * nbt);
+    
 #endif
 #ifdef HydroPlus
     //*********************************************************\
     //* for the slow modes from Hydro+, by Lipei
     //*********************************************************/
-    
-    //PRECISION Teq = effectiveTemperature(e, rhob);
-    //printf("T=%f,\tTeq=%f\n",T,Teq);
-    
-    PRECISION utInv = 1.0/ut;
-    
-    //PRECISION corrL = xi(T, T*alphaB);
+
     PRECISION corrL2 = corrL * corrL;
-    
     PRECISION gammaPhi = relaxationCoefficientPhi(rhob, seq, T, corrL2);
 #endif
     
@@ -290,16 +322,16 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	*piRHS = dPi / ut + Pi * dkvk;
 #endif
 #ifdef VMU
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * kappaB * Nablat_alphaB + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * kappaB * Nablax_alphaB + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * kappaB * Nablay_alphaB + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * kappaB * Nablan_alphaB + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
 #endif
 #ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
     {
         PRECISION gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Qvec[n]);
-        phiQRHS[n] = - utInv * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
+        phiQRHS[n] = - 1/ut * gammaQ * (PhiQ[n] - equiPhiQ[n]) + PhiQ[n] * dkvk;
     }
 #endif
 }
@@ -769,6 +801,16 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION rhobs = 0;
     PRECISION alphaBs  = 0;
     
+    PRECISION Nablat_rhob = 0;
+    PRECISION Nablax_rhob = 0;
+    PRECISION Nablay_rhob = 0;
+    PRECISION Nablan_rhob = 0;
+    
+    PRECISION Nablat_T = 0;
+    PRECISION Nablax_T = 0;
+    PRECISION Nablay_T = 0;
+    PRECISION Nablan_T = 0;
+    
     PRECISION Nablat_alphaB = 0;
     PRECISION Nablax_alphaB = 0;
     PRECISION Nablay_alphaB = 0;
@@ -812,7 +854,7 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 	//=========================================================
 	// Dissipative components source terms
 	//=========================================================
-//#ifndef IDEAL
+
 	PRECISION pimunuRHS[NUMBER_PROPAGATED_PIMUNU_COMPONENTS];
     PRECISION piRHS;
     PRECISION nbmuRHS[NUMBER_PROPAGATED_VMU_COMPONENTS];
@@ -832,5 +874,4 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 #ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n) S[ALL_NUMBER_CONSERVED_VARIABLES+n] = phiQRHS[n];// for slow modes
 #endif
-//#endif
 }

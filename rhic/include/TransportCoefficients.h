@@ -10,10 +10,8 @@
 
 #include <stdio.h>
 
-//Transport coefficients of the baryon evolution; Lipei
-const PRECISION Cb = 4.0;
-
 //Transport coefficients
+
 const PRECISION delta_pipi = 1.33333;
 const PRECISION tau_pipi = 0;//1.42857;
 const PRECISION delta_PiPi = 0.666667;
@@ -21,18 +19,19 @@ const PRECISION lambda_piPi = 1.2;
 
 PRECISION bulkViscosityToEntropyDensity(PRECISION T);
 
-
 // baryon diffusion coefficients
 
-void getBaryonDiffusionCoeffTable();
+const PRECISION Cb = 4.0;
 
-void baryonDiffusionCoeff(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff);
+void getBaryonDiffusionCoefficientTable();
 
-PRECISION baryonDiffusionCoefficient(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p);
+void baryonDiffusionCoefficient(PRECISION T, PRECISION muB, PRECISION * const __restrict__ diffusionCoeff);
 
-PRECISION criticalBaryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq, PRECISION corrL);
+PRECISION baryonDiffusionCoefficientKinetic(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p);
 
-PRECISION criticalBaryonDiffusionCoefficientPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq);
+PRECISION baryonDiffusionCoefficientAdscft(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq, PRECISION corrL);
+
+PRECISION baryonDiffusionCoefficientHydroPlus(PRECISION T, PRECISION rhob, PRECISION alphaB, PRECISION e, PRECISION p, PRECISION seq);
 
 
 #endif /* TransportCoefficients_hpp */
