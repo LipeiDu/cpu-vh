@@ -84,10 +84,10 @@ void setInitialTmunuFromFile(void * latticeParams, void * initCondParams, void *
                     u->ux[s] = ux_in;
                     u->uy[s] = uy_in;
                     u->un[s] = un_in;
-                    up->ut[s] = ut_in; //set previous step to same value
-                    up->ux[s] = ux_in; //...
-                    up->uy[s] = uy_in;
-                    up->un[s] = un_in;
+                    //up->ut[s] = ut_in; //set previous step to same value
+                    //up->ux[s] = ux_in; //...
+                    //up->uy[s] = uy_in;
+                    //up->un[s] = un_in;
 #ifdef PIMUNU
                     q->pitt[s] = pitt_in;
                     q->pitx[s] = pitx_in;
@@ -187,7 +187,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
                     fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     u->ut[s] =  (PRECISION) value;
-                    up->ut[s] = (PRECISION) value;
+                    //up->ut[s] = (PRECISION) value;
                 }
             }
         }
@@ -209,7 +209,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
                     fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     u->ux[s] =  (PRECISION) value;
-                    up->ux[s] = (PRECISION) value;
+                    //up->ux[s] = (PRECISION) value;
                 }
             }
         }
@@ -231,7 +231,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
                     fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     u->uy[s] =  (PRECISION) value;
-                    up->uy[s] = (PRECISION) value;
+                    //up->uy[s] = (PRECISION) value;
                 }
             }
         }
@@ -253,7 +253,7 @@ void setInitialTmunuFromFiles(void * latticeParams, void * initCondParams, void 
                     fscanf(fileIn, "%f %f %f %f\n", &x, &y, &z, &value);
                     int s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                     u->un[s] =  (PRECISION) value;
-                    up->un[s] = (PRECISION) value;
+                    //up->un[s] = (PRECISION) value;
                 }
             }
         }
@@ -523,10 +523,10 @@ void setFluidVelocityInitialCondition(void * latticeParams, void * hydroParams) 
 				u->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
                 
                 //intialize the flow velocity of the previous step; Lipei
-                up->ux[s] = 0;
-                up->uy[s] = 0;
-                up->un[s] = 0;
-                up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
+                //up->ux[s] = 0;
+                //up->uy[s] = 0;
+                //up->un[s] = 0;
+                //up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
 			}
 		}
 	}
@@ -840,10 +840,10 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
                             u->un[s] = 0;
                             u->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
                             
-                            up->ux[s] = 0;
-                            up->uy[s] = 0;
-                            up->un[s] = 0;
-                            up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
+                            //up->ux[s] = 0;
+                            //up->uy[s] = 0;
+                            //up->un[s] = 0;
+                            //up->ut[s] = sqrt(1+ux*ux+uy*uy+t0*t0*un*un);
 #ifdef PIMUNU
                             q->pitt[s] = 0;
                             q->pitx[s] = 0;
@@ -1071,10 +1071,10 @@ void setICfromSource(void * latticeParams, void * initCondParams, void * hydroPa
                             u->ut[is] = sqrt( 1 + u->ux[is]*u->ux[is] + u->uy[is]*u->uy[is] + TAU*TAU*u->un[is]*u->un[is]);
                             
                             e[is] = e[is] + initialEnergyDensity;
-                            up->ut[is] = u->ut[is];
-                            up->ux[is] = u->ux[is];
-                            up->uy[is] = u->uy[is];
-                            up->un[is] = u->un[is];
+                            //up->ut[is] = u->ut[is];
+                            //up->ux[is] = u->ux[is];
+                            //up->uy[is] = u->uy[is];
+                            //up->un[is] = u->un[is];
                             p[is] = equilibriumPressureWB(e[is]);
                         }
                     }
@@ -1560,10 +1560,10 @@ void setISGubserInitialCondition(void * latticeParams, const char *rootDirectory
 				u->uy[s] = u2;
 				u->un[s] = 0;
 				u->ut[s] = sqrt(1 + u1*u1 + u2*u2);
-                up->ux[s] = u->ux[s];
-                up->uy[s] = u->uy[s];
-                up->un[s] = u->un[s];
-                up->ut[s] = u->ut[s];
+                //up->ux[s] = u->ux[s];
+                //up->uy[s] = u->uy[s];
+                //up->un[s] = u->un[s];
+                //up->ut[s] = u->ut[s];
 #ifdef PIMUNU
         		q->pitt[s] = (PRECISION) pitt;
         		q->pitx[s] = (PRECISION) pitx;

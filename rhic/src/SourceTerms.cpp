@@ -238,31 +238,32 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     DB = diffusionCoeff[1];
     
     // critical scaling
-#ifdef CRITICAL
-    tau_n = Cb/T * corrL;
-    kappaB = diffusionCoeff[0] * corrL;
-    DB = diffusionCoeff[1] / corrL;
-#endif
+//#ifdef CRITICAL
+//    tau_n = Cb/T * corrL;
+//    kappaB = diffusionCoeff[0] * corrL;
+//    DB = diffusionCoeff[1] / corrL;
+//#endif
     
     // other transport coefficients
     PRECISION delta_nn = tau_n;
     PRECISION lambda_nn = 0.60 * tau_n;
     
     // kappaB * gradient of muB/T term
+#ifndef CRITICAL
     PRECISION NBI0t = kappaB * Nablat_alphaB;
     PRECISION NBI0x = kappaB * Nablax_alphaB;
     PRECISION NBI0y = kappaB * Nablay_alphaB;
     PRECISION NBI0n = kappaB * Nablan_alphaB;
-#ifdef CRITICAL
+#else
     PRECISION TInv = 1 / T;
     PRECISION facG1 = kappaB / rhob * TInv;
     PRECISION facG2 = dPdT(e, rhob) - (e + p) * TInv;
     PRECISION facG = facG1 * facG2;
     
-    NBI0t = DB * Nablat_rhob + facG *  Nablat_T;
-    NBI0x = DB * Nablax_rhob + facG *  Nablax_T;
-    NBI0y = DB * Nablay_rhob + facG *  Nablay_T;
-    NBI0n = DB * Nablan_rhob + facG *  Nablan_T;
+    PRECISION NBI0t = DB * Nablat_rhob + facG *  Nablat_T;
+    PRECISION NBI0x = DB * Nablax_rhob + facG *  Nablax_T;
+    PRECISION NBI0y = DB * Nablay_rhob + facG *  Nablay_T;
+    PRECISION NBI0n = DB * Nablan_rhob + facG *  Nablan_T;
 #endif
     
     // other souce terms
@@ -322,10 +323,17 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	*piRHS = dPi / ut + Pi * dkvk;
 #endif
 #ifdef VMU
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    //#ifndef CRITICAL
+    //nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
+    //nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    //nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    //nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    //#else
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t) + nbt * dkvk + GBt;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x) + nbx * dkvk;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y) + nby * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n) + nbn * dkvk + GBn;
+    //#endif
 #endif
 #ifdef HydroPlus
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)

@@ -311,13 +311,11 @@ void setConservedVariables(double t, void * latticeParams) {
 				q->ttn[s] = Ttn(e_s, p_s+Pi_s, ut_s, un_s, pitn_s);
 
                 PRECISION rhob_s = rhob[s];
-                rhobp[s] = rhob[s];
                 
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
                 //if (T[s] < 1.e-7) T[s] = 1.e-7;
                 
-                Tp[s] = T[s];
 #ifdef VMU
                 nbt_s = q->nbt[s];
 #endif
@@ -328,11 +326,23 @@ void setConservedVariables(double t, void * latticeParams) {
                 
                 //if (alphaB[s]>=0 && alphaB[s] < 1.e-7) alphaB[s] = 1.e-7;
                 //else if (alphaB[s]<=0 && alphaB[s] > -1.e-7)  alphaB[s] = -1.e-7;
-
-                alphaBp[s] = alphaB[s];
                 
                 seq[s] = equilibriumEntropy(e[s], rhob[s], p[s], T[s], alphaB[s]);
 #endif
+                
+                //=======================================================================
+                // initialize quantities at the previous step
+                //=======================================================================
+                
+                up->ux[s] = ux_s;
+                up->uy[s] = uy_s;
+                up->un[s] = un_s;
+                up->ut[s] = ut_s;
+                
+                rhobp[s] = rhob[s];
+                
+                Tp[s] = T[s];
+                alphaBp[s] = alphaB[s];
 			}
 		}
 	}
@@ -572,7 +582,9 @@ void freeHostMemory() {
     }
     
     free(eqPhiQ);
+#ifdef CRITICAL
     free(xieq);
+#endif
 
 	free(q->ttt);
 	free(q->ttx);

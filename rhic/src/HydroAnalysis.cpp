@@ -30,10 +30,13 @@ using namespace std;//Lipei
 
 void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
     
-    FILE *fp;
+    FILE *fp, *fpxi;
     char fname[255];
     sprintf(fname, "%s/gammaQ_%.3f.dat", pathToOutDir, t);
     fp=fopen(fname, "w");
+    
+    sprintf(fname, "%s/xi_%.3f.dat", pathToOutDir, t);
+    fpxi=fopen(fname, "w");
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     int nx = lattice->numLatticePointsX;
@@ -70,11 +73,13 @@ void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
                 double gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Q);
                 
                 fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,gammaQ);
+                fprintf(fpxi, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,corrL);
             }
         }
     }
     
     fclose(fp);
+    fclose(fpxi);
 }
 
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams)
