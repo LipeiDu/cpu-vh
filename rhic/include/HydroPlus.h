@@ -32,6 +32,6 @@ void getCorrelationLengthTable();
 
 void setInitialConditionSlowModes(void * latticeParams, void * hydroParams);
 
-void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB, PRECISION s);
+void getPressurePlusFromSlowModes(PRECISION * const __restrict__ deltaVariables, PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB, PRECISION s);
 
 #endif /* HydroPlus_h */

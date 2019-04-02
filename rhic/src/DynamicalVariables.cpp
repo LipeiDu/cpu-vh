@@ -314,7 +314,6 @@ void setConservedVariables(double t, void * latticeParams) {
                 
                 PRECISION nbt_s = 0;
                 T[s] = effectiveTemperature(e_s, rhob_s);
-                //if (T[s] < 1.e-7) T[s] = 1.e-7;
                 
 #ifdef VMU
                 nbt_s = q->nbt[s];
@@ -323,10 +322,7 @@ void setConservedVariables(double t, void * latticeParams) {
                 q->Nbt[s] = Nbt(rhob_s, ut_s, nbt_s);
 
                 alphaB[s] = chemicalPotentialOverT(e_s, rhob_s);
-                
-                //if (alphaB[s]>=0 && alphaB[s] < 1.e-7) alphaB[s] = 1.e-7;
-                //else if (alphaB[s]<=0 && alphaB[s] > -1.e-7)  alphaB[s] = -1.e-7;
-                
+
                 seq[s] = equilibriumEntropy(e[s], rhob[s], p[s], T[s], alphaB[s]);
 #endif
                 

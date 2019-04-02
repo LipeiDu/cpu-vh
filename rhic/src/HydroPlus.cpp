@@ -28,12 +28,17 @@
 
 using namespace std;
 
-#define dQvec 10.0 // difference between Q vectors of slow modes
+#define GaussianXI
+
+#define dQvec 2.0 // difference between Q vectors of slow modes
 #define Q0 0.0
 #define HBARC 0.197326938
 
 #define xi0 1.0
 #define xi02 1.0 // correlation length squared
+#define xic 0.2 // gaussian xi center
+#define xiw 0.05 // gaussian xi width
+
 #define Cr 1.0 // LambdaT = Cr * T^2
 
 /**************************************************************************************************************************************************/
@@ -119,7 +124,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
     int nz = lattice->numLatticePointsRapidity;
     
 #ifdef HydroPlus
-    printf("Hydro+ is on, number of slow modes is %d, Q0 is %f, dQ is %f...\n",NUMBER_SLOW_MODES, Q0, dQvec);
+    printf("HYDRO+ is ON, number of slow modes is %d, Q0 is %f, dQ is %f...\n",NUMBER_SLOW_MODES, Q0, dQvec);
     
     // initialization of Q vectors
     for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
@@ -146,7 +151,6 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
                     eqPhiQ->phiQ[n][s] = equiPhiQ;
                     q->phiQ[n][s] = equiPhiQ;
                     
-                    //printf("Initialization: equiPhiQ = %f\n",equiPhiQ);
                 }
             }
         }
@@ -160,7 +164,7 @@ void setInitialConditionSlowModes(void * latticeParams, void * hydroParams)
 
 // note: the integrands of alpha and beta only work for f2 defined above.
 // this function takes e/p/rhob/T/alphaB and slow modes PhiQ/eqPhiQ, then returns variables with contributions from slow modes, including p/T/alphaB
-void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB, PRECISION s)
+void getPressurePlusFromSlowModes(PRECISION * const __restrict__ deltaVariables, PRECISION * const __restrict__ pPlus, const PRECISION * const __restrict__ equiPhiQ, const PRECISION * const __restrict__ PhiQ, PRECISION e, PRECISION rhob, PRECISION p, PRECISION T, PRECISION alphaB, PRECISION s)
 {
 
     PRECISION muB = alphaB * T;
@@ -222,7 +226,7 @@ void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PR
     PRECISION deltaAlphaB = - facQ * alpha;
     PRECISION deltaBeta = facQ * beta;
     
-    //printf("deltaS=%f,\t deltaAlphaB=%f,\t deltaBeta=%f.\n",deltaS,deltaAlphaB,deltaBeta);
+    //printf("deltaS=%8f\t deltaAlphaB=%8f\t deltaBeta=%8f.\n",deltaS,deltaAlphaB,deltaBeta);
     
     // variables(+) with contribution from slow modes
     T = 1 / (1/T + deltaBeta);
@@ -230,6 +234,11 @@ void getPressurePlusFromSlowModes(PRECISION * const __restrict__ pPlus, const PR
     PRECISION deltaP = T * (deltaS - (e + p) * deltaBeta + rhob * deltaAlphaB);
     *pPlus = p;// + deltaP;
     //printf("corrL=%f\t dlnXi_de=%f\t muB=%f\t deltaP=%f\t p+=%f\n",corrL,dlnXi_de,muB,deltaP,p+deltaP);
+    
+    deltaVariables[0] = deltaAlphaB;
+    deltaVariables[1] = deltaBeta;
+    deltaVariables[2] = deltaP;
+    deltaVariables[3] = deltaS;
 }
 
 /**************************************************************************************************************************************************/
@@ -260,9 +269,8 @@ PRECISION dlnXide(PRECISION e0, PRECISION rhob0){
         
         return (log(xip)-log(xim))/(2 * 0.1 * delta_e);
     }
-    else{
+    else
         return 0.0;
-    }
 }
 
 PRECISION dlnXidrhob(PRECISION e0, PRECISION rhob0){
@@ -289,16 +297,15 @@ PRECISION dlnXidrhob(PRECISION e0, PRECISION rhob0){
         
         return (log(xip)-log(xim))/(2 * delta_n);
     }
-    else{
+    else
         return 0.0;
-    }
 }
-
 
 // Read in the table of correlation length
 void getCorrelationLengthTable(){
 #ifdef CRITICAL
-    // correlation length table
+    printf("CRITICAL is ON...\n");
+
     FILE *filexi;
     PRECISION x, y;
     
@@ -321,6 +328,7 @@ void getCorrelationLengthTable(){
 // bilinear interpolation of correlation length table
 PRECISION correlationLength(PRECISION T, PRECISION muB){
 #ifdef CRITICAL
+#ifndef GaussianXI
     PRECISION T0 = T*HBARC;
     PRECISION muB0 = muB*HBARC;
     
@@ -328,10 +336,12 @@ PRECISION correlationLength(PRECISION T, PRECISION muB){
         if((0.22<=muB0)&&(muB0<=0.45)){
             return InferredPrimaryVariable(muB0, T0-0.08, 0.22, 0.002, 81, 0.002, 0, xieq);
         }
-        else
-            return 1.0;
     }else
         return 1.0;
+#else
+    PRECISION T0 = T*HBARC;
+    return xi0 + 4.0 * exp(-(T0-0.2)*(T0-0.2)/(2*xiw*xiw));
+#endif
 #else
     return 1.0;
 #endif

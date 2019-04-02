@@ -12,8 +12,14 @@
 #include "../include/TransportCoefficients.h"
 #include "../include/HydroPlus.h"
 
+#define HBARC 0.197326938
 
-//parameters for the analytic parameterization of the bulk viscosity \zeta/S
+
+/**************************************************************************************************************************************************/
+/* bulk viscosity as a function of temperature
+/**************************************************************************************************************************************************/
+
+// G. Denicol et. al. PRC80 (2009) 064901. parameters for the analytic parameterization of the bulk viscosity \zeta/S
 #define A_1 -13.77
 #define A_2 27.55
 #define A_3 13.45
@@ -27,12 +33,6 @@
 #define SIGMA_2 0.13
 #define SIGMA_3 0.0025
 #define SIGMA_4 0.022
-
-#define HBARC 0.197326938
-
-/**************************************************************************************************************************************************/
-/* bulk viscosity as a function of temperature
-/**************************************************************************************************************************************************/
 
 PRECISION bulkViscosityToEntropyDensity(PRECISION T) {
     PRECISION x = T/1.01355;

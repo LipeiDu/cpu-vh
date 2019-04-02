@@ -15,7 +15,7 @@
 /*********************************************************/
 //Main switch//
 
-//#define PIMUNU
+#define PIMUNU
 //#define PI
 
 #define NBMU
@@ -24,7 +24,7 @@
 #define RootSolver_with_Baryon
 #define EOS_with_baryon
 
-//#define HydroPlus
+#define HydroPlus
 #define CRITICAL
 
 /**************************************************************************************************************************************************/

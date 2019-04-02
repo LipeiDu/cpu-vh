@@ -8,9 +8,6 @@
 #include <stdlib.h>
 #include <stdio.h> // for printf
 #include <math.h>
-#include <iostream>// by Lipei
-#include <fstream>// by Lipei
-#include <iomanip>//by Lipei
 
 #include "../include/FullyDiscreteKurganovTadmorScheme.h"
 #include "../include/LatticeParameters.h"
@@ -830,5 +827,5 @@ void rungeKutta2(PRECISION t, PRECISION dt, CONSERVED_VARIABLES * __restrict__ q
     
 	setGhostCells(Q, e, p, u, latticeParams, rhob, alphaB, T, seq, eqPhiQ);
     
-    // setCurrentConservedVariables() in HydroPlugin.cpp swap q and Q
+    // setCurrentConservedVariables in HydroPlugin.cpp swap q and Q
 }

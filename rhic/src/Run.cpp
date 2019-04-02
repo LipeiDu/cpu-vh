@@ -13,6 +13,7 @@
 #include <sys/time.h> // for timing
 #include <unistd.h>		// for current working directory
 #include <libconfig.h>
+#include "../include/BEShydroLOGO.h"
 
 //#include "gtest/gtest.h" // for unit testing
 
@@ -46,6 +47,8 @@ int main(int argc, char **argv) {
 	char *rootDirectory = NULL;
 	size_t size;
 	rootDirectory = getcwd(rootDirectory,size);
+    
+    displayLogo();
 
 	// Print argument values
 	printf("configDirectory = %s\n", cli.configDirectory);

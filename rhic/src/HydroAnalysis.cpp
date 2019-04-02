@@ -8,15 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <iostream>//Lipei
-#include <istream>//Lipei
-#include <fstream>//Lipei
-#include <stdio.h>//Lipei
-#include <stdlib.h>//Lipei
-#include <cassert>//Lipei
-#include <string>//Lipei
-#include <iomanip>//by Lipei
-using namespace std;//Lipei
+#include <iostream>
+#include <istream>
+#include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cassert>
+#include <string>
+#include <iomanip>
 
 #include "../include/DynamicalVariables.h"
 #include "../include/LatticeParameters.h"
@@ -25,18 +24,98 @@ using namespace std;//Lipei
 #include "../include/HydroAnalysis.h"
 #include "../include/HydroPlus.h"
 #include "../include/TransportCoefficients.h"
+#include "../include/FluxLimiter.h"
 
 #define HBARC 0.197326938
+#define zFREQ 10
+#define tFREQ 10
 
-void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
+using namespace std;
+
+void testHydroPlus()
+{
+
+    // make derivatives of correlation length tables
     
-    FILE *fp, *fpxi;
+    FILE *filedxi;
+    filedxi = fopen ("output/dxi_table.dat","w");
+    
+    float de = 0.02;
+    float dn = 0.005;
+    
+    for(int i = 0; i < 301; ++i) {
+        for(int j = 0; j < 1; ++j) {
+            
+            float es = i * de;
+            float rhobs = j * dn;
+            
+            float dlogxide = dlnXide(es,rhobs);
+            float dlogxidn = dlnXidrhob(es,rhobs);
+            
+            fprintf(filedxi, "%.3f\t%.3f\t%.3f\t%.3f\n",es,rhobs,dlogxide,dlogxidn);
+        }
+    }
+    
+    fclose(filedxi);
+     
+    // correlation length as a function of (e, rhob)
+
+    char xitable[] = "output/xi_enb_table.dat";
+    ofstream xifile(xitable);
+    for(int i = 0; i < 900; ++i) {
+        for(int j = 0; j < 180; ++j) {
+            
+            float e = i * 0.02;
+            float rhob = j * 0.005;
+            
+            PRECISION PrimaryVariables[3];
+            
+            getPrimaryVariablesCombo(e, rhob, PrimaryVariables);
+
+            float Teq = PrimaryVariables[1];
+            float alphaBeq = PrimaryVariables[2];
+            float muB = alphaBeq*Teq;
+            
+            float xi = correlationLength(Teq, muB);
+            float logxi = log(xi);
+            
+            if(logxi<0.0) printf("Teq=%f,\t muB=%f,\t xi=%f,\t lnxi=%f\n",Teq,muB,xi,logxi);
+            
+            xifile
+            << setprecision(5) << setw(10) << e//*HBARC
+            << setprecision(5) << setw(10) << rhob
+            << setprecision(6) << setw(18) << Teq*HBARC
+            << setprecision(6) << setw(18) << muB*HBARC
+            << setprecision(6) << setw(18) << logxi
+            << endl;
+        }
+    }
+    xifile.close();
+}
+
+void outputHydroPlus(double t, const char *pathToOutDir, void * latticeParams) {
+    
+    FILE *fpgamma, *fpxi;
+    FILE *fpdp, *fpds, *fpdt, *fpdmu;
     char fname[255];
+    
     sprintf(fname, "%s/gammaQ_%.3f.dat", pathToOutDir, t);
-    fp=fopen(fname, "w");
+    fpgamma=fopen(fname, "w");
     
     sprintf(fname, "%s/xi_%.3f.dat", pathToOutDir, t);
     fpxi=fopen(fname, "w");
+    
+    sprintf(fname, "%s/deltaP_%.3f.dat", pathToOutDir, t);
+    fpdp=fopen(fname, "w");
+    
+    sprintf(fname, "%s/deltaS_%.3f.dat", pathToOutDir, t);
+    fpds=fopen(fname, "w");
+    
+    sprintf(fname, "%s/deltaBeta_%.3f.dat", pathToOutDir, t);
+    fpdt=fopen(fname, "w");
+    
+    sprintf(fname, "%s/deltaAlphaB_%.3f.dat", pathToOutDir, t);
+    fpdmu=fopen(fname, "w");
     
     struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
     int nx = lattice->numLatticePointsX;
@@ -51,14 +130,17 @@ void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
     int i,j,k;
     int s;
     
-    double Q = 10.0;
+    double Q = Qvec[1];
     
     for(k = 2; k < nz+2; ++k) {
         z = (k-2 - (nz-1)/2.)*dz;
+        
         for(j = 2; j < ny+2; ++j) {
             y = (j-2 - (ny-1)/2.)*dy;
+            
             for(i = 2; i < nx+2; ++i) {
                 x = (i-2 - (nx-1)/2.)*dx;
+                
                 s = columnMajorLinearIndex(i, j, k, nx+4, ny+4);
                 
                 double Ts = T[s];
@@ -66,21 +148,231 @@ void outputGammaQ(double t, const char *pathToOutDir, void * latticeParams) {
                 double seqs = seq[s];
                 double rhobs = rhob[s];
                 
+                // output correlation length and relaxation rate
                 double corrL = correlationLength(Ts, Ts*alphaBs);
                 double corrL2 = corrL * corrL;
                 
                 double gammaPhi = relaxationCoefficientPhi(rhobs, seqs, Ts, corrL2);
                 double gammaQ = relaxationCoefficientPhiQ(gammaPhi, corrL2, Q);
                 
-                fprintf(fp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,gammaQ);
+                fprintf(fpgamma, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,gammaQ);
                 fprintf(fpxi, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,corrL);
+                
+                // output contributions from slow modes to p, T, s and alphaB
+                PRECISION deltaVariables[4], equiPhiQ[NUMBER_SLOW_MODES], PhiQ[NUMBER_SLOW_MODES], pPlus;
+                
+                for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n){
+                    equiPhiQ[n] = eqPhiQ->phiQ[n][s];
+                    PhiQ[n] = q->phiQ[n][s];
+                }
+                
+                getPressurePlusFromSlowModes(deltaVariables, &pPlus, equiPhiQ, PhiQ, e[s], rhobs, p[s], Ts, alphaBs, seqs);
+                
+                fprintf(fpdmu, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,deltaVariables[0]);
+                fprintf(fpdt, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,deltaVariables[1]);
+                fprintf(fpdp, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,deltaVariables[2]);
+                fprintf(fpds, "%.3f\t%.3f\t%.3f\t%.8f\n",x,y,z,deltaVariables[3]);
             }
         }
     }
     
-    fclose(fp);
+    fclose(fpgamma);
     fclose(fpxi);
+    fclose(fpdp);
+    fclose(fpds);
+    fclose(fpdt);
+    fclose(fpdmu);
 }
+
+
+void outputBaryonCP(double t, const char *pathToOutDir, void * latticeParams)
+{
+    struct LatticeParameters * lattice = (struct LatticeParameters *) latticeParams;
+    
+    int d_ncx = lattice->numLatticePointsX;
+    int d_ncy = lattice->numLatticePointsY;
+    int d_ncz = lattice->numLatticePointsRapidity;
+    
+    double d_dx = lattice->latticeSpacingX;
+    double d_dy = lattice->latticeSpacingY;
+    double d_dz = lattice->latticeSpacingRapidity;
+    double d_dt = lattice->latticeSpacingProperTime;
+    
+    PRECISION facX = 1/d_dx/2;
+    PRECISION facY = 1/d_dy/2;
+    PRECISION facZ = 1/d_dz/2;
+    
+    int stride = (d_ncx+4) * (d_ncy+4);
+    
+    FILE *fpn;
+    char fname[255];
+    
+    for(int i = 2; i < d_ncx+2; ++i) {
+        for(int j = 2; j < d_ncy+2; ++j) {
+            
+            // only print out the center of the transverse plane
+            if(i== (d_ncx+3)/2 && j== (d_ncy+3)/2){
+                
+                for(int k = 2; k < d_ncz+2; ++k) {
+                    
+                    // print out info at some rapidities, with zPREQ
+                    if((k-2) >= 0 && (k-2) % zFREQ == 0){
+                        
+                        double x = (i-2 - (d_ncx-1)/2.) * d_dx;
+                        double y = (j-2 - (d_ncy-1)/2.) * d_dy;
+                        double z = (k-2 - (d_ncz-1)/2.) * d_dz;
+                        
+                        int s = columnMajorLinearIndex(i, j, k, d_ncx+4, d_ncy+4);
+                        
+                        PRECISION *utvec = u->ut;
+                        PRECISION *uxvec = u->ux;
+                        PRECISION *uyvec = u->uy;
+                        PRECISION *unvec = u->un;
+                        
+                        PRECISION ps  = p[s];
+                        PRECISION ut = utvec[s];
+                        PRECISION ux = uxvec[s];
+                        PRECISION uy = uyvec[s];
+                        PRECISION un = unvec[s];
+                        
+                        //*********************************************************\
+                        //* PART I
+                        //*********************************************************/
+                        
+                        PRECISION es = e[s];
+                        PRECISION Ts  = T[s];
+                        PRECISION rhobs = rhob[s];
+                        PRECISION alphaBs  = alphaB[s];
+                        
+                        PRECISION Tps  = Tp[s];
+                        PRECISION rhobps = rhobp[s];
+                        PRECISION alphaBps  = alphaBp[s];
+                        
+                        // derivatives of rhob
+                        PRECISION dtrhob = (rhobs - rhobps) / d_dt;
+                        PRECISION dxrhob = (rhob[s+1]- rhob[s - 1]) * facX;
+                        PRECISION dyrhob = (rhob[s + d_ncx] - rhob[s - d_ncx]) * facY;
+                        PRECISION dnrhob = (rhob[s + stride] - rhob[s - stride]) * facZ;
+                        
+                        // derivatives of T
+                        PRECISION dtT = (Ts - Tps) / d_dt;
+                        PRECISION dxT = (*(T + s + 1) - *(T + s - 1)) * facX;
+                        PRECISION dyT = (*(T + s + d_ncx) - *(T + s - d_ncx)) * facY;
+                        PRECISION dnT = (*(T + s + stride) - *(T + s - stride)) * facZ;
+                        
+                        // derivatives of muB/T
+                        /*PRECISION dtalphaB = (alphaBs - alphaBps) / d_dt;
+                         PRECISION dxalphaB = (*(alphaB + s + 1) - *(alphaB + s - 1)) * facX;
+                         PRECISION dyalphaB = (*(alphaB + s + d_ncx) - *(alphaB + s - d_ncx)) * facY;
+                         PRECISION dnalphaB = (*(alphaB + s + stride) - *(alphaB + s - stride)) * facZ;*/
+                        
+                        PRECISION alphabxp1 = alphaB[s+1];
+                        PRECISION alphabxp2 = alphaB[s+2];
+                        PRECISION alphabxm1 = alphaB[s-1];
+                        PRECISION alphabxm2 = alphaB[s-2];
+                        PRECISION alphabyp1 = alphaB[s+d_ncx];
+                        PRECISION alphabyp2 = alphaB[s+2*d_ncx];
+                        PRECISION alphabym1 = alphaB[s-d_ncx];
+                        PRECISION alphabym2 = alphaB[s-2*d_ncx];
+                        PRECISION alphabnp1 = alphaB[s+stride];
+                        PRECISION alphabnp2 = alphaB[s+2*stride];
+                        PRECISION alphabnm1 = alphaB[s-stride];
+                        PRECISION alphabnm2 = alphaB[s-2*stride];
+                        
+                        PRECISION dtalphaB = (alphaBs - alphaBps) / d_dt;
+                        PRECISION dxalphaB = approximateDerivative(alphabxm1,alphaBs,alphabxp1) * facX * 2;
+                        PRECISION dyalphaB = approximateDerivative(alphabym1,alphaBs,alphabyp1) * facY * 2;
+                        PRECISION dnalphaB = approximateDerivative(alphabnm1,alphaBs,alphabnp1) * facZ * 2;
+                        
+                        // gradient of rhob
+                        PRECISION ukdk_rhob = ut * dtrhob + ux * dxrhob + uy * dyrhob + un * dnrhob;
+                        PRECISION Nablat_rhob =  dtrhob - ut * ukdk_rhob;
+                        PRECISION Nablax_rhob = -dxrhob - ux * ukdk_rhob;
+                        PRECISION Nablay_rhob = -dyrhob - uy * ukdk_rhob;
+                        PRECISION Nablan_rhob = -1/pow(t,2)*dnrhob - un * ukdk_rhob;
+                        
+                        // gradient of T
+                        PRECISION ukdk_T = ut * dtT + ux * dxT + uy * dyT + un * dnT;
+                        PRECISION Nablat_T =  dtT - ut * ukdk_T;
+                        PRECISION Nablax_T = -dxT - ux * ukdk_T;
+                        PRECISION Nablay_T = -dyT - uy * ukdk_T;
+                        PRECISION Nablan_T = -1/pow(t,2)*dnT - un * ukdk_T;
+                        
+                        // gradient of muB/T
+                        PRECISION ukdk_alphaB = ut * dtalphaB + ux * dxalphaB + uy * dyalphaB + un * dnalphaB;
+                        PRECISION Nablat_alphaB =  dtalphaB - ut * ukdk_alphaB;
+                        PRECISION Nablax_alphaB = -dxalphaB - ux * ukdk_alphaB;
+                        PRECISION Nablay_alphaB = -dyalphaB - uy * ukdk_alphaB;
+                        PRECISION Nablan_alphaB = -1/pow(t,2)*dnalphaB - un * ukdk_alphaB;
+                        
+                        //printf("dnrhob = %f\t dnT = %f\t dnalphaB = %f\t rhob[s + stride] = %f\t rhob[s - stride] = %f\t strie = %d\n",dnrhob,dnT,dnalphaB,rhob[s+stride],rhob[s - stride],stride);
+                        
+                        //*********************************************************\
+                        //* PART II
+                        //*********************************************************/
+                        
+                        PRECISION muBs = Ts * alphaBs;
+                        PRECISION corrL = correlationLength(Ts, muBs);
+                        
+                        // relaxation time
+                        PRECISION tau_n0 = Cb/Ts;
+                        
+                        // baryon diffusion coefficients
+                        PRECISION kappaB0 = 0.0;
+                        PRECISION DB0 = 0.0;
+                        
+                        PRECISION diffusionCoeff[2];
+                        baryonDiffusionCoefficient(Ts, muBs, diffusionCoeff);
+                        
+                        PRECISION kappaB = diffusionCoeff[0];//baryonDiffusionCoefficientKinetic(Ts, rhobs, alphaBs, es, ps);;//
+                        PRECISION DB = diffusionCoeff[1];
+                        
+                        // critical scaling
+                        //#ifdef CRITICAL
+                        //                        PRECISION tau_n = tau_n0 * corrL;
+                        //                        PRECISION kappaB = kappaB0 * corrL;
+                        //                        PRECISION DB = DB0 / corrL;
+                        //#endif
+                        
+                        // other transport coefficients
+                        //PRECISION delta_nn = tau_n;
+                        //PRECISION lambda_nn = 0.60 * tau_n;
+                        
+                        // kappaB * gradient of muB/T term
+                        PRECISION NBI0t1 = kappaB * Nablat_alphaB;
+                        PRECISION NBI0x1 = kappaB * Nablax_alphaB;
+                        PRECISION NBI0y1 = kappaB * Nablay_alphaB;
+                        PRECISION NBI0n1 = kappaB * Nablan_alphaB;
+                        
+                        PRECISION TInv = 1 / Ts;
+                        PRECISION facG1 = kappaB / rhobs * TInv;
+                        PRECISION facG2 = dPdT(es, rhobs) - (es + ps) * TInv;
+                        PRECISION facG = facG1 * facG2;
+                        
+                        PRECISION NBI0t2 = DB * Nablat_rhob + facG *  Nablat_T;
+                        PRECISION NBI0x2 = DB * Nablax_rhob + facG *  Nablax_T;
+                        PRECISION NBI0y2 = DB * Nablay_rhob + facG *  Nablay_T;
+                        PRECISION NBI0n2 = DB * Nablan_rhob + facG *  Nablan_T;
+                        
+                        int nt = t/d_dt;
+                        if(nt % tFREQ == 0){
+                            sprintf(fname, "%s/BaryonCP_%.3f.dat", pathToOutDir, z);
+                            fpn = fopen(fname, "a+");
+                            
+                            //fprintf(fpn, "%.3f\t%.3f\t%.3f\t%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t %.8f\t%.8f\t%.8f\t%.8f\t %.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",
+                            //t,x,y,z,muBs,Ts,corrL,DB0,DB,kappaB0,kappaB,NBI0t1,NBI0x1,NBI0y1,NBI0n1,NBI0t2,NBI0x2,NBI0y2,NBI0n2,es,rhobs);//17
+                            
+                            fprintf(fpn, "%.3f\t%.3f\t%.3f\t%.3f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t %.8f\t%.8f\t%.8f\t%.8f\t %.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\n",t,x,y,z,muBs,Ts,corrL,dtrhob,dxrhob,dyrhob,dnrhob,dtalphaB,dxalphaB,dyalphaB,dnalphaB,dtT,dxT,dyT,dnT,es,rhobs);//17
+                            
+                            fclose(fpn);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 void outputAnalysis(double t, FILE *outputDir, void * latticeParams)
 {
@@ -332,85 +624,3 @@ void testBaryCoeff(){
  }
  }*/
 
-void testHydroPlus()
-{
-//#ifdef CRITICAL
-    // make derivatives of correlation length tables
-    FILE *filedxi;
-    filedxi = fopen ("output/dxi.dat","w");
-    
-    float de = 0.02;
-    float dn = 0.005;
-    
-    for(int i = 0; i < 301; ++i) {
-        for(int j = 0; j < 81; ++j) {
-            
-            float x = i * de;
-            float y = j * dn;
-            
-            float dlogxide = dlnXide(x,y);
-            float dlogxidn = dlnXidrhob(x,y);
-            
-            //if(dlogxide<0.0||dlogxidn<0.0) printf("e=%f,\t rhob=%f,\t dlogxide=%f,\t dlogxidn=%f\n",x,y,dlogxide,dlogxidn);
-            
-            fprintf(filedxi, "%.3f\t%.3f\t%.3f\t%.3f\n",x,y,dlogxide,dlogxidn);
-        }
-    }
-    
-    fclose(filedxi);
-    
-    // read derivative table
-    /*filedxi = fopen ("input/dxi.dat","r");
-     if(filedxi==NULL){
-     printf("dxi.dat was not opened...\n");
-     exit(-1);
-     }
-     else
-     {
-     fseek(filedxi,0L,SEEK_SET);
-     for(int i = 0; i < 163081; ++i){
-     fscanf(filedxi,"%lf %lf %lf", & x, & y, & dlnxide[i], & dlnxidn[i]);
-     }
-     }
-     
-     fclose(filedxi);
-     
-     printf("Correlation length tables are read in.\n");
-     
-     // correlation length as a function of (e, rhob)*/
-    //#ifdef CRITICAL_D
-    char xitable[] = "output/xitable_enb.dat";
-    ofstream xifile(xitable);
-    for(int i = 0; i < 900; ++i) {
-        for(int j = 0; j < 180; ++j) {
-            
-            float e = i * 0.02;
-            float rhob = j * 0.005;
-            
-            PRECISION PrimaryVariables[3];
-            
-            getPrimaryVariablesCombo(e, rhob, PrimaryVariables);
-            
-            //float peq = //PrimaryVariables[0];
-            float Teq = PrimaryVariables[1];//effectiveTemperature(e, rhob);//
-            float alphaBeq = PrimaryVariables[2];//chemicalPotentialOverT(e, rhob);//
-            float muB = alphaBeq*Teq;
-            
-            float xi = correlationLength(Teq, muB);
-            float logxi = log(xi);
-            
-            if(logxi<0.0) printf("Teq=%f,\t muB=%f,\t xi=%f,\t lnxi=%f\n",Teq,muB,xi,logxi);
-            
-            xifile
-            << setprecision(5) << setw(10) << e//*HBARC
-            << setprecision(5) << setw(10) << rhob
-            << setprecision(6) << setw(18) << Teq*HBARC
-            << setprecision(6) << setw(18) << muB*HBARC
-            << setprecision(6) << setw(18) << logxi
-            << endl;
-        }
-    }
-    xifile.close();
-    //#endif
-//#endif
-}

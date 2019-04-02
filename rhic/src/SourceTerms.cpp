@@ -94,19 +94,19 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************\
 	//* vorticity tensor
 	//*********************************************************/
-    PRECISION wtx = 0;//(dtux + dxut) / 2 + (ux * dut - ut * dux) / 2 + t * un2 * ux / 2;
-	PRECISION wty = 0;//(dtuy + dyut) / 2 + (uy * dut - ut * duy) / 2 + t * un2 * uy / 2;
-	PRECISION wtn = 0;//(t2 * dtun + 2 * t * un + dnut) / 2 + (t2 * un * dut - ut * Dun) + t3 * un*un2 / 2;
-	PRECISION wxy = 0;//(dyux - dxuy) / 2 + (uy * dux - ux * duy) / 2;
-	PRECISION wxn = 0;//(dnux - t2 * dxun) / 2 + (t2 * un * dux - ux * Dun) / 2;
-	PRECISION wyn = 0;//(dnuy - t2 * dyun) / 2 + (t2 * un * duy - uy * Dun) / 2;
+    PRECISION wtx = (-dtux  -  dxut  +  ut * dux  -  ux * dut  -  t * un2 * ux) / 2.0;
+    PRECISION wty = (-dtuy  -  dyut  +  ut * duy  -  uy * dut  -  t * un2 * uy) / 2.0;
+    PRECISION wtn = (-t2 * dtun  -  2.0 * t * un  - dnut  -  ut * Dun  - t2 * un * dut  -  t3 * un * un2) / 2.0;
+    PRECISION wxy = (dxuy  -  dyux  +  ux * duy  -  uy * dux) / 2.0;
+    PRECISION wxn = (t2 * dxun  -  dnux  -  ux * Dun  -  t2 * un * dux) / 2.0;
+    PRECISION wyn = (t2 * dyun  -  dnuy  -  uy * Dun  -  t2 * un * duy) / 2.0;
 	// anti-symmetric vorticity components
-	PRECISION wxt = 0;//wtx;
-	PRECISION wyt = 0;//wty;
-	PRECISION wnt = 0;//wtn / t2;
-	PRECISION wyx = 0;//-wxy;
-	PRECISION wnx = 0;//-wxn / t2;
-	PRECISION wny = 0;//-wyn / t2;
+	PRECISION wxt = wtx;
+	PRECISION wyt = wty;
+	PRECISION wnt = wtn / t2;
+	PRECISION wyx = -wxy;
+	PRECISION wnx = -wxn / t2;
+	PRECISION wny = -wyn / t2;
     
     //*********************************************************\
     //* pi^\mu\nu \sigma_\mu\nu
@@ -183,16 +183,16 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 	//*********************************************************\
 	//* I
 	//*********************************************************/
-	PRECISION Itt = I1tt + delta_pipi * I2tt - I3tt + tau_pipi * I4tt - lambda_piPi * Pi * stt;
-	PRECISION Itx = I1tx + delta_pipi * I2tx - I3tx + tau_pipi * I4tx - lambda_piPi * Pi * stx;
-	PRECISION Ity = I1ty + delta_pipi * I2ty - I3ty + tau_pipi * I4ty - lambda_piPi * Pi * sty;
-	PRECISION Itn = I1tn + delta_pipi * I2tn - I3tn + tau_pipi * I4tn - lambda_piPi * Pi * stn;
-	PRECISION Ixx = I1xx + delta_pipi * I2xx - I3xx + tau_pipi * I4xx - lambda_piPi * Pi * sxx;
-	PRECISION Ixy = I1xy + delta_pipi * I2xy - I3xy + tau_pipi * I4xy - lambda_piPi * Pi * sxy;
-	PRECISION Ixn = I1xn + delta_pipi * I2xn - I3xn + tau_pipi * I4xn - lambda_piPi * Pi * sxn;
-	PRECISION Iyy = I1yy + delta_pipi * I2yy - I3yy + tau_pipi * I4yy - lambda_piPi * Pi * syy;
-	PRECISION Iyn = I1yn + delta_pipi * I2yn - I3yn + tau_pipi * I4yn - lambda_piPi * Pi * syn;
-	PRECISION Inn = I1nn + delta_pipi * I2nn - I3nn + tau_pipi * I4nn - lambda_piPi * Pi * snn;
+	PRECISION Itt = I1tt + delta_pipi * I2tt - tau_piw * I3tt + tau_pipi * I4tt - lambda_piPi * Pi * stt;
+	PRECISION Itx = I1tx + delta_pipi * I2tx - tau_piw * I3tx + tau_pipi * I4tx - lambda_piPi * Pi * stx;
+	PRECISION Ity = I1ty + delta_pipi * I2ty - tau_piw * I3ty + tau_pipi * I4ty - lambda_piPi * Pi * sty;
+	PRECISION Itn = I1tn + delta_pipi * I2tn - tau_piw * I3tn + tau_pipi * I4tn - lambda_piPi * Pi * stn;
+	PRECISION Ixx = I1xx + delta_pipi * I2xx - tau_piw * I3xx + tau_pipi * I4xx - lambda_piPi * Pi * sxx;
+	PRECISION Ixy = I1xy + delta_pipi * I2xy - tau_piw * I3xy + tau_pipi * I4xy - lambda_piPi * Pi * sxy;
+	PRECISION Ixn = I1xn + delta_pipi * I2xn - tau_piw * I3xn + tau_pipi * I4xn - lambda_piPi * Pi * sxn;
+	PRECISION Iyy = I1yy + delta_pipi * I2yy - tau_piw * I3yy + tau_pipi * I4yy - lambda_piPi * Pi * syy;
+	PRECISION Iyn = I1yn + delta_pipi * I2yn - tau_piw * I3yn + tau_pipi * I4yn - lambda_piPi * Pi * syn;
+	PRECISION Inn = I1nn + delta_pipi * I2nn - tau_piw * I3nn + tau_pipi * I4nn - lambda_piPi * Pi * snn;
 
 	//*********************************************************\
 	//* shear stress tensor source terms, i.e. terms on RHS
@@ -221,7 +221,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 
 #ifdef VMU
     //*********************************************************\
-    //* for the diffusion current of baryon, by Lipei
+    //* for the diffusion current of baryon
     //*********************************************************/
     
     // relaxation time
@@ -234,7 +234,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION diffusionCoeff[2];
     baryonDiffusionCoefficient(T, muB, diffusionCoeff);
     
-    kappaB = diffusionCoeff[0];
+    kappaB = diffusionCoeff[0];//baryonDiffusionCoefficientAdscft(T, rhob, alphaB, e, p, seq);//baryonDiffusionCoefficientKinetic(T, rhob, alphaB, e, p);//
     DB = diffusionCoeff[1];
     
     // critical scaling
@@ -249,14 +249,14 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION lambda_nn = 0.60 * tau_n;
     
     // kappaB * gradient of muB/T term
-#ifndef CRITICAL
+//#ifndef CRITICAL
     PRECISION NBI0t = kappaB * Nablat_alphaB;
     PRECISION NBI0x = kappaB * Nablax_alphaB;
     PRECISION NBI0y = kappaB * Nablay_alphaB;
     PRECISION NBI0n = kappaB * Nablan_alphaB;
-#else
-    PRECISION TInv = 1 / T;
-    PRECISION facG1 = kappaB / rhob * TInv;
+/*/#else
+//    PRECISION TInv = 1 / T;
+//    PRECISION facG1 = kappaB / rhob * TInv;
     PRECISION facG2 = dPdT(e, rhob) - (e + p) * TInv;
     PRECISION facG = facG1 * facG2;
     
@@ -264,7 +264,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION NBI0x = DB * Nablax_rhob + facG *  Nablax_T;
     PRECISION NBI0y = DB * Nablay_rhob + facG *  Nablay_T;
     PRECISION NBI0n = DB * Nablan_rhob + facG *  Nablan_T;
-#endif
+#endif*/
     
     // other souce terms
     PRECISION facNBI1 = nbt * Dut + nbx * Dux + nby * Duy + nbn * Dun;
@@ -279,10 +279,10 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
     PRECISION NBI2y = facNBI2 * nby;
     PRECISION NBI2n = facNBI2 * nbn;
     
-    PRECISION NBI3t = -nbx * wxt - nby * wyt - t2 * nbn * wnt;
-    PRECISION NBI3x = -nbt * wtx + nby * wyx + t2 * nbn * wnx;
-    PRECISION NBI3y = -nbt * wty + nbx * wxy + t2 * nbn * wny;
-    PRECISION NBI3n = 1/t2 * (-nbt * wtn + nbx * wxn + nby * wyn);
+    PRECISION NBI3t = 0;//-nbx * wxt - nby * wyt - t2 * nbn * wnt;
+    PRECISION NBI3x = 0;//-nbt * wtx + nby * wyx + t2 * nbn * wnx;
+    PRECISION NBI3y = 0;//-nbt * wty + nbx * wxy + t2 * nbn * wny;
+    PRECISION NBI3n = 0;//1/t2 * (-nbt * wtn + nbx * wxn + nby * wyn);
     
     PRECISION facNBI4 = lambda_nn/tau_n;
     PRECISION NBI4t = facNBI4 * (stt * nbt - stx * nbx - sty * nby - t2 * stn * nbn);
@@ -296,7 +296,7 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #endif
 #ifdef HydroPlus
     //*********************************************************\
-    //* for the slow modes from Hydro+, by Lipei
+    //* for the slow modes from Hydro+
     //*********************************************************/
 
     PRECISION corrL2 = corrL * corrL;
@@ -324,15 +324,15 @@ void setDissipativeSourceTerms(PRECISION * const __restrict__ pimunuRHS, PRECISI
 #endif
 #ifdef VMU
     //#ifndef CRITICAL
-    //nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
-    //nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
-    //nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
-    //nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
+    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t + NBI2t + NBI3t + NBI4t) + nbt * dkvk + GBt;
+    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x + NBI2x + NBI3x + NBI4x) + nbx * dkvk;
+    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y + NBI2y + NBI3y + NBI4y) + nby * dkvk;
+    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n + NBI2n + NBI3n + NBI4n) + nbn * dkvk + GBn;
     //#else
-    nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t) + nbt * dkvk + GBt;
-    nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x) + nbx * dkvk;
-    nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y) + nby * dkvk;
-    nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n) + nbn * dkvk + GBn;
+    //nbmuRHS[0] = -1/ut * (1/tau_n * nbt - 1/tau_n * NBI0t + NBI1t) + nbt * dkvk + GBt;
+    //nbmuRHS[1] = -1/ut * (1/tau_n * nbx - 1/tau_n * NBI0x + NBI1x) + nbx * dkvk;
+    //nbmuRHS[2] = -1/ut * (1/tau_n * nby - 1/tau_n * NBI0y + NBI1y) + nby * dkvk;
+    //nbmuRHS[3] = -1/ut * (1/tau_n * nbn - 1/tau_n * NBI0n + NBI1n) + nbn * dkvk + GBn;
     //#endif
 #endif
 #ifdef HydroPlus
@@ -375,7 +375,7 @@ PRECISION d_dx
     PRECISION dxPi = (*(I + ptr + 3) - *(I + ptr + 1)) *facX; ptr+=5;
 #endif
     //=========================================================
-    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    // spatial derivatives of the conserved variables \nb^{\mu}
     //=========================================================
 #ifdef VMU
     ptr+=5; // increased by 5 to start with nbt
@@ -407,7 +407,7 @@ PRECISION d_dx
     S[3] = 0.0;
 #endif
     //=========================================================
-    // set dx terms in the source terms of baryon current; by Lipei
+    // set dx terms in the source terms of baryon current
     //=========================================================
 #ifdef NBMU
 #ifdef VMU
@@ -450,7 +450,7 @@ PRECISION d_dy
     PRECISION dyPi = (*(J + ptr + 3) - *(J + ptr + 1)) *facY; ptr+=5;
 #endif
     //=========================================================
-    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    // spatial derivatives of the conserved variables \nb^{\mu}
     //=========================================================
 #ifdef VMU
     ptr+=5;
@@ -483,7 +483,7 @@ PRECISION d_dy
     S[3] = 0.0;
 #endif
     //=========================================================
-    // set dy terms in the source terms of baryon current; by Lipei
+    // set dy terms in the source terms of baryon current
     //=========================================================
 #ifdef NBMU
 #ifdef VMU
@@ -526,7 +526,7 @@ PRECISION d_dz
     PRECISION dnPi = (*(K + ptr + 3) - *(K + ptr + 1)) *facZ; ptr+=5;
 #endif
     //=========================================================
-    // spatial derivatives of the conserved variables \nb^{\mu}; by Lipei
+    // spatial derivatives of the conserved variables \nb^{\mu}
     //=========================================================
 #ifdef VMU
     ptr+=5;
@@ -559,7 +559,7 @@ PRECISION d_dz
     S[3] = 0.0;
 #endif
     //=========================================================
-    // set dn terms in the source terms of baryon current; by Lipei
+    // set dn terms in the source terms of baryon current
     //=========================================================
 #ifdef NBMU
 #ifdef VMU
@@ -782,6 +782,25 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
     PRECISION dyalphaB = (*(alphaBvec + s + d_ncx) - *(alphaBvec + s - d_ncx)) * facY;
     PRECISION dnalphaB = (*(alphaBvec + s + stride) - *(alphaBvec + s - stride)) * facZ;
     
+    /*PRECISION alphabxp1 = alphaBvec[s+1];
+    PRECISION alphabxp2 = alphaBvec[s+2];
+    PRECISION alphabxm1 = alphaBvec[s-1];
+    PRECISION alphabxm2 = alphaBvec[s-2];
+    PRECISION alphabyp1 = alphaBvec[s+d_ncx];
+    PRECISION alphabyp2 = alphaBvec[s+2*d_ncx];
+    PRECISION alphabym1 = alphaBvec[s-d_ncx];
+    PRECISION alphabym2 = alphaBvec[s-2*d_ncx];
+    PRECISION alphabnp1 = alphaBvec[s+stride];
+    PRECISION alphabnp2 = alphaBvec[s+2*stride];
+    PRECISION alphabnm1 = alphaBvec[s-stride];
+    PRECISION alphabnm2 = alphaBvec[s-2*stride];
+    
+    PRECISION dtalphaB = (alphaBs - alphaBp) / d_dt;
+    PRECISION dxalphaB = approximateDerivative(alphabxm1,alphaBs,alphabxp1) * facX * 2;
+    PRECISION dyalphaB = approximateDerivative(alphabym1,alphaBs,alphabyp1) * facY * 2;
+    PRECISION dnalphaB = approximateDerivative(alphabnm1,alphaBs,alphabnp1) * facZ * 2;*/
+
+    
     // gradient of rhob
     PRECISION ukdk_rhob = ut * dtrhob + ux * dxrhob + uy * dyrhob + un * dnrhob;
     PRECISION Nablat_rhob =  dtrhob - ut * ukdk_rhob;
@@ -837,7 +856,7 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 	PRECISION dnvn = (dnun - vn * dnut)/ ut;
     PRECISION dkvk = dxvx + dyvy + dnvn;
     
-    // added dynamical source terms; lipei
+    // added dynamical source terms
 	S[0] = Source->sourcet[s] - (ttt / t + t * tnn) + dkvk*(pitt-p-Pi) - vx*dxp - vy*dyp - vn*dnp;
 	S[1] = Source->sourcex[s] - ttx/t -dxp + dkvk*pitx;
 	S[2] = Source->sourcey[s] - tty/t -dyp + dkvk*pity;
@@ -850,7 +869,7 @@ void loadSourceTerms2(const PRECISION * const __restrict__ Q, PRECISION * const 
 #endif
 
     //=========================================================
-    // N^{\mu} source terms; by Lipei
+    // N^{\mu} source terms
     //=========================================================
 #ifdef NBMU
     S[NUMBER_CONSERVED_VARIABLES] = Source->sourceb[s] - Nbt/t + dkvk*nbt;

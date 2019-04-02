@@ -124,7 +124,7 @@ PRECISION utauFromConservedVariables(PRECISION M0, PRECISION Ms, PRECISION Pi, P
 }
 
 /**************************************************************************************************************************************************/
-/* calculate v, u^tau, non Newton method, without slow modes
+/* calculate v, u^tau, non-Newton method, without slow modes
 /**************************************************************************************************************************************************/
 
 // designed for the case with baryon evolution, but no slow modes, not Newton method
@@ -204,6 +204,7 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
     PRECISION vRelativeError = 10.0;
     
     PRECISION e0, rhob0, pPlus, peq, Teq, alphaBeq, muBeq, Seq, v0, equiPhiQ0[NUMBER_SLOW_MODES];
+    PRECISION deltaVariables[4];
     
     for(int j = 0; j < MAX_ITERS; ++j)
     {
@@ -211,11 +212,7 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
         e0 = M0 - vPrev * Ms;
         rhob0 = N0 * sqrt(1 - vPrev * vPrev);
         
-        // without contributions from the slow modes
-        //peq = equilibriumPressure(e0, rhob0);
-        //Teq = effectiveTemperature(e0, rhob0);
-        //alphaBeq = chemicalPotentialOverT(e0, rhob0);
-        
+        // without contributions from the slow modes, from EOS
         PRECISION PrimaryVariables[3];
         
         getPrimaryVariablesCombo(e0, rhob0, PrimaryVariables);
@@ -226,18 +223,17 @@ void InferredVariablesVelocityIterationHydroPlus(PRECISION * const __restrict__ 
         muBeq = Teq * alphaBeq;
         Seq = equilibriumEntropy(e0, rhob0, peq, Teq, alphaBeq);
         
-        //printf("peq=%f\t Teq=%f\t alphaBeq=%f.\n",peq,Teq,alphaBeq);
-        
         // include contributions from slow modes into p, T and alphaB
         for(unsigned int n = 0; n < NUMBER_SLOW_MODES; ++n)
         {
             equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Teq, muBeq, Seq, Qvec[n]);
-            //printf("equiPhiQ0[%d]=%f\n",n,equiPhiQ0[n]);
         }
         
-        getPressurePlusFromSlowModes(&pPlus, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq, Seq);
+        pPlus = peq; // initialize p(+) as equilibrium value
         
-        //printf("j=%d\t pPlus=%f\n",j,pPlus);
+        //getPressurePlusFromSlowModes(deltaVariables, &pPlus, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq, Seq);
+        
+        //printf("deltaVariables0=%8f\t deltaVariables1=%8f\t deltaVariables2=%8f.\n",deltaVariables[3],deltaVariables[0],deltaVariables[1]);
         
         // recalculate the flow velocity, with p(+) from Hydro+
         v0 = Ms/(M0 + pPlus + Pi);
@@ -284,10 +280,7 @@ void InferredVariablesUtauIterationHydroPlus(PRECISION * const __restrict__ e, P
         e0 = M0 - Ms * sqrt(1 - 1 / (utPrev * utPrev));
         rhob0 = N0/utPrev;
         
-        // without contributions from the slow modes
-        //peq = equilibriumPressure(e0, rhob0);
-        //Teq = effectiveTemperature(e0, rhob0);
-        //alphaBeq = chemicalPotentialOverT(e0, rhob0);
+        // without contributions from the slow modes, from EOS
         PRECISION PrimaryVariables[3];
         
         getPrimaryVariablesCombo(e0, rhob0, PrimaryVariables);
@@ -304,7 +297,9 @@ void InferredVariablesUtauIterationHydroPlus(PRECISION * const __restrict__ e, P
             equiPhiQ0[n] = equilibriumPhiQ(e0, rhob0, Teq, muBeq, Seq, Qvec[n]);
         }
         
-        getPressurePlusFromSlowModes(&pPlus, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq, Seq);
+        pPlus = peq; // initialize p(+) as equilibrium value
+        
+        //getPressurePlusFromSlowModes(&pPlus, equiPhiQ0, PhiQ, e0, rhob0, peq, Teq, alphaBeq, Seq);
         
         // recalculate the flow velocity, with p(+) from Hydro+
         ut0 = sqrt((M0 + pPlus + Pi)/(e0 + pPlus + Pi));
@@ -402,24 +397,14 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
 	PRECISION M  = M1 * M1 + M2 * M2 + t * t * M3 * M3;
     PRECISION Ms = sqrt(M);
 
-    //========================================================================================
+    //**************************************************************************
     // SECTION I: baryon evolution is off
-    //========================================================================================
+    //**************************************************************************
     
 #ifndef RootSolver_with_Baryon // Root Solver without Baryon
     
-//#ifdef Pi
-//	if ((M0 * M0 - M + M0 * Pi) < 0)
-//		Pi = M / M0 - M0;
-//#endif
+    *e = energyDensityFromConservedVariables(ePrev, M0, M, Pi, rhobPrev);
 
-	//if (ePrev <= 0.1) {
-    //    *e = M0 - M / M0;
-	//}
-    //else {
-		*e = energyDensityFromConservedVariables(ePrev, M0, M, Pi, rhobPrev);
-    //}
-    
 	if (isnan(*e)) {
 		printf("e is nan. \n M0=%.3f,\t M1=%.3f,\t M2=%.3f,\t M3=%.3f\n", M0, M1, M2, M3);
         printf("ttt=%.3f,\t ttx=%.3f,\t tty=%.3f,\t ttn=%.3f\n", ttt, ttx, tty, ttn);
@@ -455,51 +440,34 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     
     *seq = equilibriumEntropy(*e, 0.0, *p, *T, 0.0);
     
-    //========================================================================================
+    //**************************************************************************
     // SECTION II: baryon evolution is on, but no slow modes
-    //========================================================================================
+    //**************************************************************************
     
 #else // RootSolver_with_Baryon
 
 #ifndef HydroPlus // HydroPlus
 
-    //------------------------Newton------------------------
+    //**************************** Newton method ****************************
 #ifdef Method_Newton
-    
-//#ifdef Pi
-//    if(M0 + Pi - Ms < 0){
-//        Pi = Ms - M0;
-//    }
-//#endif
     
     PRECISION v0 = 0;
     PRECISION u0 = 0;
 
     PRECISION vPrev = sqrt(1-1/(utPrev*utPrev));
     
-    //if(ePrev <= 0.1)
-    //    v0 = Ms/M0;
-    //else
-        v0 = velocityFromConservedVariables(M0, Ms, Pi, N0, vPrev);
+    v0 = velocityFromConservedVariables(M0, Ms, Pi, N0, vPrev);
     
     if (isnan(v0)) {
         printf("v0 = nan.\t vPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t N0=%5e.\n",vPrev,M0,Ms,Pi,rhobPrev,N0);
     }
     
-    if(v0<0.563624&&v0>=0){
+    if(v0<0.563624&&v0>=0)
+    {
         *e    = M0 - v0 * Ms;
         *rhob = N0 * sqrt(1 - v0*v0);
 
-        //if (*e < 3.e-4)
-        //{
-        //    *e = 3.e-4;
-        //    *p = 3.e-4;
-        //}else{
-            *p = equilibriumPressure(*e, *rhob);
-        //}
-        
-        //if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
-        //else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
+        *p = equilibriumPressure(*e, *rhob);
     
         PRECISION P  = *p + Pi;
         PRECISION v1 = M1/(M0 + P);
@@ -511,12 +479,10 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *uy = u0 * v2;
         *un = u0 * v3;
     }
-    else{
-        //printf("Solving for u0.\n");
-        //if(ePrev <= 0.1)
-        //    u0 = 1/sqrt(1-(Ms/M0)*(Ms/M0));
-        //else
-            u0 = utauFromConservedVariables(M0, Ms, Pi, N0, utPrev);
+    else
+    {
+
+        u0 = utauFromConservedVariables(M0, Ms, Pi, N0, utPrev);
         
         if (isnan(u0)) {
             printf("u0 = nan.\t utPrev=%5e,\t M0=%5e,\t Ms=%5e,\t Pi=%5e,\t rhobPrev=%5e,\t N0=%5e.\n",utPrev,M0,Ms,Pi,rhobPrev,N0);
@@ -525,16 +491,7 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
         *e    = M0 - Ms * sqrt(1 - 1/(u0*u0));
         *rhob = N0/u0;
         
-        //if (*e < 3.e-4)
-        //{
-        //    *e = 3.e-4;
-        //    *p = 3.e-4;
-        //}else{
-            *p = equilibriumPressure(*e, *rhob);
-        //}
-        
-        //if (*rhob<1.e-4 && *rhob >=0) *rhob = 1.e-4;
-        //else if (*rhob<0 && *rhob > -1.e-4) *rhob = -1.e-4;
+        *p = equilibriumPressure(*e, *rhob);
         
         PRECISION P  = *p + Pi;
         *ut = u0;
@@ -544,15 +501,10 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     }
     
     *T = effectiveTemperature(*e, *rhob);
-    //if (*T < 1.e-7) *T = 1.e-7;
-    
     *alphaB = chemicalPotentialOverT(*e, *rhob);
-    //if (*alphaB>=0 && *alphaB < 1.e-7) *alphaB = 1.e-7;
-    //else if (*alphaB <=0 && *alphaB > -1.e-7)  *alphaB = -1.e-7;
-    
     *seq = equilibriumEntropy(*e, *rhob, *p, *T, *alphaB);
     
-    //------------------------non-Newton------------------------
+    //**************************** non-Newton method ****************************
 #else
     
     PRECISION absoluteError = 1.e-16;
@@ -616,9 +568,9 @@ void getInferredVariables(PRECISION t, const PRECISION * const __restrict__ q, P
     
 #else // HydroPlus
     
-    //========================================================================================
+    //**************************************************************************
     // SECTION III: baryon evolution is on, slow modes are evolved
-    //========================================================================================
+    //**************************************************************************
     // Note: the root sloving routine below, which is not Newton's method, is adapted from a version of MUSIC
     
     // STEP I: setup
@@ -684,9 +636,9 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 
                 int s = columnMajorLinearIndex(i, j, k, ncx, ncy);
                 
-                //===================================================================
+                //**************************************************************************
                 // updated Tmunu, Nbmu, shear and bulk pressure, slow modes
-                //===================================================================
+                //**************************************************************************
                 
                 PRECISION q_s[NUMBER_ALL_EVOLVING_VARIABLES];
                 
@@ -728,26 +680,25 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 // old flow velocity
                 PRECISION ut_s = uPrev->ut[s];
                 
-                //===================================================================
+                //**************************************************************************
                 // _e, _rhob, _p, _alphaB and _equiPhiQ etc will have updated values.
-                //===================================================================
+                //**************************************************************************
                 
                 PRECISION _e,_rhob,_p,_T,_alphaB,_ut,_ux,_uy,_un,_seq;
                 PRECISION _equiPhiQ[NUMBER_SLOW_MODES];
                 
                 getInferredVariables(t,q_s,e[s],&_e,&_p,ut_s,&_ut,&_ux,&_uy,&_un,rhob[s],&_rhob,&_T,&_alphaB,&_seq,_equiPhiQ);
                 
-                //===================================================================
+                //**************************************************************************
                 // pass the updated value to external arries
-                //===================================================================
+                //**************************************************************************
+                // NOTES: T, alphaB and seq have no contributions from slow modes even when hydro+ is on, but pressure will have.
                 
-                // T and seq have no contributions from slow modes even when hydro+ is on
                 e[s] = _e;
                 rhob[s]  = _rhob;
                 T[s] = _T;
                 seq[s] = _seq;
                 
-                // pressure has contributions from slow modes when hydro+ is on
                 p[s] = _p;
 
                 u->ut[s] = _ut;
@@ -756,7 +707,6 @@ void setInferredVariablesKernel(const CONSERVED_VARIABLES * const __restrict__ q
                 u->un[s] = _un;
 
 #ifdef NBMU
-                // alphaB has no contributions from slow modes even when hydro+ is on
                 alphaB[s] = _alphaB;
 #endif
 #ifdef HydroPlus

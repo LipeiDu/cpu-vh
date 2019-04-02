@@ -56,10 +56,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   //output(q->ttn, t, outputDir, "ttn", latticeParams);
   #ifdef PIMUNU
   //output(q->pitx, t, outputDir, "pitx", latticeParams);
-  output(q->pixx, t, outputDir, "pixx", latticeParams);
-  output(q->pixy, t, outputDir, "pixy", latticeParams);
+  //output(q->pixx, t, outputDir, "pixx", latticeParams);
+  //output(q->pixy, t, outputDir, "pixy", latticeParams);
   //output(q->pixn, t, outputDir, "pixn", latticeParams);
-  output(q->piyy, t, outputDir, "piyy", latticeParams);
+  //output(q->piyy, t, outputDir, "piyy", latticeParams);
   //output(q->piyn, t, outputDir, "piyn", latticeParams);
   output(q->pinn, t, outputDir, "pinn", latticeParams);
   #endif
@@ -81,10 +81,10 @@ void outputDynamicalQuantities(double t, const char *outputDir, void * latticePa
   #ifdef HydroPlus
   output(q->phiQ[0], t, outputDir, "phiQ0", latticeParams);
   output(q->phiQ[1], t, outputDir, "phiQ1", latticeParams);
-  //output(q->phiQ[2], t, outputDir, "phiQ2", latticeParams);
+  output(q->phiQ[2], t, outputDir, "phiQ2", latticeParams);
   output(eqPhiQ->phiQ[0], t, outputDir, "eqPhiQ0", latticeParams);
   output(eqPhiQ->phiQ[1], t, outputDir, "eqPhiQ1", latticeParams);
-  //output(eqPhiQ->phiQ[2], t, outputDir, "eqPhiQ2", latticeParams);
+  output(eqPhiQ->phiQ[2], t, outputDir, "eqPhiQ2", latticeParams);
   #endif
 }
 
@@ -138,7 +138,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   //testEOS();
   // baryon diffusion coefficients table
   getBaryonDiffusionCoefficientTable();
-  testBaryCoeff();
+  //testBaryCoeff();
   // read in the parameterized correlation length xi(T, muB)
   getCorrelationLengthTable();
   testHydroPlus();
@@ -256,7 +256,8 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
   for (int n = 1; n <= nt+1; ++n)
   {
       
-    outputAnalysis(t, fp, latticeParams);
+    //outputAnalysis(t, fp, latticeParams);
+    //outputBaryonCP(t, outputDir, latticeParams);
       
     // copy variables back to host and write to disk
     if ((n-1) % FREQ == 0)
@@ -265,7 +266,7 @@ void run(void * latticeParams, void * initCondParams, void * hydroParams, const 
       n - 1, nt, t, e[sctr], p[sctr], rhob[sctr], effectiveTemperature(e[sctr], rhob[sctr]) * hbarc);
       outputDynamicalQuantities(t, outputDir, latticeParams);
       //outputAnalysis(t, outputDir, latticeParams);
-      outputGammaQ(t, outputDir, latticeParams);
+      outputHydroPlus(t, outputDir, latticeParams);
     }
 
     //************************************************************************************\
